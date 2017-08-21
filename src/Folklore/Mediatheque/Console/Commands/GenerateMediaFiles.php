@@ -57,7 +57,7 @@ class GenerateMediaFiles extends Command
             VideoContract::class
         ];
         foreach ($contracts as $contract) {
-            $all = app($contract)::all();
+            $all = app($contract)->all();
             foreach ($all as $item) {
                 $job = new CreateFiles($item, true);
                 $job->onQueue('generate_media_files');
