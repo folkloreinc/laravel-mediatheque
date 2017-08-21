@@ -3,7 +3,7 @@
 namespace Folklore\Mediatheque\Events;
 
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Folklore\Mediatheque\Models\Model;
 
