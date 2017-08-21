@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Support\Traits;
 
-use Illuminate\Foundation\Bus\DispatchesJobs;
+use Illuminate\Contracts\Bus\Dispatcher;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Support\Interfaces\HasDimension as HasDimensionInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasDuration as HasDurationInterface;
@@ -14,11 +14,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
 
 trait HasFiles
 {
-    use DispatchesJobs {
-        dispatch as private dispatchHasFiles;
-        dispatchNow as private dispatchNowHasFiles;
-    }
-
     public static function bootHasFiles()
     {
         static::observe(HasFilesObserver::class);
@@ -95,10 +90,11 @@ trait HasFiles
             'order' => 0
         ]);
 
+        $dispatcher = app(Dispatcher::class);
         if (config('mediatheque.file_creators_use_queue')) {
-            $this->dispatchHasFiles(new CreateFilesJob($this));
+            $dispatcher->dispatch(new CreateFilesJob($this));
         } else {
-            $this->dispatchNowHasFiles(new CreateFilesJob($this));
+            $dispatcher->dispatchNow(new CreateFilesJob($this));
         }
     }
 
