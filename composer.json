@@ -22,7 +22,8 @@
   "require": {
     "php": ">=5.5.9",
     "illuminate/support": "5.1.*|5.2.*|5.3.*|5.4.*",
-    "guzzlehttp/guzzle": "5.3|~6.0"
+    "guzzlehttp/guzzle": "5.3|~6.0",
+    "folklore/image": "v1.x-dev"
   },
   "require-dev": {
     "fzaninotto/faker": "~1.4",
