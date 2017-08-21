@@ -7,7 +7,6 @@ use Illuminate\Bus\Dispatcher;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Http\File;
 use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
 use Folklore\Mediatheque\Jobs\ExecFileCreator;
@@ -15,7 +14,7 @@ use Exception;
 
 class CreateFiles implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use InteractsWithQueue, Queueable, SerializesModels;
 
     public $model;
     public $onlyMissingFiles;

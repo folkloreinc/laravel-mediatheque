@@ -6,7 +6,6 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\File;
 use Folklore\Mediatheque\Contracts\FilesCreator;
@@ -15,7 +14,7 @@ use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
 
 class ExecFileCreator implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use InteractsWithQueue, Queueable, SerializesModels;
 
     public $fileCreator;
     public $fileCreatorHandle;
@@ -45,7 +44,7 @@ class ExecFileCreator implements ShouldQueue
     public function handle()
     {
         $handle = $this->fileCreatorHandle;
-        
+
         $file = new File($this->file);
         $createdFiles = null;
 
