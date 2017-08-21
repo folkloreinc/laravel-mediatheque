@@ -55,13 +55,12 @@ class MediathequeServiceProvider extends BaseServiceProvider
 
     public function mapRoutes()
     {
-        $routesPath = is_file(base_path('routes/mediatheque.php')) ?
-            base_path('routes/mediatheque.php') : (__DIR__ . '/../../routes/mediatheque.php');
-
-        $this->getRouter()
-            ->namespace('Folklore\Mediatheque\Http\Controllers')
-            ->prefix(config('mediatheque.route_prefix'))
-            ->group($routesPath);
+        if (! $this->app->routesAreCached()) {
+            $router = $this->getRouter();
+            $routesPath = is_file(base_path('routes/mediatheque.php')) ?
+                base_path('routes/mediatheque.php') : (__DIR__ . '/../../routes/mediatheque.php');
+            require $routesPath;
+        }
     }
 
     /**

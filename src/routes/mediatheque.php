@@ -1,49 +1,57 @@
 <?php
 
+$router = !isset($router) ? app('router') : $router;
+$prefix = config('mediatheque.route_prefix');
+$namespace = 'Folklore\Mediatheque\Http\Controllers';
 $types = array_keys(config('mediatheque.mimes'));
 
-/**
- * Upload
- */
-Route::group([
-    'prefix' => 'upload',
+$router->group([
+    'prefix' => $prefix,
+    'namespace' => $namespace,
     'middleware' => ['api']
-], function () use ($types) {
-    Route::post('/', [
-        'as' => 'mediatheque.upload',
-        'uses' => 'UploadController@index'
-    ]);
-
-    Route::post('/pull', [
-        'as' => 'mediatheque.upload.pull',
-        'uses' => 'UploadController@pull'
-    ]);
-
-    foreach ($types as $type) {
-        Route::post('/'.$type, [
-            'as' => 'mediatheque.upload.'.$type,
-            'uses' => 'UploadController@'.$type
+], function ($router) use ($types) {
+    /**
+     * Upload
+     */
+    $router->group([
+        'prefix' => 'upload',
+    ], function ($router) use ($types) {
+        $router->post('/', [
+            'as' => 'mediatheque.upload',
+            'uses' => 'UploadController@index'
         ]);
-    }
-});
 
-/**
- * Api
- */
-Route::group([
-    'prefix' => 'api',
-    'middleware' => ['api']
-], function () use ($types) {
-    foreach ($types as $type) {
-        Route::resource($type, studly_case($type).'Controller', [
-            'except' => ['create', 'edit'],
-            'names' => [
-                'index' => 'mediatheque.api.'.$type.'.index',
-                'show' => 'mediatheque.api.'.$type.'.show',
-                'store' => 'mediatheque.api.'.$type.'.store',
-                'update' => 'mediatheque.api.'.$type.'.update',
-                'destroy' => 'mediatheque.api.'.$type.'.destroy'
-            ]
+        $router->post('/pull', [
+            'as' => 'mediatheque.upload.pull',
+            'uses' => 'UploadController@pull'
         ]);
-    }
+
+        foreach ($types as $type) {
+            $router->post('/'.$type, [
+                'as' => 'mediatheque.upload.'.$type,
+                'uses' => 'UploadController@'.$type
+            ]);
+        }
+    });
+
+    /**
+     * Api
+     */
+    $router->group([
+        'prefix' => 'api',
+
+    ], function ($router) use ($types) {
+        foreach ($types as $type) {
+            $router->resource($type, studly_case($type).'Controller', [
+                'except' => ['create', 'edit'],
+                'names' => [
+                    'index' => 'mediatheque.api.'.$type.'.index',
+                    'show' => 'mediatheque.api.'.$type.'.show',
+                    'store' => 'mediatheque.api.'.$type.'.store',
+                    'update' => 'mediatheque.api.'.$type.'.update',
+                    'destroy' => 'mediatheque.api.'.$type.'.destroy'
+                ]
+            ]);
+        }
+    });
 });
