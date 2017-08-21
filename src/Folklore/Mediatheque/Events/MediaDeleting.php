@@ -3,13 +3,11 @@
 namespace Folklore\Mediatheque\Events;
 
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Broadcasting\InteractsWithSockets;
 use Folklore\Mediatheque\Models\Model;
 
 class MediaDeleting
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use SerializesModels;
 
     public $model;
     public $type;
