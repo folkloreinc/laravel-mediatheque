@@ -39,14 +39,13 @@ class MediathequeServiceProvider extends BaseServiceProvider
         // Merge files
         $this->mergeConfigFrom($configPath, 'mediatheque');
 
+        // Migrations
+        $this->loadMigrationsFrom($migrationsPath);
+
         // Publish
         $this->publishes([
             $configPath => config_path('mediatheque.php')
         ], 'config');
-
-        $this->publishes([
-            $migrationsPath => base_path('database/migrations')
-        ], 'migrations');
 
         $this->publishes([
             $routesPath => base_path('routes')

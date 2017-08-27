@@ -2,7 +2,7 @@
 
 $router = !isset($router) ? app('router') : $router;
 $prefix = config('mediatheque.route_prefix');
-$namespace = 'Folklore\Mediatheque\Http\Controllers';
+$prefix = config('mediatheque.route_namespace');
 $types = array_keys(config('mediatheque.mimes'));
 
 $router->group([

@@ -6,6 +6,8 @@ return [
 
     'route_prefix' => 'mediatheque',
 
+    'route_namespace' => 'Folklore\Mediatheque\Http\Controllers',
+
     'source' => 'public',
 
     'sources' => [
