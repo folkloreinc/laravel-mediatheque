@@ -2,6 +2,25 @@
 
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
+use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Route;
+use Folklore\Mediatheque\Models\Observers\FileableObserver;
+use Folklore\Mediatheque\Interfaces\FileableInterface;
+use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
+use Folklore\Mediatheque\Contracts\DimensionGetter;
+use Folklore\Mediatheque\Contracts\DurationGetter;
+use Folklore\Mediatheque\Contracts\MimeGetter;
+use Folklore\Mediatheque\Contracts\ExtensionGetter;
+use Folklore\Mediatheque\Contracts\TypeGetter;
+use Folklore\Mediatheque\Contracts\PagesCountGetter;
+use Folklore\Mediatheque\Contracts\FamilyNameGetter;
+use Folklore\Mediatheque\Services\MediaInfo;
+use Folklore\Mediatheque\Services\ThumbnailCreator;
+use Folklore\Mediatheque\Services\FFMpeg;
+use Folklore\Mediatheque\Services\Imagick;
+use Folklore\Mediatheque\Services\AudioWaveForm;
+use Folklore\Mediatheque\Services\OtfInfo;
+
 class MediathequeServiceProvider extends BaseServiceProvider
 {
 

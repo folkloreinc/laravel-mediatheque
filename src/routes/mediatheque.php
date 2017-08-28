@@ -2,7 +2,7 @@
 
 $router = !isset($router) ? app('router') : $router;
 $prefix = config('mediatheque.route_prefix');
-$prefix = config('mediatheque.route_namespace');
+$namespace = config('mediatheque.route_namespace');
 $types = array_keys(config('mediatheque.mimes'));
 
 $router->group([
