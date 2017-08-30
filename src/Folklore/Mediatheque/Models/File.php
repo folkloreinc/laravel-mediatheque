@@ -101,7 +101,7 @@ class File extends Model implements FileContract, HasUrlInterface
         $source = $this->getSource($data['source']);
         $source->putFromLocalPath($data['path'], $path);
 
-        $this->fill($data);
+        $this->fill(array_only($data, $this->fillable));
         $this->save();
     }
 
