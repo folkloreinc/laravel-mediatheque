@@ -34,7 +34,6 @@ before_install:
 
 install:
     - composer update --no-interaction --prefer-dist
-    - php artisan vendor:publish
 
 script: vendor/bin/phpunit
 
