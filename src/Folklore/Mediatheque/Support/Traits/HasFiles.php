@@ -9,8 +9,8 @@ use Folklore\Mediatheque\Support\Interfaces\HasPages as HasPagesInterface;
 use Folklore\Mediatheque\Jobs\CreateFiles as CreateFilesJob;
 use Folklore\Mediatheque\Models\Observers\HasFilesObserver;
 
-use Illuminate\Http\File;
-use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
+use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 trait HasFiles
 {
@@ -39,7 +39,7 @@ trait HasFiles
         $currentSourceFile = $this->files->source;
 
         $modelData = array_merge([
-            'name' => $file instanceof SymfonyUploadedFile ?
+            'name' => $file instanceof UploadedFile ?
                 $file->getClientOriginalName() : $file->getFilename()
         ], $data);
 
