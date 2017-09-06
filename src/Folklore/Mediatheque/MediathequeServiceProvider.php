@@ -59,7 +59,13 @@ class MediathequeServiceProvider extends BaseServiceProvider
         $this->mergeConfigFrom($configPath, 'mediatheque');
 
         // Migrations
-        $this->loadMigrationsFrom($migrationsPath);
+        if (method_exists($this, 'loadMigrationsFrom')) {
+            $this->loadMigrationsFrom($migrationsPath);
+        } else {
+            $this->publishes([
+                $migrationsPath => base_path('database/migrations')
+            ], 'migrations');
+        }
 
         // Publish
         $this->publishes([
