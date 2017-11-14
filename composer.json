@@ -23,7 +23,8 @@
         "php": ">=5.5.9",
         "illuminate/support": "5.1.*|5.2.*|5.3.*|5.4.*|5.5.*",
         "guzzlehttp/guzzle": "5.3|~6.0",
-        "folklore/image": "v1.x-dev"
+        "folklore/image": "v1.x-dev",
+        "php-ffmpeg/php-ffmpeg": "^0.11.0"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",
