@@ -44,6 +44,7 @@ class ExecFileCreator implements ShouldQueue
     {
         $handle = $this->fileCreatorHandle;
 
+        $this->model->load('files');
         $originalFile = $this->model->getOriginalFile();
         $originalFileExt = pathinfo($originalFile->path, PATHINFO_EXTENSION);
         $downloadPath = tempnam(sys_get_temp_dir(), 'CreateFilesJob').'.'.$originalFileExt;
