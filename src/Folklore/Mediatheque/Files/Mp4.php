@@ -9,11 +9,9 @@ use FFMpeg\Format\Video\X264;
 
 class Mp4 implements FilesCreator
 {
-    public $quality = 20;
+    protected $options = [];
 
-    protected $options;
-
-    public function __constructor($options = null)
+    public function __constructor($options = [])
     {
         $this->options = $options;
     }
@@ -37,6 +35,12 @@ class Mp4 implements FilesCreator
             $keys = $this->getKeysOfFilesToCreate($file);
         }
 
+        $options = array_merge([
+            'audio_codec' => 'aac',
+            'passes' => 1,
+            'quality' => 20,
+        ], config('mediatheque.mp4'), $this->options);
+
         try {
             $path = $file->getRealPath();
             $mp4Path = $path.'.mp4';
@@ -45,20 +49,29 @@ class Mp4 implements FilesCreator
                 return null;
             }
 
-            $format = new X264();
+            $audioCodec = $options['audio_codec'];
+            $format = new X264($audioCodec);
+            $format->setPasses($options['passes']);
             $ffmpeg = FFMpeg::create(config('mediatheque.programs.ffmpeg'));
 
-            $format->setAdditionalParameters([
+            $parameters = [
                 '-y',
                 '-preset',
                 'slower',
                 '-pix_fmt',
                 'yuv420p',
+                '-profile:v',
+                'baseline',
                 '-crf',
-                $this->quality,
+                $options['quality'],
                 '-movflags',
                 '+faststart'
-            ]);
+            ];
+            if ($audioCodec === 'aac') {
+                $parameters[] = '-strict';
+                $parameters[] = '-2';
+            }
+            $format->setAdditionalParameters($parameters);
 
             $ffmpegVideo = $ffmpeg->open($path);
             $ffmpegVideo->save($format, $mp4Path);

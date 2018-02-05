@@ -92,6 +92,12 @@ return [
         'restored' => \Folklore\Mediatheque\Events\MediaRestored::class,
     ],
 
+    'mp4' => [
+        'audio_codec' => 'aac',
+        'passes' => 1,
+        'quality' => 20,
+    ],
+
     'thumbnails' => [
         'enable' => true,
 
