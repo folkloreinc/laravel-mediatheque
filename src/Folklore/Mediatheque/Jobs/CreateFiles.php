@@ -44,8 +44,13 @@ class CreateFiles implements ShouldQueue
                 if (is_string($fileCreator)) {
                     $fileCreator = app($fileCreator);
                 }
+
                 $job = new ExecFileCreator($fileCreator, $handle, $this->model, $this->onlyMissingFiles);
-                app(Dispatcher::class)->dispatch($job);
+                if ($this->model->shouldQueueFileCreator($handle, $fileCreator)) {
+                    app(Dispatcher::class)->dispatch($job);
+                } else {
+                    app(Dispatcher::class)->dispatchNow($job);
+                }
             }
         }
     }

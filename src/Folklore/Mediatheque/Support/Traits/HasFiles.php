@@ -30,6 +30,11 @@ trait HasFiles
         return $filesCreators;
     }
 
+    public function shouldQueueFileCreator($handle, $fileCreator)
+    {
+        return config('mediatheque.file_creators_use_queue');
+    }
+
     public function setOriginalFile($file, $data = [])
     {
         if (is_string($file)) {
@@ -90,12 +95,7 @@ trait HasFiles
             'order' => 0
         ]);
 
-        $dispatcher = app(Dispatcher::class);
-        if (config('mediatheque.file_creators_use_queue')) {
-            $dispatcher->dispatch(new CreateFilesJob($this));
-        } else {
-            $dispatcher->dispatchNow(new CreateFilesJob($this));
-        }
+        app(Dispatcher::class)->dispatchNow(new CreateFilesJob($this));
     }
 
     public function getOriginalFile()
