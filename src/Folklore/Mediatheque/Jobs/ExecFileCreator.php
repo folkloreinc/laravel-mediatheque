@@ -11,6 +11,7 @@ use Illuminate\Http\File;
 use Folklore\Mediatheque\Contracts\FilesCreator;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
+use Exception;
 
 class ExecFileCreator implements ShouldQueue
 {
@@ -19,7 +20,6 @@ class ExecFileCreator implements ShouldQueue
     public $fileCreator;
     public $fileCreatorHandle;
     public $model;
-    public $file;
     public $onlyMissingFiles;
 
     /**
@@ -27,12 +27,11 @@ class ExecFileCreator implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(FilesCreator $fileCreator, $fileCreatorHandle, HasFilesInterface $model, $file, $onlyMissingFiles = false)
+    public function __construct(FilesCreator $fileCreator, $fileCreatorHandle, HasFilesInterface $model, $onlyMissingFiles = false)
     {
         $this->fileCreator = $fileCreator;
         $this->fileCreatorHandle = $fileCreatorHandle;
         $this->model = $model;
-        $this->file = $file;
         $this->onlyMissingFiles = $onlyMissingFiles;
     }
 
@@ -45,7 +44,14 @@ class ExecFileCreator implements ShouldQueue
     {
         $handle = $this->fileCreatorHandle;
 
-        $file = new File($this->file);
+        $originalFile = $this->model->getOriginalFile();
+        $originalFileExt = pathinfo($originalFile->path, PATHINFO_EXTENSION);
+        $downloadPath = tempnam(sys_get_temp_dir(), 'CreateFilesJob').'.'.$originalFileExt;
+        if (!$originalFile->downloadFile($downloadPath)) {
+            throw new Exception('Could not download original file');
+        }
+
+        $file = new File($downloadPath);
         $createdFiles = null;
 
         if ($this->onlyMissingFiles) {
@@ -125,5 +131,9 @@ class ExecFileCreator implements ShouldQueue
                 $i++;
             }
         }
+
+        unlink($downloadPath);
+
+        $this->model->touch();
     }
 }

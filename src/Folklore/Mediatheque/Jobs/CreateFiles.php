@@ -40,25 +40,13 @@ class CreateFiles implements ShouldQueue
         $filesCreators = $this->model->getFilesCreators();
 
         if (!is_null($filesCreators) && sizeof($filesCreators)) {
-            $originalFile = $this->model->getOriginalFile();
-            $originalFileExt = pathinfo($originalFile->path, PATHINFO_EXTENSION);
-            $downloadPath = tempnam(sys_get_temp_dir(), 'CreateFilesJob').'.'.$originalFileExt;
-            if (!$originalFile->downloadFile($downloadPath)) {
-                throw new Exception('Could not download original file');
-            }
-
             foreach ($filesCreators as $handle => $fileCreator) {
                 if (is_string($fileCreator)) {
                     $fileCreator = app($fileCreator);
                 }
-
-                $job = new ExecFileCreator($fileCreator, $handle, $this->model, $downloadPath, $this->onlyMissingFiles);
+                $job = new ExecFileCreator($fileCreator, $handle, $this->model, $this->onlyMissingFiles);
                 app(Dispatcher::class)->dispatch($job);
             }
-
-            unlink($downloadPath);
-
-            $this->model->touch();
         }
     }
 }
