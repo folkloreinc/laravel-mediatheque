@@ -2,23 +2,26 @@
 
 namespace Folklore\Mediatheque\Models;
 
-use Folklore\Mediatheque\Contracts\Models\Picture as PictureContract;
+use Folklore\Mediatheque\Contracts\Models\Image as ImageContract;
 use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasDimension as HasDimensionInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasUrl as HasUrlInterface;
+use Folklore\Mediatheque\Support\Interfaces\HasPipelines as HasPipelinesInterface;
 use Folklore\Mediatheque\Support\Traits\HasFiles;
 use Folklore\Mediatheque\Support\Traits\HasDimension;
 use Folklore\Mediatheque\Support\Traits\HasUrl;
+use Folklore\Mediatheque\Support\Traits\HasPipelines;
 
-class Picture extends Model implements
-    PictureContract,
+class Image extends Model implements
+    ImageContract,
     HasFilesInterface,
     HasDimensionInterface,
-    HasUrlInterface
+    HasUrlInterface,
+    HasPipelinesInterface
 {
-    use HasFiles, HasDimension, HasUrl;
+    use HasFiles, HasDimension, HasUrl, HasPipelines;
 
-    protected $table = 'pictures';
+    protected $table = 'images';
 
     protected $guarded = [];
     protected $fillable = [
@@ -68,6 +71,6 @@ class Picture extends Model implements
 
     protected function getTypeAttribute()
     {
-        return 'picture';
+        return 'image';
     }
 }

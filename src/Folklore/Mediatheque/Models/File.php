@@ -5,6 +5,7 @@ use Folklore\Mediatheque\Models\Collections\FilesCollection;
 use Folklore\Mediatheque\Contracts\MimeGetter;
 use Folklore\Mediatheque\Contracts\ExtensionGetter;
 use Folklore\Mediatheque\Contracts\TypeGetter;
+use Folklore\Mediatheque\Contracts\MetadataGetter;
 use Folklore\Mediatheque\Support\Interfaces\HasUrl as HasUrlInterface;
 use Folklore\Mediatheque\Support\Traits\HasUrl;
 use Folklore\Mediatheque\Models\Observers\FileObserver;
@@ -41,7 +42,8 @@ class File extends Model implements FileContract, HasUrlInterface
         'source' => 'string',
         'type' => 'string',
         'mime' => 'string',
-        'size' => 'int'
+        'size' => 'int',
+        'metadata' => 'object'
     ];
 
     public static function boot()
@@ -87,6 +89,10 @@ class File extends Model implements FileContract, HasUrlInterface
             $data['type'] = app(TypeGetter::class)->getType($path);
         }
 
+        if (!isset($data['metadata'])) {
+            $data['metadata'] = app(MetadataGetter::class)->getMetadata($path, $data['type']);
+        }
+
         if (!isset($data['path'])) {
             if ($this->getKey() === null) {
                 $this->save();
@@ -94,7 +100,7 @@ class File extends Model implements FileContract, HasUrlInterface
             $replaces = array_merge([
                 'id' => $this->id
             ], $this->toArray(), $data);
-            $format = config('mediatheque.path_format');
+            $format = config('mediatheque.file_path_format');
             $data['path'] = $this->formatPath($format, $replaces);
         }
 

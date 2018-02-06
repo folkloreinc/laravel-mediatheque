@@ -2,7 +2,6 @@
 
 trait Syncable
 {
-
     /*
      *
      * Sync methods

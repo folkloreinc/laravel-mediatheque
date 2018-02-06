@@ -2,7 +2,7 @@
 
 use Folklore\Mediatheque\Contracts\PagesCountGetter;
 
-trait hasPages
+trait HasPages
 {
     public function getPagesCountFromFile($file)
     {

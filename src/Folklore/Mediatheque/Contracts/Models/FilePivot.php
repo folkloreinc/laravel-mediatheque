@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Contracts\Models;
 
-interface Picture
+interface FilePivot
 {
 
 }

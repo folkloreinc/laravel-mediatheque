@@ -11,8 +11,12 @@
          syntaxCheck="false"
 >
     <testsuites>
-        <testsuite name="Folklore\Mediatheque Test Suite">
-            <directory>./tests/</directory>
+        <testsuite name="Folklore\Mediatheque Feature Test Suite">
+            <directory>./tests/Feature</directory>
+            <exclude>./tests/TestCase.php</exclude>
+        </testsuite>
+        <testsuite name="Folklore\Mediatheque Unit Test Suite">
+            <directory>./tests/Unit</directory>
             <exclude>./tests/TestCase.php</exclude>
         </testsuite>
     </testsuites>

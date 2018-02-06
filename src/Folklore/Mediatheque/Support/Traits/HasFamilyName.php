@@ -2,7 +2,7 @@
 
 use Folklore\Mediatheque\Contracts\FamilyNameGetter;
 
-trait hasFamilyName
+trait HasFamilyName
 {
     /**
      * Timeable

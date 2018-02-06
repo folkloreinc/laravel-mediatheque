@@ -14,7 +14,7 @@ use Folklore\Mediatheque\Contracts\ExtensionGetter;
 use Folklore\Mediatheque\Contracts\TypeGetter;
 use Folklore\Mediatheque\Contracts\PagesCountGetter;
 use Folklore\Mediatheque\Contracts\FamilyNameGetter;
-use Folklore\Mediatheque\Services\MediaInfo;
+use Folklore\Mediatheque\Services\Metadata;
 use Folklore\Mediatheque\Services\ThumbnailCreator;
 use Folklore\Mediatheque\Services\FFMpeg;
 use Folklore\Mediatheque\Services\Imagick;
@@ -44,14 +44,12 @@ class MediathequeServiceProvider extends BaseServiceProvider
     public function boot()
     {
         $this->bootPublishes();
-
-        $this->mapRoutes();
     }
 
     public function bootPublishes()
     {
         // Config file path
-        $configPath = __DIR__ . '/../../config/config.php';
+        $configPath = __DIR__ . '/../../config/';
         $migrationsPath = __DIR__ . '/../../migrations/';
         $routesPath = __DIR__ . '/../../routes/';
 
@@ -69,22 +67,12 @@ class MediathequeServiceProvider extends BaseServiceProvider
 
         // Publish
         $this->publishes([
-            $configPath => config_path('mediatheque.php')
+            $configPath => config_path('mediatheque')
         ], 'config');
 
         $this->publishes([
             $routesPath => base_path('routes')
         ], 'routes');
-    }
-
-    public function mapRoutes()
-    {
-        if (! $this->app->routesAreCached()) {
-            $router = $this->getRouter();
-            $routesPath = is_file(base_path('routes/mediatheque.php')) ?
-                base_path('routes/mediatheque.php') : (__DIR__ . '/../../routes/mediatheque.php');
-            require $routesPath;
-        }
     }
 
     /**
@@ -96,7 +84,7 @@ class MediathequeServiceProvider extends BaseServiceProvider
     {
         $this->registerModels();
         $this->registerSourceManager();
-        $this->registerMediaInfo();
+        $this->registerMetadata();
         $this->registerFFMpeg();
         $this->registerImagick();
         $this->registerAudioWaveForm();
@@ -119,12 +107,16 @@ class MediathequeServiceProvider extends BaseServiceProvider
     public function registerModels()
     {
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\Picture::class,
-            \Folklore\Mediatheque\Models\Picture::class
+            \Folklore\Mediatheque\Contracts\Models\Image::class,
+            \Folklore\Mediatheque\Models\Image::class
         );
         $this->app->bind(
             \Folklore\Mediatheque\Contracts\Models\File::class,
             \Folklore\Mediatheque\Models\File::class
+        );
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Models\FilePivot::class,
+            \Folklore\Mediatheque\Models\FilePivot::class
         );
         $this->app->bind(
             \Folklore\Mediatheque\Contracts\Models\Audio::class,
@@ -146,6 +138,14 @@ class MediathequeServiceProvider extends BaseServiceProvider
             \Folklore\Mediatheque\Contracts\Models\Font::class,
             \Folklore\Mediatheque\Models\Font::class
         );
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Models\Pipeline::class,
+            \Folklore\Mediatheque\Models\Pipeline::class
+        );
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Models\PipelineJob::class,
+            \Folklore\Mediatheque\Models\PipelineJob::class
+        );
     }
 
     /**
@@ -165,10 +165,10 @@ class MediathequeServiceProvider extends BaseServiceProvider
      *
      * @return void
      */
-    public function registerMediaInfo()
+    public function registerMetadata()
     {
-        $this->app->bind('mediatheque.services.mediainfo', function ($app) {
-            return new MediaInfo($app);
+        $this->app->bind('mediatheque.services.metadata', function ($app) {
+            return new Metadata($app);
         });
     }
 
@@ -227,7 +227,7 @@ class MediathequeServiceProvider extends BaseServiceProvider
      */
     public function registerMimeGetter()
     {
-        $this->app->bind(MimeGetter::class, 'mediatheque.services.mediainfo');
+        $this->app->bind(MimeGetter::class, 'mediatheque.services.metadata');
     }
 
     /**
@@ -237,7 +237,17 @@ class MediathequeServiceProvider extends BaseServiceProvider
      */
     public function registerExtensionGetter()
     {
-        $this->app->bind(ExtensionGetter::class, 'mediatheque.services.mediainfo');
+        $this->app->bind(ExtensionGetter::class, 'mediatheque.services.metadata');
+    }
+
+    /**
+     * Register the type getter
+     *
+     * @return void
+     */
+    public function registerMetadataGetter()
+    {
+        $this->app->bind(MetadataGetter::class, 'mediatheque.services.metadata');
     }
 
     /**
@@ -247,7 +257,7 @@ class MediathequeServiceProvider extends BaseServiceProvider
      */
     public function registerTypeGetter()
     {
-        $this->app->bind(TypeGetter::class, 'mediatheque.services.mediainfo');
+        $this->app->bind(TypeGetter::class, 'mediatheque.services.metadata');
     }
 
     /**
@@ -269,8 +279,8 @@ class MediathequeServiceProvider extends BaseServiceProvider
      */
     public function registerDimensionGetter()
     {
-        $this->app->bind(DimensionGetter::class, 'mediatheque.services.mediainfo');
-        $this->app->bind('mediatheque.services.dimension.picture', 'mediatheque.services.imagick');
+        $this->app->bind(DimensionGetter::class, 'mediatheque.services.metadata');
+        $this->app->bind('mediatheque.services.dimension.image', 'mediatheque.services.imagick');
         $this->app->bind('mediatheque.services.dimension.video', 'mediatheque.services.ffmpeg');
     }
 
@@ -281,7 +291,7 @@ class MediathequeServiceProvider extends BaseServiceProvider
      */
     public function registerDurationGetter()
     {
-        $this->app->bind(DurationGetter::class, 'mediatheque.services.mediainfo');
+        $this->app->bind(DurationGetter::class, 'mediatheque.services.metadata');
         $this->app->bind('mediatheque.services.duration.audio', 'mediatheque.services.ffmpeg');
         $this->app->bind('mediatheque.services.duration.video', 'mediatheque.services.ffmpeg');
     }
@@ -293,7 +303,7 @@ class MediathequeServiceProvider extends BaseServiceProvider
      */
     public function registerPagesCountGetter()
     {
-        $this->app->bind(PagesCountGetter::class, 'mediatheque.services.mediainfo');
+        $this->app->bind(PagesCountGetter::class, 'mediatheque.services.metadata');
         $this->app->bind('mediatheque.services.pagescount', 'mediatheque.services.imagick');
     }
 
@@ -304,7 +314,7 @@ class MediathequeServiceProvider extends BaseServiceProvider
      */
     public function registerFamilyName()
     {
-        $this->app->bind(FamilyNameGetter::class, 'mediatheque.services.mediainfo');
+        $this->app->bind(FamilyNameGetter::class, 'mediatheque.services.metadata');
         $this->app->bind('mediatheque.services.familyname', 'mediatheque.services.otfinfo');
     }
 

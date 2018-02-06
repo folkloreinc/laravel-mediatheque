@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Contracts\Models;
 
-interface Text
+interface PipelineJob
 {
 
 }

@@ -5,10 +5,12 @@ use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasDuration as HasDurationInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasUrl as HasUrlInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasThumbnails as HasThumbnailsInterface;
+use Folklore\Mediatheque\Support\Interfaces\HasPipelines as HasPipelinesInterface;
 use Folklore\Mediatheque\Support\Traits\HasFiles;
 use Folklore\Mediatheque\Support\Traits\HasDuration;
 use Folklore\Mediatheque\Support\Traits\HasThumbnails;
 use Folklore\Mediatheque\Support\Traits\HasUrl;
+use Folklore\Mediatheque\Support\Traits\HasPipelines;
 use Folklore\Mediatheque\Files\Thumbnails;
 
 class Audio extends Model implements
@@ -16,9 +18,10 @@ class Audio extends Model implements
     HasFilesInterface,
     HasDurationInterface,
     HasUrlInterface,
-    HasThumbnailsInterface
+    HasThumbnailsInterface,
+    HasPipelinesInterface
 {
-    use HasFiles, HasDuration, HasUrl, HasThumbnails;
+    use HasFiles, HasDuration, HasUrl, HasThumbnails, HasPipelines;
 
     protected $table = 'audios';
 

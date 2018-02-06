@@ -1,19 +1,19 @@
 <?php namespace Folklore\Mediatheque\Support\Traits;
 
-use Folklore\Mediatheque\Contracts\Models\Picture as PictureContract;
+use Folklore\Mediatheque\Contracts\Models\Image as ImageContract;
 
-trait HasPictures
+trait HasImages
 {
     /*
      *
      * Relationships
      *
      */
-    public function pictures()
+    public function images()
     {
         $morphName = 'morphable';
-        $key = 'picture_id';
-        $model = app(PictureContract::class);
+        $key = 'image_id';
+        $model = app(ImageContract::class);
         $modelClass = get_class($model);
         $table = $model->getTable().'_pivot';
         $query = $this->morphToMany($modelClass, $morphName, $table, null, $key)
@@ -28,9 +28,9 @@ trait HasPictures
      * Sync methods
      *
      */
-    public function syncPictures($items = array())
+    public function syncImages($items = array())
     {
-        $model = get_class(app(PictureContract::class));
-        return $this->syncMorph($model, 'morphable', 'pictures', $items);
+        $model = get_class(app(ImageContract::class));
+        return $this->syncMorph($model, 'morphable', 'images', $items);
     }
 }

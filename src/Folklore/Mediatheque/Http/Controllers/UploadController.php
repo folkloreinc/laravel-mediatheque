@@ -3,13 +3,13 @@
 namespace Folklore\Mediatheque\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Folklore\Mediatheque\Http\Requests\UploadPictureRequest;
+use Folklore\Mediatheque\Http\Requests\UploadImageRequest;
 use Folklore\Mediatheque\Http\Requests\UploadAudioRequest;
 use Folklore\Mediatheque\Http\Requests\UploadVideoRequest;
 use Folklore\Mediatheque\Http\Requests\UploadDocumentRequest;
 use Folklore\Mediatheque\Http\Requests\UploadFontRequest;
 use Folklore\Mediatheque\Contracts\MimeGetter;
-use Folklore\Mediatheque\Contracts\Models\Picture as PictureContract;
+use Folklore\Mediatheque\Contracts\Models\Image as ImageContract;
 use Folklore\Mediatheque\Contracts\Models\Audio as AudioContract;
 use Folklore\Mediatheque\Contracts\Models\Video as VideoContract;
 use Folklore\Mediatheque\Contracts\Models\Document as DocumentContract;
@@ -37,14 +37,17 @@ class UploadController extends Controller
     protected function getFileType($file)
     {
         $mime = app(MimeGetter::class)->getMime($file->getRealPath());
-        $type = null;
-        foreach (config('mediatheque.mimes') as $key => $mimes) {
-            if (isset($mimes[$mime])) {
-                $type = $key;
-                break;
+        foreach (config('mediatheque.types') as $key => $type) {
+            $mimes = array_keys(array_get($type, 'mimes', []));
+            $foundMime = array_has($mimes, function ($it) use ($mime) {
+                $pattern = str_replace('\*', '[^\]+', preg_quote($it));
+                return preg_match('/^'.$pattern.'$/', $mime);
+            });
+            if ($foundMime) {
+                return $key;
             }
         }
-        return $type;
+        return null;
     }
 
     public function pull(Request $request)
@@ -58,9 +61,9 @@ class UploadController extends Controller
         return abort(500);
     }
 
-    public function picture(UploadPictureRequest $request)
+    public function image(UploadImageRequest $request)
     {
-        $item = app(PictureContract::class);
+        $item = app(ImageContract::class);
         return $this->updateItemFromRequest($item, $request);
     }
 

@@ -5,10 +5,12 @@ use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasPages as HasPagesInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasUrl as HasUrlInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasThumbnails as HasThumbnailsInterface;
+use Folklore\Mediatheque\Support\Interfaces\HasPipelines as HasPipelinesInterface;
 use Folklore\Mediatheque\Support\Traits\HasFiles;
 use Folklore\Mediatheque\Support\Traits\HasPages;
 use Folklore\Mediatheque\Support\Traits\HasUrl;
 use Folklore\Mediatheque\Support\Traits\HasThumbnails;
+use Folklore\Mediatheque\Support\Traits\HasPipelines;
 use Folklore\Mediatheque\Files\Thumbnails;
 
 class Document extends Model implements
@@ -16,9 +18,10 @@ class Document extends Model implements
     HasFilesInterface,
     HasPagesInterface,
     HasUrlInterface,
-    HasThumbnailsInterface
+    HasThumbnailsInterface,
+    HasPipelinesInterface
 {
-    use HasFiles, HasPages, HasUrl, HasThumbnails;
+    use HasFiles, HasPages, HasUrl, HasThumbnails, HasPipelines;
 
     protected $table = 'documents';
 

@@ -3,6 +3,7 @@
 namespace Folklore\Mediatheque\Services;
 
 use Symfony\Component\HttpFoundation\File\MimeType\MimeTypeGuesser;
+use Folklore\Mediatheque\Contracts\MetadataGetter;
 use Folklore\Mediatheque\Contracts\MimeGetter;
 use Folklore\Mediatheque\Contracts\ExtensionGetter;
 use Folklore\Mediatheque\Contracts\TypeGetter;
@@ -10,9 +11,14 @@ use Folklore\Mediatheque\Contracts\DimensionGetter;
 use Folklore\Mediatheque\Contracts\DurationGetter;
 use Folklore\Mediatheque\Contracts\PagesCountGetter;
 use Folklore\Mediatheque\Contracts\FamilyNameGetter;
+use Folklore\Mediatheque\Support\Interfaces\HasDurationInterface;
+use Folklore\Mediatheque\Support\Interfaces\HasFamilyNameInterface;
+use Folklore\Mediatheque\Support\Interfaces\HasDimensionInterface;
+use Folklore\Mediatheque\Support\Interfaces\HasPagesInterface;
 use Exception;
 
-class MediaInfo implements
+class Metadata implements
+    MetadataGetter,
     MimeGetter,
     ExtensionGetter,
     TypeGetter,
@@ -21,6 +27,54 @@ class MediaInfo implements
     PagesCountGetter,
     FamilyNameGetter
 {
+    /**
+     * Get metadata
+     *
+     * @param  string  $path
+     * @return array
+     */
+    public function getMetadata($path)
+    {
+        $type = $this->getType($path);
+        $className = '\\Folklore\\Mediatheque\\Contracts\\Models\\'.studly_case($type);
+        if (!app()->bound($className)) {
+            return [];
+        }
+
+        $metadata = [];
+        $model = app($className);
+        if ($model instanceof HasDurationInterface) {
+            $duration = app(DurationGetter::class)->getDuration($path);
+            if ($duration) {
+                $metadata['duration'] = $duration;
+            }
+        }
+
+        if ($model instanceof HasFamilyNameInterface) {
+            $familyName = app(FamilyNameGetter::class)->getFamilyName($path);
+            if ($familyName) {
+                $metadata['family_name'] = $familyName;
+            }
+        }
+
+        if ($model instanceof HasDimensionInterface) {
+            $dimension = app(DimensionGetter::class)->getDimension($path);
+            if ($dimension) {
+                $metadata['width'] = $dimension['width'];
+                $metadata['height'] = $dimension['height'];
+            }
+        }
+
+        if ($model instanceof HasPagesInterface) {
+            $pages = app(PagesCountGetter::class)->getPagesCount($path);
+            if ($pages) {
+                $metadata['pages'] = $pages;
+            }
+        }
+
+        return $metadata;
+    }
+
     /**
      * Get pages count
      *
@@ -78,10 +132,10 @@ class MediaInfo implements
         try {
             $mime = MimeTypeGuesser::getInstance()->guess($path);
             if ($mime === 'application/octet-stream') {
-                $typeMimes = array_values(config('mediatheque.mimes'));
+                $types = array_values(config('mediatheque.types'));
                 $fileExtension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-                foreach ($typeMimes as $type => $mimes) {
-                    foreach ($mimes as $mimeType => $extension) {
+                foreach ($types as $key => $type) {
+                    foreach ($type['mimes'] as $mimeType => $extension) {
                         if ($fileExtension === $extension) {
                             return $mimeType;
                         }

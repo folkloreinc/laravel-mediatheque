@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateMediathequeTextsPivotTable extends Migration
+class CreateMediathequeImagesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,17 +13,16 @@ class CreateMediathequeTextsPivotTable extends Migration
      */
     public function up()
     {
-        Schema::create(config('mediatheque.table_prefix').'texts_pivot', function (Blueprint $table) {
+        Schema::create(config('mediatheque.table_prefix').'images', function (Blueprint $table) {
             $table->increments('id');
-            $table->integer('text_id')->unsigned();
-            $table->morphs('morphable');
             $table->string('handle')->nullable();
-            $table->integer('order')->default(0);
+            $table->string('name')->nullable();
+            $table->smallInteger('width')->unsigned()->default(0);
+            $table->smallInteger('height')->unsigned()->default(0);
             $table->timestamps();
 
-            $table->index('text_id');
             $table->index('handle');
-            $table->index('order');
+            $table->index('name');
         });
     }
 
@@ -34,6 +33,6 @@ class CreateMediathequeTextsPivotTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists(config('mediatheque.table_prefix').'texts_pivot');
+        Schema::dropIfExists(config('mediatheque.table_prefix').'pictures');
     }
 }

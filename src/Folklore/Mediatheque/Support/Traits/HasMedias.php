@@ -5,7 +5,7 @@ trait HasMedias
     use HasAudios;
     use HasDocuments;
     use HasFonts;
-    use HasPictures;
+    use HasImages;
     use HasTexts;
     use HasVideos;
 }

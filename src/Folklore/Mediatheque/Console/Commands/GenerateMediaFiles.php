@@ -7,7 +7,7 @@ use Illuminate\Foundation\Bus\DispatchesJobs;
 use Folklore\Mediatheque\Contracts\Models\Audio as AudioContract;
 use Folklore\Mediatheque\Contracts\Models\Document as DocumentContract;
 use Folklore\Mediatheque\Contracts\Models\Font as FontContract;
-use Folklore\Mediatheque\Contracts\Models\Picture as PictureContract;
+use Folklore\Mediatheque\Contracts\Models\Image as ImageContract;
 use Folklore\Mediatheque\Contracts\Models\Video as VideoContract;
 use Folklore\Mediatheque\Jobs\CreateFiles;
 
@@ -53,7 +53,7 @@ class GenerateMediaFiles extends Command
             AudioContract::class,
             DocumentContract::class,
             FontContract::class,
-            PictureContract::class,
+            ImageContract::class,
             VideoContract::class
         ];
         foreach ($contracts as $contract) {

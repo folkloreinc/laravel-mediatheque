@@ -6,11 +6,13 @@ use Folklore\Mediatheque\Support\Interfaces\HasDuration as HasDurationInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasDimension as HasDimensionInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasUrl as HasUrlInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasThumbnails as HasThumbnailsInterface;
+use Folklore\Mediatheque\Support\Interfaces\HasPipelines as HasPipelinesInterface;
 use Folklore\Mediatheque\Support\Traits\HasFiles;
 use Folklore\Mediatheque\Support\Traits\HasDuration;
 use Folklore\Mediatheque\Support\Traits\HasDimension;
 use Folklore\Mediatheque\Support\Traits\HasUrl;
 use Folklore\Mediatheque\Support\Traits\HasThumbnails;
+use Folklore\Mediatheque\Support\Traits\HasPipelines;
 use Folklore\Mediatheque\Files\Mp4;
 use Folklore\Mediatheque\Files\Thumbnails;
 
@@ -20,9 +22,10 @@ class Video extends Model implements
     HasDurationInterface,
     HasDimensionInterface,
     HasUrlInterface,
-    HasThumbnailsInterface
+    HasThumbnailsInterface,
+    HasPipelinesInterface
 {
-    use HasFiles, HasDuration, HasDimension, HasUrl, HasThumbnails;
+    use HasFiles, HasDuration, HasDimension, HasUrl, HasThumbnails, HasPipelines;
 
     protected $table = 'videos';
 

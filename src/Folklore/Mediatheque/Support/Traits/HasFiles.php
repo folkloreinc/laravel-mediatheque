@@ -2,10 +2,8 @@
 
 use Illuminate\Contracts\Bus\Dispatcher;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
-use Folklore\Mediatheque\Support\Interfaces\HasDimension as HasDimensionInterface;
-use Folklore\Mediatheque\Support\Interfaces\HasDuration as HasDurationInterface;
-use Folklore\Mediatheque\Support\Interfaces\HasFamilyName as HasFamilyNameInterface;
-use Folklore\Mediatheque\Support\Interfaces\HasPages as HasPagesInterface;
+use Folklore\Mediatheque\Contracts\Models\FilePivot as FilePivotContract;
+use Folklore\Mediatheque\Contracts\MetadataGetter;
 use Folklore\Mediatheque\Jobs\CreateFiles as CreateFilesJob;
 use Folklore\Mediatheque\Models\Observers\HasFilesObserver;
 
@@ -41,56 +39,32 @@ trait HasFiles
             $file = new File($file);
         }
 
-        $currentSourceFile = $this->files->source;
+        $currentOriginalFile = $this->files->original;
 
+        $name = $file instanceof UploadedFile ? $file->getClientOriginalName() : $file->getFilename();
+        $metadata = app(MetadataGetter::class)->getMetadata($file);
         $modelData = array_merge([
-            'name' => $file instanceof UploadedFile ?
-                $file->getClientOriginalName() : $file->getFilename()
-        ], $data);
+            'name' => $name
+        ], $metadata, $data);
+        $fileData = array_merge([
+            'metadata' => $metadata,
+            'handle' => 'original'
+        ], $modelData);
 
-        if ($this instanceof HasDurationInterface) {
-            $duration = $this->getDurationFromFile($file);
-            if ($duration) {
-                $modelData['duration'] = $duration;
-            }
-        }
-
-        if ($this instanceof HasFamilyNameInterface) {
-            $familyName = $this->getFamilyNameFromFile($file);
-            if ($familyName) {
-                $modelData['family_name'] = $familyName;
-            }
-        }
-
-        if ($this instanceof HasDimensionInterface) {
-            $dimension = $this->getDimensionFromFile($file);
-            if ($dimension) {
-                $modelData['width'] = $dimension['width'];
-                $modelData['height'] = $dimension['height'];
-            }
-        }
-
-        if ($this instanceof HasPagesInterface) {
-            $pages = $this->getPagesCountFromFile($file);
-            if ($pages) {
-                $modelData['pages'] = $pages;
-            }
-        }
-
-        $sourceFile = app(FileContract::class);
-        $sourceFile->setFile($file, $modelData);
-        $sourceFile->save();
+        $originalFile = app(FileContract::class);
+        $originalFile->setFile($file, $fileData);
+        $originalFile->save();
 
         if (sizeof($modelData) || $this->getKey() === null) {
             $this->fill($modelData);
             $this->save();
         }
 
-        if ($currentSourceFile) {
-            $this->files()->detach($currentSourceFile);
+        if ($currentOriginalFile) {
+            $this->files()->detach($currentOriginalFile);
         }
 
-        $this->files()->attach($sourceFile, [
+        $this->files()->attach($originalFile, [
             'handle' => 'original',
             'order' => 0
         ]);
@@ -114,11 +88,14 @@ trait HasFiles
         $key = 'file_id';
         $model = app(FileContract::class);
         $modelClass = get_class($model);
+        $pivot = app(FilePivotContract::class);
+        $pivotClass = get_class($pivot);
         $table = $model->getTable().'_pivot';
         $query = $this->morphToMany($modelClass, $morphName, $table, null, $key)
                         ->withTimestamps()
                         ->withPivot('handle', 'order')
-                        ->orderBy('order', 'asc');
+                        ->orderBy('order', 'asc')
+                        ->using($pivotClass);
         return $query;
     }
 
