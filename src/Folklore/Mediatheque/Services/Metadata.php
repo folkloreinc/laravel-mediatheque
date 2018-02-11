@@ -132,7 +132,7 @@ class Metadata implements
         try {
             $mime = MimeTypeGuesser::getInstance()->guess($path);
             if ($mime === 'application/octet-stream') {
-                $types = array_values(config('mediatheque.config.types'));
+                $types = array_values(config('mediatheque.types'));
                 $fileExtension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
                 foreach ($types as $key => $type) {
                     foreach ($type['mimes'] as $mimeType => $extension) {
@@ -157,7 +157,7 @@ class Metadata implements
     public function getExtension($path, $filename = null)
     {
         $mime = app(MimeGetter::class)->getMime($path);
-        $types = array_values(config('mediatheque.config.types'));
+        $types = array_values(config('mediatheque.types'));
         $fileExtension = pathinfo(!empty($filename) ? $filename : $path, PATHINFO_EXTENSION);
         return array_reduce($types, function ($extension, $type) use ($mime) {
             $mimes = array_get($type, 'mimes', []);
@@ -174,7 +174,7 @@ class Metadata implements
     public function getType($path)
     {
         $fileMime = app(MimeGetter::class)->getMime($path);
-        $types = config('mediatheque.config.types');
+        $types = config('mediatheque.types');
         foreach ($types as $name => $type) {
             $mimes = array_get($type, 'mimes', []);
             foreach ($mimes as $mime => $extension) {

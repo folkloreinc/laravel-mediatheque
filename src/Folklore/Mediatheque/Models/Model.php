@@ -1,7 +1,7 @@
 <?php namespace Folklore\Mediatheque\Models;
 
 use Illuminate\Database\Eloquent\Model as Eloquent;
-use Folklore\Mediatheque\Models\Observers\MediaObserver;
+use Folklore\Mediatheque\Observers\MediaObserver;
 
 class Model extends Eloquent
 {

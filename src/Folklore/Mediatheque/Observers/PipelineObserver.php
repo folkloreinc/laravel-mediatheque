@@ -1,6 +1,6 @@
 <?php
 
-namespace Folklore\Mediatheque\Models\Observers;
+namespace Folklore\Mediatheque\Observers;
 
 use Illuminate\Bus\Dispatcher;
 use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;

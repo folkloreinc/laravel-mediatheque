@@ -1,4 +1,4 @@
-<?php namespace Folklore\Mediatheque\Models\Collections;
+<?php namespace Folklore\Mediatheque\Collections;
 
 use Illuminate\Database\Eloquent\Collection;
 

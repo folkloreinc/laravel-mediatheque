@@ -56,6 +56,9 @@ class RunPipelineJob implements ShouldQueue
 
             // Run the job
             $file = $this->model->files->{$fromFile};
+            if (!$file) {
+                throw new Exception('File "'.$fromFile.'" is not available.');
+            }
             $job = new $jobClass($file, $options, $this->model);
             $newFile = app(Dispatcher::class)->dispatchNow($job);
 
@@ -75,8 +78,7 @@ class RunPipelineJob implements ShouldQueue
             $pipelineJob->markEnded();
         } catch (Exception $e) {
             $log->error($e);
-
-            $pipelineJob->markFailed();
+            $pipelineJob->markFailed($e);
         }
 
         $this->model->load('files');

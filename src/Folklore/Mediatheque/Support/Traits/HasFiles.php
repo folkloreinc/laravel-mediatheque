@@ -3,7 +3,7 @@
 use Illuminate\Contracts\Bus\Dispatcher;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\MetadataGetter;
-use Folklore\Mediatheque\Models\Observers\HasFilesObserver;
+use Folklore\Mediatheque\Observers\HasFilesObserver;
 
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -70,7 +70,7 @@ trait HasFiles
                 ->first();
         if ($file) {
             $this->files()->detach($file);
-            $eventClass = config('mediatheque.config.events.file_detached');
+            $eventClass = config('mediatheque.events.file_detached');
             event(new $eventClass($this, $file));
         }
     }
@@ -80,7 +80,7 @@ trait HasFiles
         $this->files()->attach($file, [
             'handle' => $handle
         ]);
-        $eventClass = config('mediatheque.config.events.file_attached');
+        $eventClass = config('mediatheque.events.file_attached');
         event(new $eventClass($this, $file));
     }
 

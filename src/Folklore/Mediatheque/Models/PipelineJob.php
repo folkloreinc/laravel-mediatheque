@@ -7,6 +7,7 @@ use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
 use Illuminate\Bus\Dispatcher;
 use Folklore\Mediatheque\Jobs\RunPipelineJob;
+use Exception;
 
 class PipelineJob extends Model implements PipelineJobContract
 {
@@ -78,11 +79,14 @@ class PipelineJob extends Model implements PipelineJobContract
         $this->save();
     }
 
-    public function markFailed()
+    public function markFailed(Exception $e = null)
     {
         $this->started = false;
         $this->failed = true;
-        $this->failed_at = Carbon::now();
+        $this->ended_at = Carbon::now();
+        if (!is_null($e)) {
+            $this->failed_exception = $e;
+        }
         $this->save();
     }
 
@@ -94,5 +98,10 @@ class PipelineJob extends Model implements PipelineJobContract
             !$this->failed &&
             array_get($this->definition, 'from_file') === $name
         );
+    }
+
+    public function setFailedExceptionAttribute($e)
+    {
+        $this->attributes['failed_exception'] = (string) $e;
     }
 }

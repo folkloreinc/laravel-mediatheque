@@ -2,8 +2,24 @@
 
 return [
 
+    /*
+    |--------------------------------------------------------------------------
+    | Table Prefix
+    |--------------------------------------------------------------------------
+    |
+    | The table prefix used for each table created by this package
+    |
+    */
     'table_prefix' => 'mediatheque_',
 
+    /*
+    |--------------------------------------------------------------------------
+    | Routes
+    |--------------------------------------------------------------------------
+    |
+    | Default configuration for routing in the packages.
+    |
+    */
     'routes' => [
         'prefix' => 'mediatheque',
         'namespace' => 'Folklore\Mediatheque\Http\Controllers',
@@ -18,6 +34,118 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Sources
+    |--------------------------------------------------------------------------
+    |
+    | Configuration of media sources. You can define multiple sources as well
+    | as the default source. Available drives are: "local", "filesystem"
+    |
+    */
+    'source' => 'public',
+
+    'sources' => [
+        'public' => [
+            'driver' => 'local',
+            'path' => public_path('files'),
+            'url' => env('APP_URL').'/files'
+        ],
+
+        'cloud' => [
+            'driver' => 'filesystem',
+            'disk' => 'public',
+            'path' => '/',
+            'cache' => false
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Files
+    |--------------------------------------------------------------------------
+    |
+    | When files are copied on the source, this is the format that is used to
+    | generate the path.
+    |
+    */
+    'file_path_format' => '{type}/{date(Y-m-d)}/{id}-{date(his)}.{extension}',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pipelines
+    |--------------------------------------------------------------------------
+    |
+    | Pipelines are groups of jobs that are executed on media to generate files
+    | from original or other media files.
+    |
+    */
+    'pipelines' => [
+
+        'video' => [
+            'queue' => true,
+            'jobs' => [
+                'h264' => \Folklore\Mediatheque\Jobs\Video\H264::class,
+                'webm' => \Folklore\Mediatheque\Jobs\Video\WebM::class,
+                'thumbnails' => [
+                    'job' => \Folklore\Mediatheque\Jobs\Video\Thumbnails::class,
+                    'count' => 5,
+                    'in_middle' => true,
+                ],
+            ]
+        ],
+
+        'audio' => [
+            'queue' => true,
+            'jobs' => [
+                'thumbnails' => [
+                    'job' => \Folklore\Mediatheque\Jobs\Audio\Thumbnails::class,
+                    'zoom' => 600,
+                    'width' => 1200,
+                    'height' => 400,
+                    'axis_label' => false,
+                    'background_color' => 'FFFFFF00',
+                    'color' => '000000',
+                    'border_color' => null,
+                    'axis_label_color' => null,
+                ],
+            ]
+        ],
+
+        'document' => [
+            'queue' => true,
+            'jobs' => [
+                'thumbnails' => [
+                    'job' => \Folklore\Mediatheque\Jobs\Document\Thumbnails::class,
+                    'count' => 'all',
+                    'resolution' => 150,
+                    'quality' => 100,
+                    'background' => 'white',
+                    'format' => 'jpeg',
+                    'font' => storage_path('mediatheque/fonts/arial.ttf'),
+                ],
+            ]
+        ],
+
+        'font' => [
+            'queue' => true,
+            'jobs' => [
+                'webfonts' => \Folklore\Mediatheque\Jobs\Font\WebFonts::class,
+            ]
+        ]
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Media types
+    |--------------------------------------------------------------------------
+    |
+    | This defines configuration for each media types. It list the default pipeline
+    | that will be executed when a media is created and also the mimes types and
+    | extensions that are used to detect media types.
+    |
+    */
     'types' => [
         'image' => [
             'pipeline' => 'image',
@@ -79,6 +207,14 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Events
+    |--------------------------------------------------------------------------
+    |
+    | The events class dispatched by the package
+    |
+    */
     'events' => [
         'created' => \Folklore\Mediatheque\Events\MediaCreated::class,
         'updated' => \Folklore\Mediatheque\Events\MediaUpdated::class,
@@ -88,5 +224,36 @@ return [
         'file_attached' => \Folklore\Mediatheque\Events\FileAttached::class,
         'file_detached' => \Folklore\Mediatheque\Events\FileDetached::class,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Services
+    |--------------------------------------------------------------------------
+    |
+    | Configuration of services used by this package
+    |
+    */
+    'services' => [
+        'ffmpeg' => [
+            'ffmpeg.binaries'  => env('FFMPEG_BIN', '/usr/local/bin/ffmpeg'),
+            'ffprobe.binaries' => env('FFPROBE_BIN', '/usr/local/bin/ffprobe')
+        ],
+
+        'audiowaveform' => [
+            'bin'  => env('AUDIOWAVEFORM_BIN', '/usr/local/bin/audiowaveform')
+        ],
+
+        'imagick' => [
+            'convert'  => env('IMAGICK_CONVERT_BIN', '/usr/local/bin/convert')
+        ],
+
+        'otfinfo' => [
+            'bin' => env('OTFINFO_BIN', '/usr/local/bin/otfinfo')
+        ],
+
+        'convertFonts' => [
+            'bin' => env('CONVERTFONTS_BIN', '/usr/local/bin/convertFonts')
+        ]
+    ]
 
 ];

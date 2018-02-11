@@ -45,34 +45,6 @@ class Document extends Model implements
         'type'
     );
 
-    public function filesCreators()
-    {
-        $filesCreators = [];
-        if (config('mediatheque.thumbnails.enable', true) && config('mediatheque.thumbnails.document.enable', true)) {
-            $filesCreators['thumbnail'] = new Thumbnails([
-                'sourcePathHandler' => [$this, 'getThumbnailSourcePath'],
-                'countHandler' => [$this, 'getThumbnailsCount']
-            ]);
-        }
-        return sizeof($filesCreators) ?
-            $filesCreators : null;
-    }
-
-    public function getThumbnailsCount()
-    {
-        $count = config('mediatheque.thumbnails.document.count', 'all');
-        if ($count === 'all') {
-            return $this->pages ? $this->pages:1;
-        } else {
-            return $count;
-        }
-    }
-
-    public function getThumbnailSourcePath($path, $i, $count)
-    {
-        return $path.'['.$i.']';
-    }
-
     /**
      * Query scopes
      */

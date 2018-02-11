@@ -46,16 +46,6 @@ class Audio extends Model implements
         'duration_human'
     );
 
-    public function filesCreators()
-    {
-        $filesCreators = [];
-        if (config('mediatheque.thumbnails.enable') && config('mediatheque.thumbnails.audio.enable')) {
-            $filesCreators['thumbnail'] = Thumbnails::class;
-        }
-        return sizeof($filesCreators) ?
-            $filesCreators : null;
-    }
-
     /**
      * Query scopes
      */

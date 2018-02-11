@@ -12,8 +12,9 @@ class UploadMediaRequest extends Request
 
     public function rules()
     {
-        $allMimes = array_values(config('mediatheque.mimes', []));
-        $mimes = array_reduce($allMimes, function ($mimes, $typeMimes) {
+        $types = array_values(config('mediatheque.types', []));
+        $mimes = array_reduce($types, function ($mimes, $type) {
+            $typeMimes = array_get($type, 'mimes', []);
             $matchingMimes = array_where(array_keys($typeMimes), function ($value, $key) {
                 return preg_match($this->mimeRegex, $value);
             }, []);

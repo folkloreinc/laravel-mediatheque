@@ -1,14 +1,14 @@
 <?php namespace Folklore\Mediatheque\Models;
 
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
-use Folklore\Mediatheque\Models\Collections\FilesCollection;
+use Folklore\Mediatheque\Collections\FilesCollection;
 use Folklore\Mediatheque\Contracts\MimeGetter;
 use Folklore\Mediatheque\Contracts\ExtensionGetter;
 use Folklore\Mediatheque\Contracts\TypeGetter;
 use Folklore\Mediatheque\Contracts\MetadataGetter;
 use Folklore\Mediatheque\Support\Interfaces\HasUrl as HasUrlInterface;
 use Folklore\Mediatheque\Support\Traits\HasUrl;
-use Folklore\Mediatheque\Models\Observers\FileObserver;
+use Folklore\Mediatheque\Observers\FileObserver;
 
 use Illuminate\Http\File as HttpFile;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
@@ -63,7 +63,7 @@ class File extends Model implements FileContract, HasUrlInterface
         $path = $file->getRealPath();
 
         if (!isset($data['source'])) {
-            $data['source'] = config('mediatheque.files.source');
+            $data['source'] = config('mediatheque.source');
         }
 
         if (!isset($data['mime'])) {
@@ -101,7 +101,7 @@ class File extends Model implements FileContract, HasUrlInterface
             $replaces = array_merge([
                 'id' => $this->id
             ], $this->toArray(), $data);
-            $format = config('mediatheque.files.file_path_format');
+            $format = config('mediatheque.file_path_format');
             $data['path'] = $this->formatPath($format, $replaces);
         }
 

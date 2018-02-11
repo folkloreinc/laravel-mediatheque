@@ -54,29 +54,6 @@ class Video extends Model implements
         'type'
     );
 
-    public function filesCreators()
-    {
-        $filesCreators = [];
-        $filesCreators['mp4'] = Mp4::class;
-        if (config('mediatheque.thumbnails.enable', true) && config('mediatheque.thumbnails.video.enable', true)) {
-            $filesCreators['thumbnail'] = new Thumbnails([
-                'sourcePathHandler' => [$this, 'getThumbnailSourcePath']
-            ]);
-        }
-        return sizeof($filesCreators) ?
-            $filesCreators : null;
-    }
-
-    public function getThumbnailSourcePath($path, $i, $count)
-    {
-        $duration = $this->duration ? $this->duration : $this->getDurationFromFile($path);
-        $durationSteps = $duration/$count;
-        $durationMiddle = $durationSteps/2;
-        $inMiddle = config('mediatheque.thumbnails.video.in_middle', true);
-        $time = ($durationSteps * $i) + ($inMiddle ? $durationMiddle:0);
-        return $path.'['.$time.']';
-    }
-
     public function getUrl()
     {
         if ($this instanceof HasFilesInterface) {

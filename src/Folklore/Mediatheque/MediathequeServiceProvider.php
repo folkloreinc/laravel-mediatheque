@@ -4,7 +4,7 @@ use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
-use Folklore\Mediatheque\Models\Observers\FileableObserver;
+use Folklore\Mediatheque\Observers\FileableObserver;
 use Folklore\Mediatheque\Interfaces\FileableInterface;
 use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
 use Folklore\Mediatheque\Contracts\MetadataGetter;
@@ -50,15 +50,12 @@ class MediathequeServiceProvider extends BaseServiceProvider
     public function bootPublishes()
     {
         // Config file path
-        $configPath = __DIR__ . '/../../config';
+        $configPath = __DIR__ . '/../../config/config.php';
         $migrationsPath = __DIR__ . '/../../migrations';
         $routesPath = __DIR__ . '/../../routes';
 
         // Merge files
-        $this->mergeConfigFrom($configPath.'/config.php', 'mediatheque.config');
-        $this->mergeConfigFrom($configPath.'/files.php', 'mediatheque.files');
-        $this->mergeConfigFrom($configPath.'/pipelines.php', 'mediatheque.pipelines');
-        $this->mergeConfigFrom($configPath.'/services.php', 'mediatheque.services');
+        $this->mergeConfigFrom($configPath, 'mediatheque');
 
         // Migrations
         if (method_exists($this, 'loadMigrationsFrom')) {
@@ -71,7 +68,7 @@ class MediathequeServiceProvider extends BaseServiceProvider
 
         // Publish
         $this->publishes([
-            $configPath => config_path('mediatheque')
+            $configPath => config_path('mediatheque.php')
         ], 'config');
 
         $this->publishes([
@@ -115,7 +112,7 @@ class MediathequeServiceProvider extends BaseServiceProvider
     {
         $this->app->singleton('mediatheque', function ($app) {
             $mediatheque = new Mediatheque($app);
-            $mediatheque->setPipelines(config('mediatheque.pipelines.pipelines', []));
+            $mediatheque->setPipelines(config('mediatheque.pipelines', []));
             return $mediatheque;
         });
     }

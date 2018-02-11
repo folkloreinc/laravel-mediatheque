@@ -1,6 +1,6 @@
 <?php
 
-namespace Folklore\Mediatheque\Models\Observers;
+namespace Folklore\Mediatheque\Observers;
 
 use Folklore\Mediatheque\Models\Model;
 use Folklore\Mediatheque\Support\Interfaces\HasPipelines as HasPipelinesInterface;
@@ -13,7 +13,7 @@ class MediaObserver
 
         if ($model instanceof HasPipelinesInterface) {
             $type = $this->getTypeFromModel($model);
-            $pipeline = config('mediatheque.config.types.'.$type.'.pipeline', null);
+            $pipeline = config('mediatheque.types.'.$type.'.pipeline', null);
             if (!is_null($pipeline)) {
                 $model->runPipeline($pipeline);
             }

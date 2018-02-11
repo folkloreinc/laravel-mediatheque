@@ -1,6 +1,6 @@
 <?php
 
-namespace Folklore\Mediatheque\Models\Observers;
+namespace Folklore\Mediatheque\Observers;
 
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 

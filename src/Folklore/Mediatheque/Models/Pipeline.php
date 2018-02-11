@@ -7,7 +7,7 @@ use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
 use Illuminate\Bus\Dispatcher;
 use Folklore\Mediatheque\Jobs\RunPipeline;
-use Folklore\Mediatheque\Models\Observers\PipelineObserver;
+use Folklore\Mediatheque\Observers\PipelineObserver;
 
 class Pipeline extends Model implements PipelineContract
 {
