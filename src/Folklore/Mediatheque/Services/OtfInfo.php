@@ -19,7 +19,7 @@ class OtfInfo implements FamilyNameGetter
     {
         try {
             $command = [
-                config('mediatheque.programs.otfinfo.bin'),
+                config('mediatheque.services.otfinfo.bin'),
                 '-a',
                 escapeshellarg($path),
                 '2>&1'

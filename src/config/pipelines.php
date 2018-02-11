@@ -6,16 +6,12 @@ return [
 
         'video' => [
             'queue' => true,
-            'files' => [
-                'mp4' => [
-                    'job' => \Folklore\Mediatheque\Jobs\ConvertH264::class,
-                    'resize' => [-1, 720],
-                    'use_file' => null,
+            'jobs' => [
+                'h264' => [
+                    'job' => \Folklore\Mediatheque\Jobs\Video\H264::class,
                 ],
                 'webm' => [
-                    'job' => \Folklore\Mediatheque\Jobs\ConvertWebm::class,
-                    'resize' => [-1, 720],
-                    'use_file' => null,
+                    'job' => \Folklore\Mediatheque\Jobs\Video\WebM::class,
                 ],
                 'thumbnails' => [
                     'job' => \Folklore\Mediatheque\Jobs\CreateThumbnails::class,
@@ -27,7 +23,7 @@ return [
 
         'audio' => [
             'queue' => true,
-            'files' => [
+            'jobs' => [
                 'thumbnails' => [
                     'job' => \Folklore\Mediatheque\Jobs\CreateThumbnails::class,
                     'zoom' => 600,
@@ -44,7 +40,7 @@ return [
 
         'document' => [
             'queue' => true,
-            'files' => [
+            'jobs' => [
                 'thumbnails' => [
                     'generator' => \Folklore\Mediatheque\Jobs\CreateThumbnails::class,
                     'count' => 'all',
@@ -59,7 +55,7 @@ return [
 
         'font' => [
             'queue' => true,
-            'files' => [
+            'jobs' => [
                 'webfonts' => \Folklore\Mediatheque\Jobs\CreateWebfonts::class,
             ]
         ]

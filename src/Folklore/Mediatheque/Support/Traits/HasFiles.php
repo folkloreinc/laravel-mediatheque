@@ -2,9 +2,7 @@
 
 use Illuminate\Contracts\Bus\Dispatcher;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
-use Folklore\Mediatheque\Contracts\Models\FilePivot as FilePivotContract;
 use Folklore\Mediatheque\Contracts\MetadataGetter;
-use Folklore\Mediatheque\Jobs\CreateFiles as CreateFilesJob;
 use Folklore\Mediatheque\Models\Observers\HasFilesObserver;
 
 use Symfony\Component\HttpFoundation\File\File;
@@ -17,29 +15,11 @@ trait HasFiles
         static::observe(HasFilesObserver::class);
     }
 
-    public function getFilesCreators()
-    {
-        $filesCreators = [];
-        if (method_exists($this, 'filesCreators')) {
-            $filesCreators = $this->filesCreators();
-        } elseif (isset($this->filesCreators)) { // @TODO check $filesCreator property vs model magic method
-            $filesCreators = $this->filesCreators;
-        }
-        return $filesCreators;
-    }
-
-    public function shouldQueueFileCreator($handle, $fileCreator)
-    {
-        return config('mediatheque.file_creators_use_queue');
-    }
-
     public function setOriginalFile($file, $data = [])
     {
         if (is_string($file)) {
             $file = new File($file);
         }
-
-        $currentOriginalFile = $this->files->original;
 
         $name = $file instanceof UploadedFile ? $file->getClientOriginalName() : $file->getFilename();
         $metadata = app(MetadataGetter::class)->getMetadata($file);
@@ -60,21 +40,48 @@ trait HasFiles
             $this->save();
         }
 
-        if ($currentOriginalFile) {
-            $this->files()->detach($currentOriginalFile);
-        }
-
-        $this->files()->attach($originalFile, [
-            'handle' => 'original',
-            'order' => 0
-        ]);
-
-        app(Dispatcher::class)->dispatchNow(new CreateFilesJob($this));
+        $this->setFile('original', $originalFile);
     }
 
     public function getOriginalFile()
     {
         return $this->files->original;
+    }
+
+    public function setFile($handle, $file)
+    {
+        $currentFile = $this->files->{$handle};
+        if ($currentFile) {
+            $this->removeFile($currentFile);
+        }
+
+        if (!is_null($file)) {
+            $this->addFile($file, $handle);
+        }
+    }
+
+    public function removeFile($handle)
+    {
+        $table = app(FileContract::class)->getTable().'_pivot';
+        $file = $handle instanceof FileContract
+            ? $handle
+            : $this->files()
+                ->where($table.'.handle', $handle)
+                ->first();
+        if ($file) {
+            $this->files()->detach($file);
+            $eventClass = config('mediatheque.config.events.file_detached');
+            event(new $eventClass($this, $file));
+        }
+    }
+
+    public function addFile($file, $handle = null)
+    {
+        $this->files()->attach($file, [
+            'handle' => $handle
+        ]);
+        $eventClass = config('mediatheque.config.events.file_attached');
+        event(new $eventClass($this, $file));
     }
 
     /**
@@ -88,14 +95,11 @@ trait HasFiles
         $key = 'file_id';
         $model = app(FileContract::class);
         $modelClass = get_class($model);
-        $pivot = app(FilePivotContract::class);
-        $pivotClass = get_class($pivot);
         $table = $model->getTable().'_pivot';
         $query = $this->morphToMany($modelClass, $morphName, $table, null, $key)
                         ->withTimestamps()
                         ->withPivot('handle', 'order')
-                        ->orderBy('order', 'asc')
-                        ->using($pivotClass);
+                        ->orderBy('order', 'asc');
         return $query;
     }
 

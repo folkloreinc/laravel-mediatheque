@@ -20,6 +20,7 @@ return [
 
     'types' => [
         'image' => [
+            'pipeline' => 'image',
             'mimes' => [
                 'image/*' => '*',
                 'image/jpeg' => 'jpg',
@@ -31,6 +32,7 @@ return [
         ],
 
         'audio' => [
+            'pipeline' => 'audio',
             'mimes' => [
                 'audio/*' => '*',
                 'audio/wave' => 'wav',
@@ -41,6 +43,7 @@ return [
         ],
 
         'video' => [
+            'pipeline' => 'video',
             'mimes' => [
                 'video/*' => '*',
                 'video/quicktime' => 'mov',
@@ -51,6 +54,7 @@ return [
         ],
 
         'document' => [
+            'pipeline' => 'document',
             'mimes' => [
                 'application/pdf' => 'pdf',
                 'application/octet-stream' => '*',
@@ -59,6 +63,7 @@ return [
         ],
 
         'font' => [
+            'pipeline' => 'font',
             'mimes' => [
                 'application/x-font-truetype' => 'ttf',
                 'application/x-font-ttf' => 'ttf',
@@ -80,6 +85,8 @@ return [
         'deleting' => \Folklore\Mediatheque\Events\MediaDeleting::class,
         'saved' => \Folklore\Mediatheque\Events\MediaSaved::class,
         'restored' => \Folklore\Mediatheque\Events\MediaRestored::class,
+        'file_attached' => \Folklore\Mediatheque\Events\FileAttached::class,
+        'file_detached' => \Folklore\Mediatheque\Events\FileDetached::class,
     ],
 
 ];

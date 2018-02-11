@@ -11,5 +11,5 @@ interface ThumbnailCreator
      * @param  string  $destination
      * @return string|boolean
      */
-    public function createThumbnail($source, $destination);
+    public function createThumbnail($source, $destination, $options = []);
 }

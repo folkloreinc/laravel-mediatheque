@@ -11,10 +11,10 @@ use Folklore\Mediatheque\Contracts\DimensionGetter;
 use Folklore\Mediatheque\Contracts\DurationGetter;
 use Folklore\Mediatheque\Contracts\PagesCountGetter;
 use Folklore\Mediatheque\Contracts\FamilyNameGetter;
-use Folklore\Mediatheque\Support\Interfaces\HasDurationInterface;
-use Folklore\Mediatheque\Support\Interfaces\HasFamilyNameInterface;
-use Folklore\Mediatheque\Support\Interfaces\HasDimensionInterface;
-use Folklore\Mediatheque\Support\Interfaces\HasPagesInterface;
+use Folklore\Mediatheque\Support\Interfaces\HasDuration as HasDurationInterface;
+use Folklore\Mediatheque\Support\Interfaces\HasFamilyName as HasFamilyNameInterface;
+use Folklore\Mediatheque\Support\Interfaces\HasDimension as HasDimensionInterface;
+use Folklore\Mediatheque\Support\Interfaces\HasPages as HasPagesInterface;
 use Exception;
 
 class Metadata implements
@@ -36,7 +36,7 @@ class Metadata implements
     public function getMetadata($path)
     {
         $type = $this->getType($path);
-        $className = '\\Folklore\\Mediatheque\\Contracts\\Models\\'.studly_case($type);
+        $className = 'Folklore\\Mediatheque\\Contracts\\Models\\'.studly_case($type);
         if (!app()->bound($className)) {
             return [];
         }
@@ -132,7 +132,7 @@ class Metadata implements
         try {
             $mime = MimeTypeGuesser::getInstance()->guess($path);
             if ($mime === 'application/octet-stream') {
-                $types = array_values(config('mediatheque.types'));
+                $types = array_values(config('mediatheque.config.types'));
                 $fileExtension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
                 foreach ($types as $key => $type) {
                     foreach ($type['mimes'] as $mimeType => $extension) {
@@ -157,9 +157,10 @@ class Metadata implements
     public function getExtension($path, $filename = null)
     {
         $mime = app(MimeGetter::class)->getMime($path);
-        $typeMimes = array_values(config('mediatheque.mimes'));
+        $types = array_values(config('mediatheque.config.types'));
         $fileExtension = pathinfo(!empty($filename) ? $filename : $path, PATHINFO_EXTENSION);
-        return array_reduce($typeMimes, function ($extension, $mimes) use ($mime) {
+        return array_reduce($types, function ($extension, $type) use ($mime) {
+            $mimes = array_get($type, 'mimes', []);
             return isset($mimes[$mime]) && $mimes[$mime] !== '*' ? $mimes[$mime] : $extension;
         }, $fileExtension);
     }
@@ -172,11 +173,15 @@ class Metadata implements
      */
     public function getType($path)
     {
-        $mime = app(MimeGetter::class)->getMime($path);
-        $mimesByType = config('mediatheque.mimes');
-        foreach ($mimesByType as $type => $mimes) {
-            if (isset($mimes[$mime])) {
-                return $type;
+        $fileMime = app(MimeGetter::class)->getMime($path);
+        $types = config('mediatheque.config.types');
+        foreach ($types as $name => $type) {
+            $mimes = array_get($type, 'mimes', []);
+            foreach ($mimes as $mime => $extension) {
+                $pattern = str_replace('\*', '[^\/]+', preg_quote($mime, '/'));
+                if (preg_match('/^'.$pattern.'$/', $fileMime)) {
+                    return $name;
+                }
             }
         }
         return null;

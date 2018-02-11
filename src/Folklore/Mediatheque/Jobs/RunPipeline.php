@@ -7,15 +7,16 @@ use Illuminate\Bus\Dispatcher;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Http\File;
 use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
-use Folklore\Mediatheque\Jobs\ExecFileCreator;
-use Exception;
+use Folklore\Mediatheque\Contracts\Models\Pipeline;
+use Folklore\Mediatheque\Contracts\Models\PipelineJob;
+use Carbon\Carbon;
 
 class RunPipeline implements ShouldQueue
 {
     use InteractsWithQueue, Queueable, SerializesModels;
 
+    public $model;
     public $pipeline;
 
     /**
@@ -23,8 +24,9 @@ class RunPipeline implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(Pipeline $pipeline, FileContract $model)
+    public function __construct(HasFilesInterface $model, Pipeline $pipeline = null)
     {
+        $this->model = $model;
         $this->pipeline = $pipeline;
     }
 
@@ -35,6 +37,38 @@ class RunPipeline implements ShouldQueue
      */
     public function handle()
     {
+        $this->pipeline->started = true;
+        $this->pipeline->started_at = Carbon::now();
+        $this->pipeline->save();
 
+        $this->model->load('files');
+
+        $definition = $this->pipeline->definition;
+        $jobs = $definition->getJobs();
+        foreach ($jobs as $handle => $job) {
+            // Ensure job definition is an array and merge handle
+            $job = array_merge([
+                'from_file' => $definition->from_file,
+                'queue' => $definition->queue,
+            ], is_string($job) ? [
+                'job' => $job,
+            ] : $job, [
+                'handle' => $handle
+            ]);
+
+            // Create the pipeline job model
+            $jobModel = app(PipelineJob::class);
+            $jobModel->name = $handle;
+            $jobModel->pipeline_id = $this->pipeline->id;
+            $jobModel->definition = $job;
+            $jobModel->save();
+
+            // Run the job
+            $fromFile = array_get($job, 'from_file');
+            $file = $this->model->files->{$fromFile};
+            if ($file) {
+                $jobModel->run();
+            }
+        }
     }
 }

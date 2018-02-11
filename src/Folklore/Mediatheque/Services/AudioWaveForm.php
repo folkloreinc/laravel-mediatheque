@@ -3,8 +3,6 @@
 namespace Folklore\Mediatheque\Services;
 
 use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
-use Illuminate\Support\Facades\Log;
-use Exception;
 
 class AudioWaveForm implements ThumbnailCreatorContract
 {
@@ -15,21 +13,21 @@ class AudioWaveForm implements ThumbnailCreatorContract
      * @param  string  $destination
      * @return boolean
      */
-    public function createThumbnail($source, $destination)
+    public function createThumbnail($source, $destination, $options = [])
     {
-        $zoom = config('mediatheque.thumbnails.audio.zoom', 600);
-        $width = config('mediatheque.thumbnails.audio.width', 1200);
-        $height = config('mediatheque.thumbnails.audio.height', 400);
-        $backgroundColor = config('mediatheque.thumbnails.audio.background_color', 'FFFFFF00');
-        $color = config('mediatheque.thumbnails.audio.color', '000000');
-        $borderColor = config('mediatheque.thumbnails.audio.border_color', null);
-        $axisColor = config('mediatheque.thumbnails.audio.axis_label_color', null);
-        $axisLabel = config('mediatheque.thumbnails.audio.axis_label', false);
+        $zoom = array_get($options, 'zoom', 600);
+        $width = array_get($options, 'width', 1200);
+        $height = array_get($options, 'height', 400);
+        $backgroundColor = array_get($options, 'background_color', 'FFFFFF00');
+        $color = array_get($options, 'color', '000000');
+        $borderColor = array_get($options, 'border_color', null);
+        $axisColor = array_get($options, 'axis_label_color', null);
+        $axisLabel = array_get($options, 'axis_label', false);
 
         $command = [];
-        $command[] = config('mediatheque.programs.audiowaveform.bin');
+        $command[] = config('mediatheque.services.audiowaveform.bin');
         $command[] = '-i '.escapeshellarg($source);
-        $command[] = '-o '.escapeshellarg($destination.'.png');
+        $command[] = '-o '.escapeshellarg($destination);
         if (!empty($zoom)) {
             $command[] = '-z '.$zoom;
         }
@@ -50,19 +48,14 @@ class AudioWaveForm implements ThumbnailCreatorContract
         $command[] = $axisLabel ? '--with-axis-labels':'--no-axis-labels';
         $command[] = '2>&1';
 
-        try {
-            $output = [];
-            $return = 0;
-            exec(implode(' ', $command), $output, $return);
+        $output = [];
+        $return = 0;
+        exec(implode(' ', $command), $output, $return);
 
-            if ($return !== 0) {
-                throw new Exception('audiowaveform failed return code :'.$return.' '.implode(PHP_EOL, $output));
-            }
-
-            return $destination.'.png';
-        } catch (Exception $e) {
-            Log::error($e);
-            return false;
+        if ($return !== 0) {
+            throw new Exception('audiowaveform failed return code :'.$return.' '.implode(PHP_EOL, $output));
         }
+
+        return $destination;
     }
 }

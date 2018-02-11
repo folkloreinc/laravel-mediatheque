@@ -56,34 +56,29 @@ class Imagick implements PagesCountGetter, DimensionGetter, ThumbnailCreatorCont
         }
     }
 
-    public function createThumbnail($source, $destination)
+    public function createThumbnail($source, $destination, $options = [])
     {
-        try {
-            $resolution = config('mediatheque.thumbnails.document.resolution', 150);
-            $format = config('mediatheque.thumbnails.document.format', 'jpeg');
-            $quality = config('mediatheque.thumbnails.document.quality', 100);
-            $backgroundColor = config('mediatheque.thumbnails.document.background', 'white');
-            $font = config('mediatheque.thumbnails.document.font');
+        $resolution = array_get($options, 'resolution', 150);
+        $format = array_get($options, 'format', 'jpeg');
+        $quality = array_get($options, 'quality', 100);
+        $backgroundColor = array_get($options, 'background', 'white');
+        $font = array_get($options, 'font');
 
-            $image = new BaseImagick();
-            $image->setResolution($resolution, $resolution);
-            $image->readImage($source);
-            $image->setImageFormat($format);
-            $image->setImageCompressionQuality($quality);
-            if (!empty($backgroundColor)) {
-                $image->setImageBackgroundColor($backgroundColor);
-            }
-            if (!empty($font) && file_exists($font)) {
-                $image->setFont($font);
-            }
-            $image->writeImage($destination.'.'.$format);
-            $image->clear();
-            $image->destroy();
-
-            return $destination.'.'.$format;
-        } catch (Exception $e) {
-            Log::error($e);
-            return false;
+        $image = new BaseImagick();
+        $image->setResolution($resolution, $resolution);
+        $image->readImage($source);
+        $image->setImageFormat($format);
+        $image->setImageCompressionQuality($quality);
+        if (!empty($backgroundColor)) {
+            $image->setImageBackgroundColor($backgroundColor);
         }
+        if (!empty($font) && file_exists($font)) {
+            $image->setFont($font);
+        }
+        $image->writeImage($destination);
+        $image->clear();
+        $image->destroy();
+
+        return $destination;
     }
 }

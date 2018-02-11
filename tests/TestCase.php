@@ -13,20 +13,28 @@ class TestCase extends BaseTestCase
      */
     protected function getEnvironmentSetUp($app)
     {
+        // Setup default database to use sqlite :memory:
+        $app['config']->set('database.default', 'testbench');
+        $app['config']->set('database.connections.testbench', [
+            'driver'   => 'sqlite',
+            'database' => ':memory:',
+            'prefix'   => '',
+        ]);
+
         $app->instance('path.public', __DIR__.'/fixture');
     }
 
     protected function getPackageProviders($app)
     {
         return [
-            \Folklore\Mediatheque\MediathequeServiceProvider::class
+            \Folklore\Mediatheque\MediathequeServiceProvider::class,
         ];
     }
 
     protected function getPackageAliases($app)
     {
         return [
-
+            'Mediatheque' => \Folklore\Mediatheque\Support\Facades\Mediatheque::class,
         ];
     }
 }

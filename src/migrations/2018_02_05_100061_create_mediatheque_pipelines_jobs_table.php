@@ -15,8 +15,9 @@ class CreateMediathequePipelinesJobsTable extends Migration
     {
         Schema::create(config('mediatheque.table_prefix').'pipelines_jobs', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('handle')->nullable();
+            $table->string('name')->nullable();
             $table->integer('pipeline_id')->unsigned();
+            $table->longText('definition')->nullable();
             $table->boolean('started')->default(false);
             $table->boolean('ended')->default(false);
             $table->boolean('failed')->default(false);
@@ -24,7 +25,7 @@ class CreateMediathequePipelinesJobsTable extends Migration
             $table->dateTime('ended_at')->nullable();
             $table->timestamps();
 
-            $table->index('handle');
+            $table->index('name');
             $table->index(['started', 'ended']);
             $table->index('failed');
             $table->index('started_at');

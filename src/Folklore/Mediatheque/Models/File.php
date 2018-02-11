@@ -26,7 +26,8 @@ class File extends Model implements FileContract, HasUrlInterface
         'source',
         'type',
         'mime',
-        'size'
+        'size',
+        'metadata'
     ];
 
     protected $appends = [
@@ -62,7 +63,7 @@ class File extends Model implements FileContract, HasUrlInterface
         $path = $file->getRealPath();
 
         if (!isset($data['source'])) {
-            $data['source'] = config('mediatheque.source');
+            $data['source'] = config('mediatheque.files.source');
         }
 
         if (!isset($data['mime'])) {
@@ -100,7 +101,7 @@ class File extends Model implements FileContract, HasUrlInterface
             $replaces = array_merge([
                 'id' => $this->id
             ], $this->toArray(), $data);
-            $format = config('mediatheque.file_path_format');
+            $format = config('mediatheque.files.file_path_format');
             $data['path'] = $this->formatPath($format, $replaces);
         }
 

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Folklore\Mediatheque\Models\Observers\FileableObserver;
 use Folklore\Mediatheque\Interfaces\FileableInterface;
 use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
+use Folklore\Mediatheque\Contracts\MetadataGetter;
 use Folklore\Mediatheque\Contracts\DimensionGetter;
 use Folklore\Mediatheque\Contracts\DurationGetter;
 use Folklore\Mediatheque\Contracts\MimeGetter;
@@ -49,12 +50,15 @@ class MediathequeServiceProvider extends BaseServiceProvider
     public function bootPublishes()
     {
         // Config file path
-        $configPath = __DIR__ . '/../../config/';
-        $migrationsPath = __DIR__ . '/../../migrations/';
-        $routesPath = __DIR__ . '/../../routes/';
+        $configPath = __DIR__ . '/../../config';
+        $migrationsPath = __DIR__ . '/../../migrations';
+        $routesPath = __DIR__ . '/../../routes';
 
         // Merge files
-        $this->mergeConfigFrom($configPath, 'mediatheque');
+        $this->mergeConfigFrom($configPath.'/config.php', 'mediatheque.config');
+        $this->mergeConfigFrom($configPath.'/files.php', 'mediatheque.files');
+        $this->mergeConfigFrom($configPath.'/pipelines.php', 'mediatheque.pipelines');
+        $this->mergeConfigFrom($configPath.'/services.php', 'mediatheque.services');
 
         // Migrations
         if (method_exists($this, 'loadMigrationsFrom')) {
@@ -82,9 +86,12 @@ class MediathequeServiceProvider extends BaseServiceProvider
      */
     public function register()
     {
+        $this->registerMediatheque();
         $this->registerModels();
+        $this->registerPipeline();
         $this->registerSourceManager();
         $this->registerMetadata();
+        $this->registerMetadataGetter();
         $this->registerFFMpeg();
         $this->registerImagick();
         $this->registerAudioWaveForm();
@@ -97,6 +104,20 @@ class MediathequeServiceProvider extends BaseServiceProvider
         $this->registerDurationGetter();
         $this->registerPagesCountGetter();
         $this->registerFamilyName();
+    }
+
+    /**
+     * Register mediatheque
+     *
+     * @return void
+     */
+    public function registerMediatheque()
+    {
+        $this->app->singleton('mediatheque', function ($app) {
+            $mediatheque = new Mediatheque($app);
+            $mediatheque->setPipelines(config('mediatheque.pipelines.pipelines', []));
+            return $mediatheque;
+        });
     }
 
     /**
@@ -115,10 +136,6 @@ class MediathequeServiceProvider extends BaseServiceProvider
             \Folklore\Mediatheque\Models\File::class
         );
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\FilePivot::class,
-            \Folklore\Mediatheque\Models\FilePivot::class
-        );
-        $this->app->bind(
             \Folklore\Mediatheque\Contracts\Models\Audio::class,
             \Folklore\Mediatheque\Models\Audio::class
         );
@@ -131,10 +148,6 @@ class MediathequeServiceProvider extends BaseServiceProvider
             \Folklore\Mediatheque\Models\Document::class
         );
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\Text::class,
-            \Folklore\Mediatheque\Models\Text::class
-        );
-        $this->app->bind(
             \Folklore\Mediatheque\Contracts\Models\Font::class,
             \Folklore\Mediatheque\Models\Font::class
         );
@@ -145,6 +158,19 @@ class MediathequeServiceProvider extends BaseServiceProvider
         $this->app->bind(
             \Folklore\Mediatheque\Contracts\Models\PipelineJob::class,
             \Folklore\Mediatheque\Models\PipelineJob::class
+        );
+    }
+
+    /**
+     * Register the pipeline class
+     *
+     * @return void
+     */
+    public function registerPipeline()
+    {
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Pipeline::class,
+            \Folklore\Mediatheque\Support\Pipeline::class
         );
     }
 

@@ -3,13 +3,21 @@
 namespace Folklore\Mediatheque\Models\Observers;
 
 use Folklore\Mediatheque\Models\Model;
-use ReflectionClass;
+use Folklore\Mediatheque\Support\Interfaces\HasPipelines as HasPipelinesInterface;
 
 class MediaObserver
 {
     public function created(Model $model)
     {
         $this->handleEvent('created', $model);
+
+        if ($model instanceof HasPipelinesInterface) {
+            $type = $this->getTypeFromModel($model);
+            $pipeline = config('mediatheque.config.types.'.$type.'.pipeline', null);
+            if (!is_null($pipeline)) {
+                $model->runPipeline($pipeline);
+            }
+        }
     }
 
     public function updated(Model $model)
@@ -44,8 +52,6 @@ class MediaObserver
 
     protected function getTypeFromModel($model)
     {
-        //$reflection = new ReflectionClass($model);
-        //$shortName = $reflection->getShortName();
         return strtolower(class_basename($model));
     }
 }

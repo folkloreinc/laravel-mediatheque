@@ -24,7 +24,7 @@ class FFMpeg implements DimensionGetter, ThumbnailCreatorContract, DurationGette
     {
         $longestDuration = 0;
         try {
-            $ffprobe = FFProbe::create(config('mediatheque.programs.ffmpeg'));
+            $ffprobe = FFProbe::create(config('mediatheque.services.ffmpeg'));
             $streams = $ffprobe->streams($path);
             foreach ($streams->audios() as $stream) {
                 $duration = $stream->get('duration');
@@ -50,27 +50,22 @@ class FFMpeg implements DimensionGetter, ThumbnailCreatorContract, DurationGette
      *
      * @param  string  $source
      * @param  string  $destination
-     * @return boolean
+     * @return string
      */
-    public function createThumbnail($source, $destination)
+    public function createThumbnail($source, $destination, $options = [])
     {
-        try {
-            $time = 0;
-            $path = $source;
-            if (preg_match('/^(.*)\[([0-9\.]+)\]$/', $source, $matches)) {
-                $path = $matches[1];
-                $time = (float)$matches[2];
-            }
-            $ffmpeg = BaseFFMpeg::create(config('mediatheque.programs.ffmpeg'));
-            $video = $ffmpeg->open($path);
-            $video->frame(TimeCode::fromSeconds($time))
-                ->save($destination.'.jpg');
-
-            return $destination.'.jpg';
-        } catch (Exception $e) {
-            Log::error($e);
+        $path = $source;
+        $time = array_get($options, 'time', 0);
+        if (preg_match('/^(.*)\[([0-9\.]+)\]$/', $source, $matches)) {
+            $path = $matches[1];
+            $time = (float)$matches[2];
         }
-        return false;
+        $ffmpeg = BaseFFMpeg::create(config('mediatheque.services.ffmpeg'));
+        $video = $ffmpeg->open($path);
+        $video->frame(TimeCode::fromSeconds($time))
+            ->save($destination);
+
+        return $destination;
     }
 
     /**
@@ -82,7 +77,7 @@ class FFMpeg implements DimensionGetter, ThumbnailCreatorContract, DurationGette
     public function getDimension($path)
     {
         try {
-            $ffprobe = FFProbe::create(config('mediatheque.programs.ffmpeg'));
+            $ffprobe = FFProbe::create(config('mediatheque.services.ffmpeg'));
             $stream = $ffprobe->streams($path)
                                 ->videos()
                                 ->first();

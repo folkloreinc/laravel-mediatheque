@@ -52,7 +52,7 @@ class Mp4 implements FilesCreator
             $audioCodec = $options['audio_codec'];
             $format = new X264($audioCodec);
             $format->setPasses($options['passes']);
-            $ffmpeg = FFMpeg::create(config('mediatheque.programs.ffmpeg'));
+            $ffmpeg = FFMpeg::create(config('mediatheque.services.ffmpeg'));
 
             $parameters = [
                 '-y',

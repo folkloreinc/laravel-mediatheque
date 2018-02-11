@@ -39,7 +39,7 @@ class WebFonts implements FilesCreator
         $path = $file->getRealPath();
         try {
             $command = [
-                config('mediatheque.programs.convertFonts.bin'),
+                config('mediatheque.services.convertFonts.bin'),
                 escapeshellarg($path),
                 '2>&1'
             ];

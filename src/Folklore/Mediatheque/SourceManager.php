@@ -38,7 +38,7 @@ class SourceManager extends Manager
      */
     protected function createDriver($source)
     {
-        $config = $this->app['config']['mediatheque.sources.'.$source];
+        $config = $this->app['config']['mediatheque.files.sources.'.$source];
         if (!$config) {
             throw new InvalidSourceException("Source [$source] not found.");
         }
@@ -64,7 +64,7 @@ class SourceManager extends Manager
      */
     public function getDefaultDriver()
     {
-        return $this->app['config']['mediatheque.source'];
+        return $this->app['config']['mediatheque.files.source'];
     }
 
     /**
@@ -75,6 +75,6 @@ class SourceManager extends Manager
      */
     public function setDefaultDriver($name)
     {
-        $this->app['config']['mediatheque.source'] = $name;
+        $this->app['config']['mediatheque.files.source'] = $name;
     }
 }
