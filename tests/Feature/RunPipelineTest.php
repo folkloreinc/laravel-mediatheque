@@ -4,15 +4,24 @@ use Folklore\Mediatheque\Support\Pipeline;
 use Folklore\Mediatheque\Contracts\Models\Video;
 use Folklore\Mediatheque\Contracts\Models\Audio;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
 
 class RunPipelineTest extends TestCase
 {
-    use DatabaseMigrations;
-
     public function setUp()
     {
         parent::setUp();
+
+        $definition = app('command.migrate')->getDefinition();
+        if ($definition->hasOption('realpath')) {
+            $this->loadMigrationsFrom([
+                '--database' => 'testbench',
+                '--realpath' => realpath(__DIR__.'/../../src/migrations'),
+            ]);
+        } else {
+            $this->artisan('migrate', [
+                '--database' => 'testbench',
+            ]);
+        }
     }
 
     public function tearDown()

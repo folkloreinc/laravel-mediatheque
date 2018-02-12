@@ -69,13 +69,13 @@ class MediathequeServiceProvider extends BaseServiceProvider
         // Migrations
         if (method_exists($this, 'loadMigrationsFrom')) {
             $this->loadMigrationsFrom($migrationsPath);
-        } else {
-            $this->publishes([
-                $migrationsPath => base_path('database/migrations')
-            ], 'migrations');
         }
 
         // Publish
+        $this->publishes([
+            $migrationsPath => base_path('database/migrations')
+        ], 'migrations');
+
         $this->publishes([
             $configPath => config_path('mediatheque.php')
         ], 'config');
