@@ -5,7 +5,7 @@ namespace Folklore\Mediatheque\Sources;
 use Folklore\Mediatheque\Contracts\Source;
 use League\Flysystem\Adapter\Local;
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Http\File;
+use Symfony\Component\HttpFoundation\File\File;
 use finfo;
 
 class FilesystemSource implements Source

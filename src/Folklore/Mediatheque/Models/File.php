@@ -9,7 +9,7 @@ use Folklore\Mediatheque\Contracts\MetadataGetter;
 use Folklore\Mediatheque\Support\Interfaces\HasUrl as HasUrlInterface;
 use Folklore\Mediatheque\Support\Traits\HasUrl;
 
-use Illuminate\Http\File as HttpFile;
+use Symfony\Component\HttpFoundation\File\File as HttpFile;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
 
 class File extends Model implements FileContract, HasUrlInterface
