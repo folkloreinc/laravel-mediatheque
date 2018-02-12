@@ -31,6 +31,7 @@ use Folklore\Mediatheque\Services\FFMpeg;
 use Folklore\Mediatheque\Services\Imagick;
 use Folklore\Mediatheque\Services\AudioWaveForm;
 use Folklore\Mediatheque\Services\OtfInfo;
+use InvalidArgumentException;
 
 class MediathequeServiceProvider extends ServiceProvider
 {
@@ -107,6 +108,8 @@ class MediathequeServiceProvider extends ServiceProvider
                 ) {
                     return Handler::class.'@handle';
                 }
+                $className = get_class($command);
+                throw new InvalidArgumentException("No handler registered for command [{$className}]");
             });
         }
     }

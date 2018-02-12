@@ -2,8 +2,17 @@
 
 namespace Folklore\Mediatheque\Jobs;
 
+use Illuminate\Contracts\Container\Container;
+
 class Handler
 {
+    protected $container;
+
+    public function __construct(Container $container)
+    {
+        $this->container = $container;
+    }
+
     /**
      * Execute the job.
      *
@@ -11,6 +20,6 @@ class Handler
      */
     public function handle($command)
     {
-        $command->handle();
+        $this->container->call([$command, 'handle']);
     }
 }
