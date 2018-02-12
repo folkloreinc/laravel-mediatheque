@@ -4,6 +4,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Bus\Dispatcher;
+use Folklore\Mediatheque\Jobs\Handler;
 use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasPipelines as HasPipelinesInterface;
 use Folklore\Mediatheque\Contracts\Models\Audio as AudioContract;
@@ -12,8 +13,9 @@ use Folklore\Mediatheque\Contracts\Models\Font as FontContract;
 use Folklore\Mediatheque\Contracts\Models\Image as ImageContract;
 use Folklore\Mediatheque\Contracts\Models\Video as VideoContract;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
-use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
+use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineModelContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
+use Folklore\Mediatheque\Contracts\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
 use Folklore\Mediatheque\Contracts\MetadataGetter;
 use Folklore\Mediatheque\Contracts\DimensionGetter;
@@ -32,18 +34,12 @@ use Folklore\Mediatheque\Services\OtfInfo;
 
 class MediathequeServiceProvider extends ServiceProvider
 {
-
     /**
      * Indicates if loading of the provider is deferred.
      *
      * @var bool
      */
     protected $defer = false;
-
-    protected function getRouter()
-    {
-        return $this->app['router'];
-    }
 
     /**
      * Bootstrap the application events.
@@ -103,22 +99,15 @@ class MediathequeServiceProvider extends ServiceProvider
     public function bootDispatcher()
     {
         $dispatcher = app(Dispatcher::class);
-        if (method_exists($dispatcher, 'maps')) {
-            $jobs = [
-                \Folklore\Mediatheque\Jobs\RunPipeline::class,
-                \Folklore\Mediatheque\Jobs\RunPipelineJob::class,
-                \Folklore\Mediatheque\Jobs\Audio\Thumbnails::class,
-                \Folklore\Mediatheque\Jobs\Document\Thumbnails::class,
-                \Folklore\Mediatheque\Jobs\Font\WebFonts::class,
-                \Folklore\Mediatheque\Jobs\Video\H264::class,
-                \Folklore\Mediatheque\Jobs\Video\Thumbnails::class,
-                \Folklore\Mediatheque\Jobs\Video\WebM::class,
-            ];
-            $maps = [];
-            foreach ($jobs as $job) {
-                $maps[$job] = $job.'@handle';
-            }
-            $dispatcher->maps($maps);
+        if (method_exists($dispatcher, 'mapUsing')) {
+            $dispatcher->mapUsing(function ($command) {
+                if ($command instanceof \Folklore\Mediatheque\Jobs\RunPipeline ||
+                    $command instanceof \Folklore\Mediatheque\Jobs\RunPipelineJob ||
+                    $command instanceof \Folklore\Mediatheque\Support\PipelineJob
+                ) {
+                    return Handler::class.'@handle';
+                }
+            });
         }
     }
 
@@ -200,7 +189,7 @@ class MediathequeServiceProvider extends ServiceProvider
             \Folklore\Mediatheque\Models\File::class
         );
         $this->app->bind(
-            PipelineContract::class,
+            PipelineModelContract::class,
             \Folklore\Mediatheque\Models\Pipeline::class
         );
         $this->app->bind(
@@ -217,7 +206,7 @@ class MediathequeServiceProvider extends ServiceProvider
     public function registerPipeline()
     {
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Pipeline::class,
+            PipelineContract::class,
             \Folklore\Mediatheque\Support\Pipeline::class
         );
     }
@@ -392,6 +381,11 @@ class MediathequeServiceProvider extends ServiceProvider
         $this->app->bind('mediatheque.services.familyname', 'mediatheque.services.otfinfo');
     }
 
+    protected function getRouter()
+    {
+        return $this->app->bound('router') ? $this->app['router'] : $this->app;
+    }
+
     /**
      * Get the services provided by the provider.
      *
@@ -399,6 +393,39 @@ class MediathequeServiceProvider extends ServiceProvider
      */
     public function provides()
     {
-        return [];
+        return [
+            'mediatheque',
+            'mediatheque.source',
+            'mediatheque.services.metadata',
+            'mediatheque.services.imagick',
+            'mediatheque.services.audiowaveform',
+            'mediatheque.services.ffmpeg',
+            'mediatheque.services.otfinfo',
+            'mediatheque.services.thumbnail.audio',
+            'mediatheque.services.thumbnail.document',
+            'mediatheque.services.thumbnail.video',
+            'mediatheque.services.dimension.image',
+            'mediatheque.services.dimension.video',
+            'mediatheque.services.duration.audio',
+            'mediatheque.services.duration.video',
+            'mediatheque.services.familyname',
+            'mediatheque.services.pagescount',
+            AudioContract::class,
+            DocumentContract::class,
+            FontContract::class,
+            ImageContract::class,
+            VideoContract::class,
+            FileContract::class,
+            PipelineModelContract::class,
+            PipelineJobContract::class,
+            PipelineContract::class,
+            MetadataGetter::class,
+            DimensionGetter::class,
+            DurationGetter::class,
+            PagesCountGetter::class,
+            FamilyNameGetter::class,
+            MimeGetter::class,
+            ExtensionGetter::class,
+        ];
     }
 }
