@@ -10,8 +10,10 @@ addons:
   apt:
     sources:
       - sourceline: "ppa:mc3man/trusty-media"
+      - sourceline: "ppa:chris-needham/ppa"
     packages:
       - ffmpeg
+      - audiowaveform
 
 php:
     - 5.5
