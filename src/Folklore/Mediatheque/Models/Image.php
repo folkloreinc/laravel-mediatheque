@@ -3,27 +3,19 @@
 namespace Folklore\Mediatheque\Models;
 
 use Folklore\Mediatheque\Contracts\Models\Image as ImageContract;
-use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasDimension as HasDimensionInterface;
-use Folklore\Mediatheque\Support\Interfaces\HasUrl as HasUrlInterface;
-use Folklore\Mediatheque\Support\Interfaces\HasPipelines as HasPipelinesInterface;
-use Folklore\Mediatheque\Support\Traits\HasFiles;
 use Folklore\Mediatheque\Support\Traits\HasDimension;
-use Folklore\Mediatheque\Support\Traits\HasUrl;
-use Folklore\Mediatheque\Support\Traits\HasPipelines;
 
-class Image extends Model implements
+class Image extends Media implements
     ImageContract,
-    HasFilesInterface,
-    HasDimensionInterface,
-    HasUrlInterface,
-    HasPipelinesInterface
+    HasDimensionInterface
 {
-    use HasFiles, HasDimension, HasUrl, HasPipelines;
+    use HasDimension;
 
     protected $table = 'images';
 
     protected $guarded = [];
+
     protected $fillable = [
         'handle',
         'name',
@@ -31,18 +23,18 @@ class Image extends Model implements
         'height'
     ];
 
-    protected $casts = array(
+    protected $casts = [
         'handle' => 'string',
         'name' => 'string',
         'width' => 'int',
         'height' => 'int'
-    );
+    ];
 
-    protected $appends = array(
+    protected $appends = [
         'original_file',
         'url',
         'type'
-    );
+    ];
 
     /**
      * Query scopes

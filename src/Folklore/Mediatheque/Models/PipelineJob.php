@@ -90,6 +90,20 @@ class PipelineJob extends Model implements PipelineJobContract
         $this->save();
     }
 
+    public function canRun($model = null)
+    {
+        if (is_null($model)) {
+            $model = $this->pipeline->getModel();
+        }
+        $fromFile = $this->definition['from_file'];
+        return (
+            !$this->started &&
+            !$this->ended &&
+            !$this->failed &&
+            $model->files->{$fromFile}
+        );
+    }
+
     public function isWaitingForFile($name)
     {
         return (

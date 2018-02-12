@@ -49,6 +49,12 @@ class Pipeline extends Model implements PipelineContract
         return $this->hasMany($modelClass);
     }
 
+    public function getModel()
+    {
+        $model = app($this->pipelinable_type)->find($this->pipelinable_id);
+        return $model;
+    }
+
     public function start()
     {
         if ($this->started) {
@@ -60,7 +66,7 @@ class Pipeline extends Model implements PipelineContract
         $this->save();
 
         $shouldQueue = $this->definition->queue;
-        $model = app($this->pipelinable_type)->find($this->pipelinable_id);
+        $model = $this->getModel();
         $job = new RunPipeline($model, $this);
         if ($shouldQueue) {
             app(Dispatcher::class)->dispatch($job);

@@ -9,6 +9,7 @@ class Thumbnails extends ThumbnailsJob
     protected $type = 'audio';
 
     protected $defaultOptions = [
+        'extension' => '.png',
         'zoom' => 600,
         'width' => 1200,
         'height' => 400,

@@ -45,28 +45,35 @@ class RunPipeline implements ShouldQueue
 
         $definition = $this->pipeline->definition;
         $jobs = $definition->getJobs();
-        foreach ($jobs as $handle => $job) {
+        foreach ($jobs as $name => $job) {
             // Ensure job definition is an array and merge handle
-            $job = array_merge([
-                'from_file' => $definition->from_file,
-                'queue' => $definition->queue,
-            ], is_string($job) ? [
-                'job' => $job,
-            ] : $job, [
-                'handle' => $handle
-            ]);
+            $job = array_merge(
+                is_string($job) ? ['job' => $job] : $job,
+                ['name' => $name]
+            );
 
-            // Create the pipeline job model
-            $jobModel = app(PipelineJob::class);
-            $jobModel->name = $handle;
-            $jobModel->pipeline_id = $this->pipeline->id;
-            $jobModel->definition = $job;
-            $jobModel->save();
+            if (!isset($job['from_file']) || is_null($job['from_file'])) {
+                $job['from_file'] = $definition->from_file;
+            }
+
+            if (!isset($job['queue']) || is_null($job['queue'])) {
+                $job['queue'] = $definition->queue;
+            }
+
+            $jobModel = $this->pipeline->jobs()
+                ->where('name', $name)
+                ->first();
+            if (!$jobModel) {
+                // Create the pipeline job model
+                $jobModel = app(PipelineJob::class);
+                $jobModel->name = $name;
+                $jobModel->pipeline_id = $this->pipeline->id;
+                $jobModel->definition = $job;
+                $jobModel->save();
+            }
 
             // Run the job
-            $fromFile = array_get($job, 'from_file');
-            $file = $this->model->files->{$fromFile};
-            if ($file) {
+            if ($jobModel->canRun($this->model)) {
                 $jobModel->run();
             }
         }

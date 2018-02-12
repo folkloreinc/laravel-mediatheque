@@ -1,7 +1,6 @@
 <?php namespace Folklore\Mediatheque;
 
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
-
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Database\Eloquent\Model;
@@ -88,36 +87,6 @@ class MediathequeServiceProvider extends BaseServiceProvider
 
     public function bootEvents()
     {
-        $this->app['events']->listen('eloquent.*', function ($type, $args) {
-            preg_match('/^eloquent\.([^\s:]+)\s*\:\s*(.*)$/i', $type, $matches);
-            $model = $args[0];
-            $method = $matches[1];
-
-            if ($model instanceof HasFilesInterface) {
-                $observer = $this->app['config']->get('mediatheque.observers.has_files');
-                if (!is_null($observer) && method_exists($observer, $method)) {
-                    app($observer)->$method($model);
-                }
-            }
-
-            $observer = null;
-            if ($model instanceof AudioContract ||
-                $model instanceof DocumentContract ||
-                $model instanceof FontContract ||
-                $model instanceof ImageContract ||
-                $model instanceof VideoContract
-            ) {
-                $observer = $this->app['config']->get('mediatheque.observers.media');
-            } elseif ($model instanceof FileContract) {
-                $observer = $this->app['config']->get('mediatheque.observers.file');
-            } elseif ($model instanceof PipelineContract) {
-                $observer = $this->app['config']->get('mediatheque.observers.pipeline');
-            }
-            if (!is_null($observer) && method_exists($observer, $method)) {
-                app($observer)->$method($model);
-            }
-        });
-
         $fileObserver = $this->app['config']->get('mediatheque.observers.file');
         $fileAttachedEvent = $this->app['config']->get('mediatheque.events.file_attached', null);
         if (!is_null($fileAttachedEvent)) {

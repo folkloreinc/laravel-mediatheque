@@ -48,7 +48,7 @@ class ThumbnailsJob extends PipelineJob
         // Replace extension
         $extension = array_get($this->options, 'extension', '');
         $filename = pathinfo($path, PATHINFO_FILENAME);
-        return dirname($path).(!empty($extension) ? $filename.$extension : $filename);
+        return dirname($path).'/'.(!empty($extension) ? $filename.$extension : $filename);
     }
 
     protected function getOptions($index = 0)

@@ -22,11 +22,25 @@ return [
     */
     'routes' => [
         'prefix' => 'mediatheque',
-        'namespace' => 'Folklore\Mediatheque\Http\Controllers',
+        'domain' => null,
+        'namespace' => null,
         'middleware' => ['api'],
-        'controllers' => [
-            'upload' => 'UploadController',
+
+        'upload' => [
+            'prefix' => 'upload',
+            'controller' => \Folklore\Mediatheque\Http\Controllers\UploadController::class,
         ],
+
+        'api' => [
+            'prefix' => 'api',
+            'controllers' => [
+                'audio' => \Folklore\Mediatheque\Http\Controllers\AudioController::class,
+                'document' => \Folklore\Mediatheque\Http\Controllers\DocumentController::class,
+                'font' => \Folklore\Mediatheque\Http\Controllers\FontController::class,
+                'image' => \Folklore\Mediatheque\Http\Controllers\ImageController::class,
+                'video' => \Folklore\Mediatheque\Http\Controllers\VideoController::class,
+            ],
+        ]
     ],
 
     /*
@@ -79,7 +93,6 @@ return [
     'types' => [
         'audio' => [
             'model' => \Folklore\Mediatheque\Models\Audio::class,
-            'controller' => \Folklore\Mediatheque\Http\Controllers\AudioController::class,
             'pipeline' => 'audio',
             'mimes' => [
                 'audio/*' => '*',
@@ -92,7 +105,6 @@ return [
 
         'document' => [
             'model' => \Folklore\Mediatheque\Models\Document::class,
-            'controller' => \Folklore\Mediatheque\Http\Controllers\DocumentController::class,
             'pipeline' => 'document',
             'mimes' => [
                 'application/pdf' => 'pdf',
@@ -103,7 +115,6 @@ return [
 
         'font' => [
             'model' => \Folklore\Mediatheque\Models\Font::class,
-            'controller' => \Folklore\Mediatheque\Http\Controllers\FontController::class,
             'pipeline' => 'font',
             'mimes' => [
                 'application/x-font-truetype' => 'ttf',
@@ -121,7 +132,6 @@ return [
 
         'image' => [
             'model' => \Folklore\Mediatheque\Models\Image::class,
-            'controller' => \Folklore\Mediatheque\Http\Controllers\ImageController::class,
             'pipeline' => 'image',
             'mimes' => [
                 'image/*' => '*',
@@ -135,7 +145,6 @@ return [
 
         'video' => [
             'model' => \Folklore\Mediatheque\Models\Video::class,
-            'controller' => \Folklore\Mediatheque\Http\Controllers\VideoController::class,
             'pipeline' => 'video',
             'mimes' => [
                 'video/*' => '*',

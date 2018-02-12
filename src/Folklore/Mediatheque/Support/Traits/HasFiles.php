@@ -3,7 +3,6 @@
 use Illuminate\Contracts\Bus\Dispatcher;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\MetadataGetter;
-use Folklore\Mediatheque\Observers\HasFilesObserver;
 
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -12,7 +11,10 @@ trait HasFiles
 {
     public static function bootHasFiles()
     {
-        static::observe(HasFilesObserver::class);
+        $observer = config('mediatheque.observers.has_files', null);
+        if (!is_null($observer)) {
+            static::observe($observer);
+        }
     }
 
     public function setOriginalFile($file, $data = [])

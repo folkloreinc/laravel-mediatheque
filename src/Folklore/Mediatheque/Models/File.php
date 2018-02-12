@@ -8,7 +8,6 @@ use Folklore\Mediatheque\Contracts\TypeGetter;
 use Folklore\Mediatheque\Contracts\MetadataGetter;
 use Folklore\Mediatheque\Support\Interfaces\HasUrl as HasUrlInterface;
 use Folklore\Mediatheque\Support\Traits\HasUrl;
-use Folklore\Mediatheque\Observers\FileObserver;
 
 use Illuminate\Http\File as HttpFile;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
@@ -51,7 +50,10 @@ class File extends Model implements FileContract, HasUrlInterface
     {
         parent::boot();
 
-        static::observe(FileObserver::class);
+        $observer = config('mediatheque.observers.file', null);
+        if (!is_null($observer)) {
+            static::observe($observer);
+        }
     }
 
     public function setFile($file, $data = [])
@@ -189,7 +191,7 @@ class File extends Model implements FileContract, HasUrlInterface
     /**
      * Collections
      */
-    public function newCollection(array $models = array())
+    public function newCollection(array $models = [])
     {
         return new FilesCollection($models);
     }

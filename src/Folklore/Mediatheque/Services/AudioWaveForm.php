@@ -3,6 +3,7 @@
 namespace Folklore\Mediatheque\Services;
 
 use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
+use Exception;
 
 class AudioWaveForm implements ThumbnailCreatorContract
 {
