@@ -25,6 +25,7 @@ env:
     global:
       - FFMPEG_BIN=/usr/bin/ffmpeg
       - FFPROBE_BIN=/usr/bin/ffprobe
+      - AUDIOWAVEFORM_BIN=/usr/bin/audiowaveform
     matrix:
       - ILLUMINATE_VERSION=5.1.* PHPUNIT_VERSION=~4.0
       - ILLUMINATE_VERSION=5.2.* PHPUNIT_VERSION=~4.0
