@@ -1,9 +1,9 @@
 <?php namespace Folklore\Mediatheque;
 
-use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Bus\Dispatcher;
 use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasPipelines as HasPipelinesInterface;
 use Folklore\Mediatheque\Contracts\Models\Audio as AudioContract;
@@ -30,7 +30,7 @@ use Folklore\Mediatheque\Services\Imagick;
 use Folklore\Mediatheque\Services\AudioWaveForm;
 use Folklore\Mediatheque\Services\OtfInfo;
 
-class MediathequeServiceProvider extends BaseServiceProvider
+class MediathequeServiceProvider extends ServiceProvider
 {
 
     /**
@@ -54,6 +54,7 @@ class MediathequeServiceProvider extends BaseServiceProvider
     {
         $this->bootPublishes();
         $this->bootEvents();
+        $this->bootDispatcher();
     }
 
     public function bootPublishes()
@@ -96,6 +97,17 @@ class MediathequeServiceProvider extends BaseServiceProvider
         $fileDetachedEvent = $this->app['config']->get('mediatheque.events.file_detached', null);
         if (!is_null($fileDetachedEvent)) {
             $this->app['events']->listen($fileDetachedEvent, $fileObserver.'@detached');
+        }
+    }
+
+    public function bootDispatcher()
+    {
+        $dispatcher = app(Dispatcher::class);
+        if (method_exists($dispatcher, 'maps')) {
+            $dispatcher->maps([
+                \Folklore\Jobs\RunPipeline::class => \Folklore\Jobs\RunPipeline::class.'@handle',
+                \Folklore\Jobs\RunPipelineJob::class => \Folklore\Jobs\RunPipelineJob::class.'@handle'
+            ]);
         }
     }
 
