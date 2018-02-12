@@ -58,7 +58,9 @@ matrix:
           env: ILLUMINATE_VERSION=5.5.* PHPUNIT_VERSION=~6.0
 
 before_install:
-    - sudo apt-get -y install libcairo2-dev libpixman-1-dev libpango1.0-dev libgif-dev libjpeg-dev libgtk2.0-dev vlc libvlc-dev portaudio19-dev libsqlite3-dev libcurl4-openssl-dev makeself curl
+    - add-apt-repository ppa:mc3man/trusty-media
+    - apt-get update
+    - apt-get install ffmpeg
     - cp ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/xdebug.ini ~/xdebug.ini
     - phpenv config-rm xdebug.ini
     - composer global require hirak/prestissimo --update-no-dev
