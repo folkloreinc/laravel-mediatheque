@@ -104,10 +104,21 @@ class MediathequeServiceProvider extends ServiceProvider
     {
         $dispatcher = app(Dispatcher::class);
         if (method_exists($dispatcher, 'maps')) {
-            $dispatcher->maps([
-                \Folklore\Jobs\RunPipeline::class => \Folklore\Jobs\RunPipeline::class.'@handle',
-                \Folklore\Jobs\RunPipelineJob::class => \Folklore\Jobs\RunPipelineJob::class.'@handle'
-            ]);
+            $jobs = [
+                \Folklore\Mediatheque\Jobs\RunPipeline::class,
+                \Folklore\Mediatheque\Jobs\RunPipelineJob::class,
+                \Folklore\Mediatheque\Jobs\Audio\Thumbnails::class,
+                \Folklore\Mediatheque\Jobs\Document\Thumbnails::class,
+                \Folklore\Mediatheque\Jobs\Font\WebFonts::class,
+                \Folklore\Mediatheque\Jobs\Video\H264::class,
+                \Folklore\Mediatheque\Jobs\Video\Thumbnails::class,
+                \Folklore\Mediatheque\Jobs\Video\WebM::class,
+            ];
+            $maps = [];
+            foreach ($jobs as $job) {
+                $maps[$job] = $job.'@handle';
+            }
+            $dispatcher->maps($maps);
         }
     }
 
