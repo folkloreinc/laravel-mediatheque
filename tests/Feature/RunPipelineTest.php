@@ -11,14 +11,14 @@ class RunPipelineTest extends TestCase
     {
         parent::setUp();
 
-        if (method_exists($this, 'loadMigrationsFrom')) {
-            $this->loadMigrationsFrom([
-                '--database' => 'testbench',
-                '--realpath' => realpath(__DIR__.'/../../src/migrations'),
-            ]);
-        } else {
-            $this->artisan('migrate', ['--database' => 'testbench']);
-        }
+        $this->loadMigrationsFrom([
+            '--database' => 'testbench',
+            '--path' => realpath(__DIR__.'/../../src/migrations'),
+        ]);
+
+        $this->artisan('migrate', [
+            '--database' => 'testbench',
+        ]);
     }
 
     public function tearDown()
