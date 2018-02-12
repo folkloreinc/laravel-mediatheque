@@ -30,7 +30,10 @@ class FileObserver
     {
         $model = $event->model;
         $file = $event->file;
-        $modelFile = $model->files->first(function ($item) use ($file) {
+        $modelFile = $model->files->first(function ($item, $key) use ($file) {
+            if (!is_object($item)) {
+                $item = $key;
+            }
             return $item->id === $file->id;
         });
         $handle = $modelFile ? $modelFile->pivot->handle : null;

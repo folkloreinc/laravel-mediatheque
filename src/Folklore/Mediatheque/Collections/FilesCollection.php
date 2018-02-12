@@ -11,7 +11,10 @@ class FilesCollection extends Collection
     */
     public function __get($key)
     {
-        return $this->first(function ($item) use ($key) {
+        return $this->first(function ($item, $index) use ($key) {
+            if (!is_object($item)) {
+                $item = $index;
+            }
             return ($item->pivot && $item->pivot->handle === $key) || $item->handle === $key;
         });
     }
