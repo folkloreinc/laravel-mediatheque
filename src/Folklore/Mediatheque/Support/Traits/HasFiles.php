@@ -70,6 +70,7 @@ trait HasFiles
                 ->first();
         if ($file) {
             $this->files()->detach($file);
+            $this->load('files');
             $eventClass = config('mediatheque.events.file_detached');
             event(new $eventClass($this, $file));
         }
@@ -80,6 +81,7 @@ trait HasFiles
         $this->files()->attach($file, [
             'handle' => $handle
         ]);
+        $this->load('files');
         $eventClass = config('mediatheque.events.file_attached');
         event(new $eventClass($this, $file));
     }

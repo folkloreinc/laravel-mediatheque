@@ -5,23 +5,27 @@
  */
 $router->group([
     'prefix' => 'upload',
-], function ($router) use ($types) {
-    $controller = array_get($controllers, 'upload', 'UploadController');
+], function ($router) {
+    $controller = config('mediatheque.routes.controllers.upload');
     $router->post('/', [
         'as' => 'mediatheque.upload',
         'uses' => $controller.'@index'
     ]);
 
-    $router->post('/pull', [
+    $router->post('pull', [
         'as' => 'mediatheque.upload.pull',
         'uses' => $controller.'@pull'
     ]);
 
-    foreach ($types as $type) {
-        $router->post('/'.$type, [
-            'as' => 'mediatheque.upload.'.$type,
-            'uses' => $controller.'@'.$type
-        ]);
+    $types = config('mediatheque.types');
+    foreach ($types as $name => $type) {
+        $canUpload = array_get($type, 'upload', true);
+        if ($canUpload) {
+            $router->post($name, [
+                'as' => 'mediatheque.upload.'.$name,
+                'uses' => $controller.'@'.$name
+            ]);
+        }
     }
 });
 
@@ -30,18 +34,21 @@ $router->group([
  */
 $router->group([
     'prefix' => 'api',
-], function ($router) use ($types) {
-    foreach ($types as $type) {
-        $controller = array_get($controllers, $type, studly_case($type).'Controller');
-        $router->resource($type, $controller, [
-            'except' => ['create', 'edit'],
-            'names' => [
-                'index' => 'mediatheque.api.'.$type.'.index',
-                'show' => 'mediatheque.api.'.$type.'.show',
-                'store' => 'mediatheque.api.'.$type.'.store',
-                'update' => 'mediatheque.api.'.$type.'.update',
-                'destroy' => 'mediatheque.api.'.$type.'.destroy'
-            ]
-        ]);
+], function ($router) {
+    $types = config('mediatheque.types');
+    foreach ($types as $name => $type) {
+        $controller = array_get($type, 'controller', null);
+        if (!is_null($controller)) {
+            $router->resource($name, $controller, [
+                'except' => ['create', 'edit'],
+                'names' => [
+                    'index' => 'mediatheque.api.'.$name.'.index',
+                    'show' => 'mediatheque.api.'.$name.'.show',
+                    'store' => 'mediatheque.api.'.$name.'.store',
+                    'update' => 'mediatheque.api.'.$name.'.update',
+                    'destroy' => 'mediatheque.api.'.$name.'.destroy'
+                ]
+            ]);
+        }
     }
 });

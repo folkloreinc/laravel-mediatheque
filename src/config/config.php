@@ -26,11 +26,6 @@ return [
         'middleware' => ['api'],
         'controllers' => [
             'upload' => 'UploadController',
-            'image' => 'ImageController',
-            'audio' => 'AudioController',
-            'video' => 'VideoController',
-            'document' => 'DocumentController',
-            'font' => 'FontController',
         ],
     ],
 
@@ -70,6 +65,87 @@ return [
     |
     */
     'file_path_format' => '{type}/{date(Y-m-d)}/{id}-{date(his)}.{extension}',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Media types
+    |--------------------------------------------------------------------------
+    |
+    | This defines configuration for each media types. It list the default pipeline
+    | that will be executed when a media is created and also the mimes types and
+    | extensions that are used to detect media types.
+    |
+    */
+    'types' => [
+        'audio' => [
+            'model' => \Folklore\Mediatheque\Models\Audio::class,
+            'controller' => \Folklore\Mediatheque\Http\Controllers\AudioController::class,
+            'pipeline' => 'audio',
+            'mimes' => [
+                'audio/*' => '*',
+                'audio/wave' => 'wav',
+                'audio/x-wave' => 'wav',
+                'audio/x-wav' => 'wav',
+                'audio/mpeg' => 'mp3',
+            ]
+        ],
+
+        'document' => [
+            'model' => \Folklore\Mediatheque\Models\Document::class,
+            'controller' => \Folklore\Mediatheque\Http\Controllers\DocumentController::class,
+            'pipeline' => 'document',
+            'mimes' => [
+                'application/pdf' => 'pdf',
+                'application/octet-stream' => '*',
+                'text/plain' => '*'
+            ]
+        ],
+
+        'font' => [
+            'model' => \Folklore\Mediatheque\Models\Font::class,
+            'controller' => \Folklore\Mediatheque\Http\Controllers\FontController::class,
+            'pipeline' => 'font',
+            'mimes' => [
+                'application/x-font-truetype' => 'ttf',
+                'application/x-font-ttf' => 'ttf',
+                'application/x-font-opentype' => 'otf',
+                'application/vnd.ms-opentype' => 'otf',
+                'application/vnd.ms-fontobject' => 'eot',
+                'inode/x-empty' => 'eot',
+                'application/x-font-woff' => 'woff',
+                'application/font-woff' => 'woff',
+                'application/font-woff2' => 'woff2',
+                'font/woff2' => 'woff2'
+            ]
+        ],
+
+        'image' => [
+            'model' => \Folklore\Mediatheque\Models\Image::class,
+            'controller' => \Folklore\Mediatheque\Http\Controllers\ImageController::class,
+            'pipeline' => 'image',
+            'mimes' => [
+                'image/*' => '*',
+                'image/jpeg' => 'jpg',
+                'image/x-png' => 'png',
+                'image/x-gif' => 'gif',
+                'image/svg+xml' => 'svg',
+                'image/xml' => 'svg',
+            ],
+        ],
+
+        'video' => [
+            'model' => \Folklore\Mediatheque\Models\Video::class,
+            'controller' => \Folklore\Mediatheque\Http\Controllers\VideoController::class,
+            'pipeline' => 'video',
+            'mimes' => [
+                'video/*' => '*',
+                'video/quicktime' => 'mov',
+                'video/mpeg' => 'mp4',
+                'video/mpeg-4' => 'mp4',
+                'video/x-m4v' => 'mp4'
+            ]
+        ],
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -138,77 +214,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Media types
-    |--------------------------------------------------------------------------
-    |
-    | This defines configuration for each media types. It list the default pipeline
-    | that will be executed when a media is created and also the mimes types and
-    | extensions that are used to detect media types.
-    |
-    */
-    'types' => [
-        'image' => [
-            'pipeline' => 'image',
-            'mimes' => [
-                'image/*' => '*',
-                'image/jpeg' => 'jpg',
-                'image/x-png' => 'png',
-                'image/x-gif' => 'gif',
-                'image/svg+xml' => 'svg',
-                'image/xml' => 'svg',
-            ],
-        ],
-
-        'audio' => [
-            'pipeline' => 'audio',
-            'mimes' => [
-                'audio/*' => '*',
-                'audio/wave' => 'wav',
-                'audio/x-wave' => 'wav',
-                'audio/x-wav' => 'wav',
-                'audio/mpeg' => 'mp3',
-            ]
-        ],
-
-        'video' => [
-            'pipeline' => 'video',
-            'mimes' => [
-                'video/*' => '*',
-                'video/quicktime' => 'mov',
-                'video/mpeg' => 'mp4',
-                'video/mpeg-4' => 'mp4',
-                'video/x-m4v' => 'mp4'
-            ]
-        ],
-
-        'document' => [
-            'pipeline' => 'document',
-            'mimes' => [
-                'application/pdf' => 'pdf',
-                'application/octet-stream' => '*',
-                'text/plain' => '*'
-            ]
-        ],
-
-        'font' => [
-            'pipeline' => 'font',
-            'mimes' => [
-                'application/x-font-truetype' => 'ttf',
-                'application/x-font-ttf' => 'ttf',
-                'application/x-font-opentype' => 'otf',
-                'application/vnd.ms-opentype' => 'otf',
-                'application/vnd.ms-fontobject' => 'eot',
-                'inode/x-empty' => 'eot',
-                'application/x-font-woff' => 'woff',
-                'application/font-woff' => 'woff',
-                'application/font-woff2' => 'woff2',
-                'font/woff2' => 'woff2'
-            ]
-        ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Events
     |--------------------------------------------------------------------------
     |
@@ -223,6 +228,21 @@ return [
         'restored' => \Folklore\Mediatheque\Events\MediaRestored::class,
         'file_attached' => \Folklore\Mediatheque\Events\FileAttached::class,
         'file_detached' => \Folklore\Mediatheque\Events\FileDetached::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Observers
+    |--------------------------------------------------------------------------
+    |
+    | The events observers used by the package
+    |
+    */
+    'observers' => [
+        'media' => \Folklore\Mediatheque\Observers\MediaObserver::class,
+        'has_files' => \Folklore\Mediatheque\Observers\HasFilesObserver::class,
+        'file' => \Folklore\Mediatheque\Observers\FileObserver::class,
+        'pipeline' => \Folklore\Mediatheque\Observers\PipelineObserver::class,
     ],
 
     /*

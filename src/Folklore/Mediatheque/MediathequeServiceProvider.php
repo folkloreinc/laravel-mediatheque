@@ -4,8 +4,17 @@ use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
-use Folklore\Mediatheque\Observers\FileableObserver;
-use Folklore\Mediatheque\Interfaces\FileableInterface;
+use Illuminate\Database\Eloquent\Model;
+use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
+use Folklore\Mediatheque\Support\Interfaces\HasPipelines as HasPipelinesInterface;
+use Folklore\Mediatheque\Contracts\Models\Audio as AudioContract;
+use Folklore\Mediatheque\Contracts\Models\Document as DocumentContract;
+use Folklore\Mediatheque\Contracts\Models\Font as FontContract;
+use Folklore\Mediatheque\Contracts\Models\Image as ImageContract;
+use Folklore\Mediatheque\Contracts\Models\Video as VideoContract;
+use Folklore\Mediatheque\Contracts\Models\File as FileContract;
+use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
+use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
 use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
 use Folklore\Mediatheque\Contracts\MetadataGetter;
 use Folklore\Mediatheque\Contracts\DimensionGetter;
@@ -45,6 +54,7 @@ class MediathequeServiceProvider extends BaseServiceProvider
     public function boot()
     {
         $this->bootPublishes();
+        $this->bootEvents();
     }
 
     public function bootPublishes()
@@ -74,6 +84,50 @@ class MediathequeServiceProvider extends BaseServiceProvider
         $this->publishes([
             $routesPath => base_path('routes')
         ], 'routes');
+    }
+
+    public function bootEvents()
+    {
+        $this->app['events']->listen('eloquent.*', function ($type, $args) {
+            preg_match('/^eloquent\.([^\s:]+)\s*\:\s*(.*)$/i', $type, $matches);
+            $model = $args[0];
+            $method = $matches[1];
+
+            if ($model instanceof HasFilesInterface) {
+                $observer = $this->app['config']->get('mediatheque.observers.has_files');
+                if (!is_null($observer) && method_exists($observer, $method)) {
+                    app($observer)->$method($model);
+                }
+            }
+
+            $observer = null;
+            if ($model instanceof AudioContract ||
+                $model instanceof DocumentContract ||
+                $model instanceof FontContract ||
+                $model instanceof ImageContract ||
+                $model instanceof VideoContract
+            ) {
+                $observer = $this->app['config']->get('mediatheque.observers.media');
+            } elseif ($model instanceof FileContract) {
+                $observer = $this->app['config']->get('mediatheque.observers.file');
+            } elseif ($model instanceof PipelineContract) {
+                $observer = $this->app['config']->get('mediatheque.observers.pipeline');
+            }
+            if (!is_null($observer) && method_exists($observer, $method)) {
+                app($observer)->$method($model);
+            }
+        });
+
+        $fileObserver = $this->app['config']->get('mediatheque.observers.file');
+        $fileAttachedEvent = $this->app['config']->get('mediatheque.events.file_attached', null);
+        if (!is_null($fileAttachedEvent)) {
+            $this->app['events']->listen($fileAttachedEvent, $fileObserver.'@attached');
+        }
+
+        $fileDetachedEvent = $this->app['config']->get('mediatheque.events.file_detached', null);
+        if (!is_null($fileDetachedEvent)) {
+            $this->app['events']->listen($fileDetachedEvent, $fileObserver.'@detached');
+        }
     }
 
     /**
@@ -112,7 +166,7 @@ class MediathequeServiceProvider extends BaseServiceProvider
     {
         $this->app->singleton('mediatheque', function ($app) {
             $mediatheque = new Mediatheque($app);
-            $mediatheque->setPipelines(config('mediatheque.pipelines', []));
+            $mediatheque->setPipelines($app['config']->get('mediatheque.pipelines', []));
             return $mediatheque;
         });
     }
@@ -124,36 +178,41 @@ class MediathequeServiceProvider extends BaseServiceProvider
      */
     public function registerModels()
     {
+        $this->app->bind(AudioContract::class, function () {
+            $model = $this->app['config']->get('mediatheque.types.audio.model', null);
+            return !is_null($model) ? new $model() : null;
+        });
+
+        $this->app->bind(DocumentContract::class, function () {
+            $model = $this->app['config']->get('mediatheque.types.document.model', null);
+            return !is_null($model) ? new $model() : null;
+        });
+
+        $this->app->bind(FontContract::class, function () {
+            $model = $this->app['config']->get('mediatheque.types.font.model', null);
+            return !is_null($model) ? new $model() : null;
+        });
+
+        $this->app->bind(ImageContract::class, function () {
+            $model = $this->app['config']->get('mediatheque.types.image.model', null);
+            return !is_null($model) ? new $model() : null;
+        });
+
+        $this->app->bind(VideoContract::class, function () {
+            $model = $this->app['config']->get('mediatheque.types.video.model', null);
+            return !is_null($model) ? new $model() : null;
+        });
+
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\Image::class,
-            \Folklore\Mediatheque\Models\Image::class
-        );
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\File::class,
+            FileContract::class,
             \Folklore\Mediatheque\Models\File::class
         );
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\Audio::class,
-            \Folklore\Mediatheque\Models\Audio::class
-        );
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\Video::class,
-            \Folklore\Mediatheque\Models\Video::class
-        );
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\Document::class,
-            \Folklore\Mediatheque\Models\Document::class
-        );
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\Font::class,
-            \Folklore\Mediatheque\Models\Font::class
-        );
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\Pipeline::class,
+            PipelineContract::class,
             \Folklore\Mediatheque\Models\Pipeline::class
         );
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\PipelineJob::class,
+            PipelineJobContract::class,
             \Folklore\Mediatheque\Models\PipelineJob::class
         );
     }
