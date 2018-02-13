@@ -1,7 +1,6 @@
 <?php namespace Folklore\Mediatheque;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Bus\Dispatcher;
 use Folklore\Mediatheque\Jobs\Handler;
@@ -85,6 +84,7 @@ class MediathequeServiceProvider extends ServiceProvider
 
     public function bootEvents()
     {
+        // File attach and detach event
         $fileObserver = $this->app['config']->get('mediatheque.observers.file');
         $fileAttachedEvent = $this->app['config']->get('mediatheque.events.file_attached', null);
         if (!is_null($fileAttachedEvent)) {
@@ -125,20 +125,9 @@ class MediathequeServiceProvider extends ServiceProvider
         $this->registerModels();
         $this->registerPipeline();
         $this->registerSourceManager();
-        $this->registerMetadata();
-        $this->registerMetadataGetter();
-        $this->registerFFMpeg();
-        $this->registerImagick();
-        $this->registerAudioWaveForm();
-        $this->registerOtfInfo();
-        $this->registerMimeGetter();
-        $this->registerExtensionGetter();
-        $this->registerTypeGetter();
+        $this->registerServices();
         $this->registerThumbnailCreator();
-        $this->registerDimensionGetter();
-        $this->registerDurationGetter();
-        $this->registerPagesCountGetter();
-        $this->registerFamilyName();
+        $this->registerGetters();
     }
 
     /**
@@ -227,103 +216,44 @@ class MediathequeServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register the media info service
+     * Register services
      *
      * @return void
      */
-    public function registerMetadata()
+    public function registerServices()
     {
-        $this->app->bind('mediatheque.services.metadata', function ($app) {
-            return new Metadata($app);
-        });
+        $this->app->singleton('mediatheque.services.metadata', Metadata::class);
+        $this->app->singleton('mediatheque.services.ffmpeg', FFMpeg::class);
+        $this->app->singleton('mediatheque.services.imagick', Imagick::class);
+        $this->app->singleton('mediatheque.services.audiowaveform', AudioWaveForm::class);
+        $this->app->singleton('mediatheque.services.otfinfo', OtfInfo::class);
     }
 
     /**
-     * Register the ffmpeg service
+     * Register getters
      *
      * @return void
      */
-    public function registerFFMpeg()
-    {
-        $this->app->bind('mediatheque.services.ffmpeg', function ($app) {
-            return new FFMpeg();
-        });
-    }
-
-    /**
-     * Register the imagick service
-     *
-     * @return void
-     */
-    public function registerImagick()
-    {
-        $this->app->bind('mediatheque.services.imagick', function ($app) {
-            return new Imagick();
-        });
-    }
-
-    /**
-     * Register the imagick service
-     *
-     * @return void
-     */
-    public function registerAudioWaveForm()
-    {
-        $this->app->bind('mediatheque.services.audiowaveform', function ($app) {
-            return new AudioWaveForm();
-        });
-    }
-
-    /**
-     * Register the imagick service
-     *
-     * @return void
-     */
-    public function registerOtfInfo()
-    {
-        $this->app->bind('mediatheque.services.otfinfo', function ($app) {
-            return new OtfInfo();
-        });
-    }
-
-    /**
-     * Register the mime getter
-     *
-     * @return void
-     */
-    public function registerMimeGetter()
+    public function registerGetters()
     {
         $this->app->bind(MimeGetter::class, 'mediatheque.services.metadata');
-    }
-
-    /**
-     * Register the extension getter
-     *
-     * @return void
-     */
-    public function registerExtensionGetter()
-    {
         $this->app->bind(ExtensionGetter::class, 'mediatheque.services.metadata');
-    }
-
-    /**
-     * Register the type getter
-     *
-     * @return void
-     */
-    public function registerMetadataGetter()
-    {
         $this->app->bind(MetadataGetter::class, 'mediatheque.services.metadata');
-    }
-
-    /**
-     * Register the type getter
-     *
-     * @return void
-     */
-    public function registerTypeGetter()
-    {
         $this->app->bind(TypeGetter::class, 'mediatheque.services.metadata');
+
+        $this->app->bind(DimensionGetter::class, 'mediatheque.services.metadata');
+        $this->app->bind('mediatheque.services.dimension.image', 'mediatheque.services.imagick');
+        $this->app->bind('mediatheque.services.dimension.video', 'mediatheque.services.ffmpeg');
+
+        $this->app->bind(DurationGetter::class, 'mediatheque.services.metadata');
+        $this->app->bind('mediatheque.services.duration.audio', 'mediatheque.services.ffmpeg');
+        $this->app->bind('mediatheque.services.duration.video', 'mediatheque.services.ffmpeg');
+
+        $this->app->bind(PagesCountGetter::class, 'mediatheque.services.metadata');
+        $this->app->bind('mediatheque.services.pagescount', 'mediatheque.services.imagick');
+
+        $this->app->bind(FamilyNameGetter::class, 'mediatheque.services.metadata');
+        $this->app->bind('mediatheque.services.familyname', 'mediatheque.services.otfinfo');
     }
 
     /**
@@ -336,52 +266,6 @@ class MediathequeServiceProvider extends ServiceProvider
         $this->app->bind('mediatheque.services.thumbnail.audio', 'mediatheque.services.audiowaveform');
         $this->app->bind('mediatheque.services.thumbnail.video', 'mediatheque.services.ffmpeg');
         $this->app->bind('mediatheque.services.thumbnail.document', 'mediatheque.services.imagick');
-    }
-
-    /**
-     * Register the dimension getter
-     *
-     * @return void
-     */
-    public function registerDimensionGetter()
-    {
-        $this->app->bind(DimensionGetter::class, 'mediatheque.services.metadata');
-        $this->app->bind('mediatheque.services.dimension.image', 'mediatheque.services.imagick');
-        $this->app->bind('mediatheque.services.dimension.video', 'mediatheque.services.ffmpeg');
-    }
-
-    /**
-     * Register the duration getter
-     *
-     * @return void
-     */
-    public function registerDurationGetter()
-    {
-        $this->app->bind(DurationGetter::class, 'mediatheque.services.metadata');
-        $this->app->bind('mediatheque.services.duration.audio', 'mediatheque.services.ffmpeg');
-        $this->app->bind('mediatheque.services.duration.video', 'mediatheque.services.ffmpeg');
-    }
-
-    /**
-     * Register the pages count getter
-     *
-     * @return void
-     */
-    public function registerPagesCountGetter()
-    {
-        $this->app->bind(PagesCountGetter::class, 'mediatheque.services.metadata');
-        $this->app->bind('mediatheque.services.pagescount', 'mediatheque.services.imagick');
-    }
-
-    /**
-     * Register the pages count getter
-     *
-     * @return void
-     */
-    public function registerFamilyName()
-    {
-        $this->app->bind(FamilyNameGetter::class, 'mediatheque.services.metadata');
-        $this->app->bind('mediatheque.services.familyname', 'mediatheque.services.otfinfo');
     }
 
     protected function getRouter()
