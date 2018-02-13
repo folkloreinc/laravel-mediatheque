@@ -52,7 +52,7 @@ class RunPipelineTest extends TestCase
         $filePath = public_path('test.mp4');
         $model = app(Video::class);
         $model->setOriginalFile($filePath);
-        $model->runPipeline($pipeline);
+        $pipelineModel = $model->runPipeline($pipeline);
 
         $model->load('files');
 
@@ -63,6 +63,9 @@ class RunPipelineTest extends TestCase
             'webm',
             'thumbnails'
         ], $handles->toArray());
+
+        $this->assertTrue($pipelineModel->allJobsEnded());
+        $this->assertFalse($pipelineModel->hasFailedJobs());
     }
 
     /**
@@ -81,7 +84,7 @@ class RunPipelineTest extends TestCase
         $filePath = public_path('test.wav');
         $model = app(Audio::class);
         $model->setOriginalFile($filePath);
-        $model->runPipeline($pipeline);
+        $pipelineModel = $model->runPipeline($pipeline);
 
         $model->load('files');
 
@@ -90,5 +93,8 @@ class RunPipelineTest extends TestCase
             'original',
             'thumbnails'
         ], $handles->toArray());
+
+        $this->assertTrue($pipelineModel->allJobsEnded());
+        $this->assertFalse($pipelineModel->hasFailedJobs());
     }
 }

@@ -21,6 +21,7 @@ class CreateMediathequePipelinesTable extends Migration
             $table->boolean('started')->default(false);
             $table->boolean('ended')->default(false);
             $table->boolean('failed')->default(false);
+            $table->text('failed_exception')->nullable();
             $table->dateTime('started_at')->nullable();
             $table->dateTime('ended_at')->nullable();
             $table->timestamps();

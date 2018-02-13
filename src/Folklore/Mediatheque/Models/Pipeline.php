@@ -8,6 +8,7 @@ use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
 use Illuminate\Bus\Dispatcher;
 use Folklore\Mediatheque\Jobs\RunPipeline;
 use Folklore\Mediatheque\Observers\PipelineObserver;
+use Exception;
 
 class Pipeline extends Model implements PipelineContract
 {
@@ -55,6 +56,24 @@ class Pipeline extends Model implements PipelineContract
         return $model;
     }
 
+    public function allJobsEnded()
+    {
+        return $this->jobs()
+            ->where('started', true)
+            ->orWhere(function ($query) {
+                $query->where('ended', false);
+                $query->where('failed', false);
+            })
+            ->count() === 0;
+    }
+
+    public function hasFailedJobs()
+    {
+        return $this->jobs()
+            ->where('failed', true)
+            ->count() > 0;
+    }
+
     public function start()
     {
         if ($this->started) {
@@ -73,6 +92,32 @@ class Pipeline extends Model implements PipelineContract
         } else {
             app(Dispatcher::class)->dispatchNow($job);
         }
+    }
+
+    public function markStarted()
+    {
+        $this->started = true;
+        $this->started_at = Carbon::now();
+        $this->save();
+    }
+
+    public function markEnded()
+    {
+        $this->started = false;
+        $this->ended = true;
+        $this->ended_at = Carbon::now();
+        $this->save();
+    }
+
+    public function markFailed(Exception $e = null)
+    {
+        $this->started = false;
+        $this->failed = true;
+        $this->ended_at = Carbon::now();
+        if (!is_null($e)) {
+            $this->failed_exception = $e;
+        }
+        $this->save();
     }
 
     public function setDefinitionAttribute($value)

@@ -37,9 +37,7 @@ class RunPipeline implements ShouldQueue
      */
     public function handle()
     {
-        $this->pipeline->started = true;
-        $this->pipeline->started_at = Carbon::now();
-        $this->pipeline->save();
+        $this->pipeline->markStarted();
 
         $this->model->load('files');
 
@@ -77,5 +75,16 @@ class RunPipeline implements ShouldQueue
                 $jobModel->run();
             }
         }
+    }
+
+    /**
+     * The job failed to process.
+     *
+     * @param  Exception  $exception
+     * @return void
+     */
+    public function failed(Exception $exception = null)
+    {
+        $this->pipeline->markFailed($exception);
     }
 }
