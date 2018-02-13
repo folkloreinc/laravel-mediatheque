@@ -54,8 +54,8 @@ class RunPipelineTest extends TestCase
         $model->setOriginalFile($filePath);
         $pipelineModel = $model->runPipeline($pipeline);
 
+        $model = $model->fresh();
         $model->load('files');
-
         $handles = $model->files->pluck('handle');
         $this->assertEquals([
             'original',
@@ -90,8 +90,8 @@ class RunPipelineTest extends TestCase
         $model->setOriginalFile($filePath);
         $pipelineModel = $model->runPipeline($pipeline);
 
+        $model = $model->fresh();
         $model->load('files');
-
         $handles = $model->files->pluck('handle');
         $this->assertEquals([
             'original',
