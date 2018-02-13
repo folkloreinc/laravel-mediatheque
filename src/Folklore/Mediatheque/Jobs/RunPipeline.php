@@ -11,6 +11,7 @@ use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
 use Folklore\Mediatheque\Contracts\Models\Pipeline;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob;
 use Carbon\Carbon;
+use Exception;
 
 class RunPipeline implements ShouldQueue
 {
