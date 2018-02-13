@@ -13,11 +13,12 @@ class PipelineJob extends Model implements PipelineJobContract
 {
     protected $table = 'pipelines_jobs';
 
-    /**
-     * The attributes that should be mutated to dates.
-     *
-     * @var array
-     */
+    protected $attributes = [
+        'started' => false,
+        'ended' => false,
+        'failed' => false,
+    ];
+    
     protected $dates = [
         'started_at',
         'ended_at',

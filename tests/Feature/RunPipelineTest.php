@@ -64,6 +64,10 @@ class RunPipelineTest extends TestCase
             'thumbnails'
         ], $handles->toArray());
 
+        $pipelineModel = $pipelineModel->fresh();
+        $this->assertTrue($pipelineModel->ended);
+        $this->assertFalse($pipelineModel->started);
+        $this->assertFalse($pipelineModel->failed);
         $this->assertTrue($pipelineModel->allJobsEnded());
         $this->assertFalse($pipelineModel->hasFailedJobs());
     }
@@ -94,6 +98,10 @@ class RunPipelineTest extends TestCase
             'thumbnails'
         ], $handles->toArray());
 
+        $pipelineModel = $pipelineModel->fresh();
+        $this->assertTrue($pipelineModel->ended);
+        $this->assertFalse($pipelineModel->started);
+        $this->assertFalse($pipelineModel->failed);
         $this->assertTrue($pipelineModel->allJobsEnded());
         $this->assertFalse($pipelineModel->hasFailedJobs());
     }
