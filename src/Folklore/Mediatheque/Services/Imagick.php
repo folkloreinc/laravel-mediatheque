@@ -27,7 +27,11 @@ class Imagick implements PagesCountGetter, DimensionGetter, ThumbnailCreatorCont
             $pages = $image->getNumberImages();
             $image->destroy();
         } catch (Exception $e) {
-            Log::error($e);
+            if (config('mediatheque.debug')) {
+                throw $e;
+            } else {
+                Log::error($e);
+            }
             $pages = 0;
         }
 
@@ -51,7 +55,11 @@ class Imagick implements PagesCountGetter, DimensionGetter, ThumbnailCreatorCont
             $image->destroy();
             return $dimension;
         } catch (Exception $e) {
-            Log::error($e);
+            if (config('mediatheque.debug')) {
+                throw $e;
+            } else {
+                Log::error($e);
+            }
             return null;
         }
     }

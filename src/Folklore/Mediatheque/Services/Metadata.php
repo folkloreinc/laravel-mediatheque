@@ -16,6 +16,7 @@ use Folklore\Mediatheque\Support\Interfaces\HasFamilyName as HasFamilyNameInterf
 use Folklore\Mediatheque\Support\Interfaces\HasDimension as HasDimensionInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasPages as HasPagesInterface;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class Metadata implements
     MetadataGetter,
@@ -144,6 +145,11 @@ class Metadata implements
             }
             return $mime;
         } catch (Exception $e) {
+            if (config('mediatheque.debug')) {
+                throw $e;
+            } else {
+                Log::error($e);
+            }
             return null;
         }
     }

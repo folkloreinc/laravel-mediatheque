@@ -30,5 +30,6 @@
     </logging>
     <php>
         <env name="APP_KEY" value="AckfSECXIvnK5r28GVIWUAxmbBSjTsmF"/>
+        <env name="MEDIATHEQUE_DEBUG" value="true"/>
     </php>
 </phpunit>

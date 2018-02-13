@@ -35,7 +35,11 @@ class OtfInfo implements FamilyNameGetter
 
             return trim(implode(' ', $output));
         } catch (Exception $e) {
-            Log::error($e);
+            if (config('mediatheque.debug')) {
+                throw $e;
+            } else {
+                Log::error($e);
+            }
             return null;
         }
     }

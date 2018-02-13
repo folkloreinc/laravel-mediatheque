@@ -39,7 +39,11 @@ class FFMpeg implements DimensionGetter, ThumbnailCreatorContract, DurationGette
                 }
             }
         } catch (Exception $e) {
-            Log::error($e);
+            if (config('mediatheque.debug')) {
+                throw $e;
+            } else {
+                Log::error($e);
+            }
         }
 
         return $longestDuration;
@@ -86,7 +90,11 @@ class FFMpeg implements DimensionGetter, ThumbnailCreatorContract, DurationGette
         } catch (Exception $e) {
             $width = 0;
             $height = 0;
-            Log::error($e);
+            if (config('mediatheque.debug')) {
+                throw $e;
+            } else {
+                Log::error($e);
+            }
         }
 
         return [
