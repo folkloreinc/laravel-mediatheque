@@ -34,6 +34,12 @@
         "phpunit/phpunit": "~4.0|~5.0|~5.7|~6.0|~7.0",
         "satooshi/php-coveralls": "^1.0"
     },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/PHP-FFMpeg/BinaryDriver"
+        }
+    ],
     "suggests": {
         "ext-imagick": "*",
         "ext-gd": "*"

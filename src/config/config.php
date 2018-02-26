@@ -2,6 +2,8 @@
 
 return [
 
+    'debug' => env('MEDIATHEQUE_DEBUG', false),
+
     'table_prefix' => 'mediatheque_',
 
     'route_prefix' => 'mediatheque',
