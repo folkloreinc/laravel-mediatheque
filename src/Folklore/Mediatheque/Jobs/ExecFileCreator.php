@@ -115,9 +115,6 @@ class ExecFileCreator implements ShouldQueue
             }
             $i = 0;
             foreach ($createdFiles as $key => $createdFilePath) {
-                $createdFile = app(FileContract::class);
-                $createdFile->setFile($createdFilePath);
-                $createdFile->save();
                 $fileHandle = [];
                 if (!is_numeric($handle)) {
                     $fileHandle[] = $handle;
@@ -125,6 +122,12 @@ class ExecFileCreator implements ShouldQueue
                 if ($single === false) {
                     $fileHandle[] = $key;
                 }
+                $createdFile = app(FileContract::class);
+                if (sizeof($fileHandle)) {
+                    $createdFile->handle = implode(':', $fileHandle);
+                }
+                $createdFile->setFile($createdFilePath);
+                $createdFile->save();
                 $this->model->files()->attach($createdFile, sizeof($fileHandle) ? [
                     'handle' => implode(':', $fileHandle),
                     'order' => is_numeric($key) ? $key : $i
