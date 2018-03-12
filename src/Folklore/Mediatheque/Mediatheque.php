@@ -7,28 +7,11 @@ use \Folklore\Mediatheque\Contracts\Pipeline as PipelineContract;
 class Mediatheque
 {
     protected $app;
-
     protected $pipelines = [];
 
     public function __construct($app)
     {
         $this->app = $app;
-    }
-
-    public function routes()
-    {
-        if ($this->app->routesAreCached()) {
-            return;
-        }
-
-        $config = $this->app['config']->get('mediatheque.routes', []);
-        $router = app()->bound('router') ? app('router') : app();
-        $groupConfig = array_except($config, ['controllers']);
-        $router->group($groupConfig, function ($router) {
-            $routesPath = is_file(base_path('routes/mediatheque.php')) ?
-                base_path('routes/mediatheque.php') : (__DIR__ . '/../../routes/mediatheque.php');
-            require $routesPath;
-        });
     }
 
     public function pipeline($name)

@@ -51,6 +51,7 @@ class MediathequeServiceProvider extends ServiceProvider
         $this->bootPublishes();
         $this->bootEvents();
         $this->bootDispatcher();
+        $this->bootRouter();
     }
 
     public function bootPublishes()
@@ -58,7 +59,6 @@ class MediathequeServiceProvider extends ServiceProvider
         // Config file path
         $configPath = __DIR__ . '/../../config/config.php';
         $migrationsPath = __DIR__ . '/../../migrations';
-        $routesPath = __DIR__ . '/../../routes';
 
         // Merge files
         $this->mergeConfigFrom($configPath, 'mediatheque');
@@ -76,10 +76,6 @@ class MediathequeServiceProvider extends ServiceProvider
         $this->publishes([
             $configPath => config_path('mediatheque.php')
         ], 'config');
-
-        $this->publishes([
-            $routesPath => base_path('routes')
-        ], 'routes');
     }
 
     public function bootEvents()
@@ -112,6 +108,20 @@ class MediathequeServiceProvider extends ServiceProvider
                 throw new InvalidArgumentException("No handler registered for command [{$className}]");
             });
         }
+    }
+
+    public function bootRouter()
+    {
+        if ($this->app->routesAreCached()) {
+            return;
+        }
+
+        $config = $this->app['config']->get('mediatheque.routes', []);
+        $router = app()->bound('router') ? app('router') : app();
+        $groupConfig = array_only($config, ['middleware', 'domain', 'prefix', 'namespace']);
+        $router->group($groupConfig, function ($router) {
+            require __DIR__ .'/../../routes.php';
+        });
     }
 
     /**
