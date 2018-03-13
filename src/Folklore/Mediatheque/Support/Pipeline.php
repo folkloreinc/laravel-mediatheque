@@ -62,7 +62,7 @@ class Pipeline implements PipelineContract, Arrayable, Jsonable
         if (isset($this->name)) {
             return $this->name;
         }
-        return $this->name;
+        return $this->name();
     }
 
     public function setOptions($options)
