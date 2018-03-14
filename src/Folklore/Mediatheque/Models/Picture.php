@@ -38,7 +38,8 @@ class Picture extends Model implements
     protected $appends = array(
         'original_file',
         'url',
-        'type'
+        'type',
+        'dimension_human'
     );
 
     /**

@@ -47,8 +47,9 @@ class Video extends Model implements
         'original_file',
         'thumbnails',
         'url',
+        'type',
         'duration_human',
-        'type'
+        'dimension_human'
     );
 
     public function filesCreators()

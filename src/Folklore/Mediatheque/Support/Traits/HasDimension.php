@@ -65,4 +65,12 @@ trait HasDimension
         $ratio = $this->getRatio();
         return $width/$ratio;
     }
+
+    public function getDimensionHumanAttribute()
+    {
+        $columns = $this->getDimensionColumns();
+        $width = array_get($this->attributes, $columns['width'], -1);
+        $height = array_get($this->attributes, $columns['height'], -1);
+        return $width.'x'.$height;
+    }
 }
