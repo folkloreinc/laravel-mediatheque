@@ -1,8 +1,8 @@
 <?php
 
-namespace Folklore\Mediatheque\Contracts;
+namespace Folklore\Mediatheque\Contracts\Getter;
 
-interface PagesCountGetter
+interface PagesCount
 {
     /**
      * Get the pages count of a file

@@ -1,8 +1,8 @@
 <?php
 
-namespace Folklore\Mediatheque\Contracts;
+namespace Folklore\Mediatheque\Contracts\Getter;
 
-interface MetadataGetter
+interface Metadata
 {
     /**
      * Get metadata of a file

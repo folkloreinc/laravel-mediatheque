@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Http\Controllers;
 
-use Folklore\Mediatheque\Contracts\Models\Video as VideoContract;
+use Folklore\Mediatheque\Contracts\Model\Video as VideoContract;
 
 class VideoController extends ResourceController
 {

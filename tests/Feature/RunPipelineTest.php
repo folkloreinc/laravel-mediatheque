@@ -1,8 +1,8 @@
 <?php
 
 use Folklore\Mediatheque\Support\Pipeline;
-use Folklore\Mediatheque\Contracts\Models\Video;
-use Folklore\Mediatheque\Contracts\Models\Audio;
+use Folklore\Mediatheque\Contracts\Model\Video;
+use Folklore\Mediatheque\Contracts\Model\Audio;
 use Illuminate\Support\Facades\Storage;
 
 class RunPipelineTest extends TestCase
@@ -49,27 +49,31 @@ class RunPipelineTest extends TestCase
             'thumbnails' => \Folklore\Mediatheque\Jobs\Video\Thumbnails::class,
         ]);
 
-        $filePath = public_path('test.mp4');
-        $model = app(Video::class);
-        $model->setOriginalFile($filePath);
-        $pipelineModel = $model->runPipeline($pipeline);
-
-        $model = $model->fresh();
-        $model->load('files');
-        $handles = $model->files->pluck('handle');
-        $this->assertEquals([
+        $handles = [
             'original',
             'h264',
             'webm',
             'thumbnails'
-        ], $handles->toArray());
+        ];
 
+        $filePath = public_path('test.mp4');
+        $model = app(Video::class);
+        $model->setOriginalFile($filePath);
+        $pipelineModel = $model->runPipeline($pipeline);
         $pipelineModel = $pipelineModel->fresh();
+        $model = $model->fresh();
+        $model->load('files');
+        $this->assertEquals($handles, $model->files->pluck('handle')->toArray());
+
         $this->assertTrue($pipelineModel->ended);
         $this->assertFalse($pipelineModel->started);
         $this->assertFalse($pipelineModel->failed);
         $this->assertTrue($pipelineModel->allJobsEnded());
         $this->assertFalse($pipelineModel->hasFailedJobs());
+        foreach ($handles as $handle) {
+            $file = $model->files->{$handle};
+            $this->assertTrue(file_exists(public_path('files/'.$file->path)));
+        }
     }
 
     /**
@@ -85,24 +89,28 @@ class RunPipelineTest extends TestCase
             'thumbnails' => \Folklore\Mediatheque\Jobs\Audio\Thumbnails::class,
         ]);
 
+        $handles = [
+            'original',
+            'thumbnails'
+        ];
+
         $filePath = public_path('test.wav');
         $model = app(Audio::class);
         $model->setOriginalFile($filePath);
         $pipelineModel = $model->runPipeline($pipeline);
-
+        $pipelineModel = $pipelineModel->fresh();
         $model = $model->fresh();
         $model->load('files');
-        $handles = $model->files->pluck('handle');
-        $this->assertEquals([
-            'original',
-            'thumbnails'
-        ], $handles->toArray());
 
-        $pipelineModel = $pipelineModel->fresh();
+        $this->assertEquals($handles, $model->files->pluck('handle')->toArray());
         $this->assertTrue($pipelineModel->ended);
         $this->assertFalse($pipelineModel->started);
         $this->assertFalse($pipelineModel->failed);
         $this->assertTrue($pipelineModel->allJobsEnded());
         $this->assertFalse($pipelineModel->hasFailedJobs());
+        foreach ($handles as $handle) {
+            $file = $model->files->{$handle};
+            $this->assertTrue(file_exists(public_path('files/'.$file->path)));
+        }
     }
 }

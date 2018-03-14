@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Http\Controllers;
 
-use Folklore\Mediatheque\Contracts\Models\Document as DocumentContract;
+use Folklore\Mediatheque\Contracts\Model\Document as DocumentContract;
 
 class DocumentController extends ResourceController
 {

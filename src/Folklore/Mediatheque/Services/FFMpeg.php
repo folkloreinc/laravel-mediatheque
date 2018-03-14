@@ -3,8 +3,8 @@
 namespace Folklore\Mediatheque\Services;
 
 use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
-use Folklore\Mediatheque\Contracts\DimensionGetter;
-use Folklore\Mediatheque\Contracts\DurationGetter;
+use Folklore\Mediatheque\Contracts\Getter\Dimension as DimensionGetter;
+use Folklore\Mediatheque\Contracts\Getter\Duration as DurationGetter;
 
 use FFMpeg\FFProbe;
 use FFMpeg\FFMpeg as BaseFFMpeg;

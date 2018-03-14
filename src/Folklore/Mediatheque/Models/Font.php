@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Models;
 
-use Folklore\Mediatheque\Contracts\Models\Font as FontContract;
+use Folklore\Mediatheque\Contracts\Model\Font as FontContract;
 use Folklore\Mediatheque\Support\Interfaces\HasFamilyName as HasFamilyNameInterface;
 use Folklore\Mediatheque\Support\Traits\HasFamilyName;
 

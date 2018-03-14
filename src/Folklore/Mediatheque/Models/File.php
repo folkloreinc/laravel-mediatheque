@@ -1,11 +1,11 @@
 <?php namespace Folklore\Mediatheque\Models;
 
-use Folklore\Mediatheque\Contracts\Models\File as FileContract;
+use Folklore\Mediatheque\Contracts\Model\File as FileContract;
 use Folklore\Mediatheque\Collections\FilesCollection;
-use Folklore\Mediatheque\Contracts\MimeGetter;
-use Folklore\Mediatheque\Contracts\ExtensionGetter;
-use Folklore\Mediatheque\Contracts\TypeGetter;
-use Folklore\Mediatheque\Contracts\MetadataGetter;
+use Folklore\Mediatheque\Contracts\Getter\Mime as MimeGetter;
+use Folklore\Mediatheque\Contracts\Getter\Extension as ExtensionGetter;
+use Folklore\Mediatheque\Contracts\Getter\Type as TypeGetter;
+use Folklore\Mediatheque\Contracts\Getter\Metadata as MetadataGetter;
 use Folklore\Mediatheque\Support\Interfaces\HasUrl as HasUrlInterface;
 use Folklore\Mediatheque\Support\Traits\HasUrl;
 

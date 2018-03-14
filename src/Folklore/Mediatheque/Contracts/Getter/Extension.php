@@ -1,8 +1,8 @@
 <?php
 
-namespace Folklore\Mediatheque\Contracts;
+namespace Folklore\Mediatheque\Contracts\Getter;
 
-interface ExtensionGetter
+interface Extension
 {
     /**
      * Get the extension of a file

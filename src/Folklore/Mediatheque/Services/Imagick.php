@@ -2,8 +2,8 @@
 
 namespace Folklore\Mediatheque\Services;
 
-use Folklore\Mediatheque\Contracts\PagesCountGetter;
-use Folklore\Mediatheque\Contracts\DimensionGetter;
+use Folklore\Mediatheque\Contracts\Getter\PagesCount as PagesCountGetter;
+use Folklore\Mediatheque\Contracts\Getter\Dimension as DimensionGetter;
 use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
 use Imagick as BaseImagick;
 use Exception;

@@ -1,8 +1,8 @@
 <?php
 
-namespace Folklore\Mediatheque\Contracts;
+namespace Folklore\Mediatheque\Contracts\Getter;
 
-interface DimensionGetter
+interface Dimension
 {
     /**
      * Get duration of a file

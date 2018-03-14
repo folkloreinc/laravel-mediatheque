@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Http\Requests;
 
-use Folklore\Mediatheque\Contracts\Models\Image as ImageContract;
+use Folklore\Mediatheque\Contracts\Model\Image as ImageContract;
 
 class UploadImageRequest extends UploadMediaRequest
 {

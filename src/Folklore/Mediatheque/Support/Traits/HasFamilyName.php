@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Support\Traits;
 
-use Folklore\Mediatheque\Contracts\FamilyNameGetter;
+use Folklore\Mediatheque\Contracts\Getter\FamilyName as FamilyNameGetter;
 
 trait HasFamilyName
 {

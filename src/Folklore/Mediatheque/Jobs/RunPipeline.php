@@ -8,8 +8,8 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
-use Folklore\Mediatheque\Contracts\Models\Pipeline;
-use Folklore\Mediatheque\Contracts\Models\PipelineJob;
+use Folklore\Mediatheque\Contracts\Model\Pipeline;
+use Folklore\Mediatheque\Contracts\Model\PipelineJob;
 use Carbon\Carbon;
 use Exception;
 

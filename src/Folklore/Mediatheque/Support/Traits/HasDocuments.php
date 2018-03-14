@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Support\Traits;
 
-use Folklore\Mediatheque\Contracts\Models\Document as DocumentContract;
+use Folklore\Mediatheque\Contracts\Model\Document as DocumentContract;
 
 trait HasDocuments
 {

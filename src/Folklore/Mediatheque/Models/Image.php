@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Models;
 
-use Folklore\Mediatheque\Contracts\Models\Image as ImageContract;
+use Folklore\Mediatheque\Contracts\Model\Image as ImageContract;
 use Folklore\Mediatheque\Support\Interfaces\HasDimension as HasDimensionInterface;
 use Folklore\Mediatheque\Support\Traits\HasDimension;
 

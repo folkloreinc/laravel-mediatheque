@@ -1,8 +1,8 @@
 <?php namespace Folklore\Mediatheque\Support\Traits;
 
 use Illuminate\Contracts\Bus\Dispatcher;
-use Folklore\Mediatheque\Contracts\Models\File as FileContract;
-use Folklore\Mediatheque\Contracts\MetadataGetter;
+use Folklore\Mediatheque\Contracts\Model\File as FileContract;
+use Folklore\Mediatheque\Contracts\Getter\Metadata as MetadataGetter;
 
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;

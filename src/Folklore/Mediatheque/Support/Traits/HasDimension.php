@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Support\Traits;
 
-use Folklore\Mediatheque\Contracts\DimensionGetter;
+use Folklore\Mediatheque\Contracts\Getter\Dimension as DimensionGetter;
 
 trait HasDimension
 {

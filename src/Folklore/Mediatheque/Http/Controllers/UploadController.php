@@ -8,12 +8,12 @@ use Folklore\Mediatheque\Http\Requests\UploadAudioRequest;
 use Folklore\Mediatheque\Http\Requests\UploadVideoRequest;
 use Folklore\Mediatheque\Http\Requests\UploadDocumentRequest;
 use Folklore\Mediatheque\Http\Requests\UploadFontRequest;
-use Folklore\Mediatheque\Contracts\MimeGetter;
-use Folklore\Mediatheque\Contracts\Models\Image as ImageContract;
-use Folklore\Mediatheque\Contracts\Models\Audio as AudioContract;
-use Folklore\Mediatheque\Contracts\Models\Video as VideoContract;
-use Folklore\Mediatheque\Contracts\Models\Document as DocumentContract;
-use Folklore\Mediatheque\Contracts\Models\Font as FontContract;
+use Folklore\Mediatheque\Contracts\Getter\Mime as MimeGetter;
+use Folklore\Mediatheque\Contracts\Model\Image as ImageContract;
+use Folklore\Mediatheque\Contracts\Model\Audio as AudioContract;
+use Folklore\Mediatheque\Contracts\Model\Video as VideoContract;
+use Folklore\Mediatheque\Contracts\Model\Document as DocumentContract;
+use Folklore\Mediatheque\Contracts\Model\Font as FontContract;
 
 class UploadController extends Controller
 {

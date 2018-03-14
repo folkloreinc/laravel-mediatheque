@@ -3,7 +3,7 @@
 namespace Folklore\Mediatheque\Jobs\Font;
 
 use Folklore\Mediatheque\Support\PipelineJob;
-use Folklore\Mediatheque\Contracts\Models\File as FileContract;
+use Folklore\Mediatheque\Contracts\Model\File as FileContract;
 use Exception;
 
 class WebFonts extends PipelineJob

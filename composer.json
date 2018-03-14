@@ -55,7 +55,10 @@
         ],
         "psr-0": {
             "Folklore\\Mediatheque": "src/"
-        }
+        },
+        "files": [
+            "src/Folklore/Mediatheque/helpers.php"
+        ]
     },
     "extra": {
         "laravel": {

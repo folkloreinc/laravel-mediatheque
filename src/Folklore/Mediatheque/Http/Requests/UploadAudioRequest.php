@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Http\Requests;
 
-use Folklore\Mediatheque\Contracts\Models\Audio as AudioContract;
+use Folklore\Mediatheque\Contracts\Model\Audio as AudioContract;
 
 class UploadAudioRequest extends UploadMediaRequest
 {

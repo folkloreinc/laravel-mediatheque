@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Support\Traits;
 
-use Folklore\Mediatheque\Contracts\Models\Audio as AudioContract;
+use Folklore\Mediatheque\Contracts\Model\Audio as AudioContract;
 
 trait HasAudios
 {

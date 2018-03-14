@@ -92,7 +92,7 @@ return [
     */
     'types' => [
         'audio' => [
-            'model' => \Folklore\Mediatheque\Models\Audio::class,
+            'model' => \Folklore\Mediatheque\Contracts\Model\Audio::class,
             'pipeline' => 'audio',
             'mimes' => [
                 'audio/*' => '*',
@@ -104,7 +104,7 @@ return [
         ],
 
         'document' => [
-            'model' => \Folklore\Mediatheque\Models\Document::class,
+            'model' => \Folklore\Mediatheque\Contracts\Model\Document::class,
             'pipeline' => 'document',
             'mimes' => [
                 'application/pdf' => 'pdf',
@@ -114,7 +114,7 @@ return [
         ],
 
         'font' => [
-            'model' => \Folklore\Mediatheque\Models\Font::class,
+            'model' => \Folklore\Mediatheque\Contracts\Model\Font::class,
             'pipeline' => 'font',
             'mimes' => [
                 'application/x-font-truetype' => 'ttf',
@@ -131,7 +131,7 @@ return [
         ],
 
         'image' => [
-            'model' => \Folklore\Mediatheque\Models\Image::class,
+            'model' => \Folklore\Mediatheque\Contracts\Model\Image::class,
             'pipeline' => 'image',
             'mimes' => [
                 'image/*' => '*',
@@ -144,7 +144,7 @@ return [
         ],
 
         'video' => [
-            'model' => \Folklore\Mediatheque\Models\Video::class,
+            'model' => \Folklore\Mediatheque\Contracts\Model\Video::class,
             'pipeline' => 'video',
             'mimes' => [
                 'video/*' => '*',

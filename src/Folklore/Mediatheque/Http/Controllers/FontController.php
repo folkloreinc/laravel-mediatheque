@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Http\Controllers;
 
-use Folklore\Mediatheque\Contracts\Models\Font as FontContract;
+use Folklore\Mediatheque\Contracts\Model\Font as FontContract;
 
 class FontController extends ResourceController
 {

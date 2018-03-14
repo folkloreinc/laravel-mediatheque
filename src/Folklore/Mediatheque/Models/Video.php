@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Models;
 
-use Folklore\Mediatheque\Contracts\Models\Video as VideoContract;
+use Folklore\Mediatheque\Contracts\Model\Video as VideoContract;
 use Folklore\Mediatheque\Support\Interfaces\HasDuration as HasDurationInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasDimension as HasDimensionInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasThumbnails as HasThumbnailsInterface;

@@ -3,12 +3,10 @@
 namespace Folklore\Mediatheque\Support;
 
 use Ramsey\Uuid\Uuid;
-use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Contracts\Support\Jsonable;
 use Folklore\Mediatheque\Contracts\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesContract;
 
-class Pipeline implements PipelineContract, Arrayable, Jsonable
+class Pipeline extends Definition implements PipelineContract
 {
     protected $defaultOptions = [
         'autostart' => true,
@@ -26,7 +24,10 @@ class Pipeline implements PipelineContract, Arrayable, Jsonable
 
     public function __construct($options = [])
     {
+        $jobs = array_get($options, 'jobs', []);
+        $options = array_except($options, ['jobs']);
         $this->setOptions($options);
+        $this->setOptions($jobs);
     }
 
     public static function fromJobs($jobs, $options = [])
@@ -53,22 +54,17 @@ class Pipeline implements PipelineContract, Arrayable, Jsonable
 
     public function setName($name)
     {
-        $this->name = $name;
-        return $this;
+        return $this->set('name', $name);
     }
 
     public function getName()
     {
-        if (isset($this->name)) {
-            return $this->name;
-        }
-        return $this->name();
+        return $this->get('name');
     }
 
     public function setOptions($options)
     {
-        $this->options = array_merge($this->defaultOptions, $options);
-        return $this;
+        return $this->set('options', array_merge($this->defaultOptions, $options));
     }
 
     public function getOptions()
@@ -77,6 +73,16 @@ class Pipeline implements PipelineContract, Arrayable, Jsonable
             return $this->options;
         }
         return array_merge($this->defaultOptions, $this->options());
+    }
+
+    public function setJobs($jobs)
+    {
+        return $this->set('jobs', $jobs);
+    }
+
+    public function getJobs()
+    {
+        return $this->get('jobs');
     }
 
     public function addJob($name, $job)
@@ -88,26 +94,6 @@ class Pipeline implements PipelineContract, Arrayable, Jsonable
         return $this;
     }
 
-    public function setJobs($jobs)
-    {
-        $this->jobs = $jobs;
-        return $this;
-    }
-
-    public function getJobs()
-    {
-        if (isset($this->jobs)) {
-            return $this->jobs;
-        }
-        return $this->jobs();
-    }
-
-    public function get($key, $value = null)
-    {
-        $options = $this->getOptions();
-        return array_get($options, $key, $value);
-    }
-
     public function toArray()
     {
         $options = $this->getOptions();
@@ -117,14 +103,10 @@ class Pipeline implements PipelineContract, Arrayable, Jsonable
         ]);
     }
 
-    public function toJson($options = 0)
+    public function __get($name)
     {
-        return json_encode($this->toArray(), $options);
-    }
-
-    public function __get($key)
-    {
-        return $this->get($key);
+        $options = $this->getOptions();
+        return array_get($options, $name);
     }
 
     public function __sleep()

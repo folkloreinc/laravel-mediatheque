@@ -1,8 +1,8 @@
 <?php
 
-namespace Folklore\Mediatheque\Contracts;
+namespace Folklore\Mediatheque\Contracts\Getter;
 
-interface FamilyNameGetter
+interface FamilyName
 {
     /**
      * Get family name from a file

@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Http\Requests;
 
-use Folklore\Mediatheque\Contracts\Models\Document as DocumentContract;
+use Folklore\Mediatheque\Contracts\Model\Document as DocumentContract;
 
 class UploadDocumentRequest extends UploadMediaRequest
 {

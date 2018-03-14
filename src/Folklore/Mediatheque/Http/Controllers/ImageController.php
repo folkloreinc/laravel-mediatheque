@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Http\Controllers;
 
-use Folklore\Mediatheque\Contracts\Models\Image as ImageContract;
+use Folklore\Mediatheque\Contracts\Model\Image as ImageContract;
 
 class ImageController extends ResourceController
 {

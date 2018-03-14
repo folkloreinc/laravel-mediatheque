@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Support;
 
-use Folklore\Mediatheque\Contracts\Models\File as FileContract;
+use Folklore\Mediatheque\Contracts\Model\File as FileContract;
 use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesContract;
 use Folklore\Mediatheque\Sources\LocalSource;
 

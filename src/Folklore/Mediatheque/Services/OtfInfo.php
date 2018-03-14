@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Services;
 
-use Folklore\Mediatheque\Contracts\FamilyNameGetter;
+use Folklore\Mediatheque\Contracts\Getter\FamilyName as FamilyNameGetter;
 
 use Illuminate\Support\Facades\Log;
 use Exception;

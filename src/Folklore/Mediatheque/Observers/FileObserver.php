@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Observers;
 
-use Folklore\Mediatheque\Contracts\Models\File as FileContract;
+use Folklore\Mediatheque\Contracts\Model\File as FileContract;
 use Folklore\Mediatheque\Support\Interfaces\HasPipelines as HasPipelinesInterface;
 use Folklore\Mediatheque\Events\FileAttached;
 use Folklore\Mediatheque\Events\FileDetached;

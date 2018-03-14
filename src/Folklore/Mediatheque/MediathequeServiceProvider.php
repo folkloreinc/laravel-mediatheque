@@ -6,24 +6,24 @@ use Illuminate\Bus\Dispatcher;
 use Folklore\Mediatheque\Jobs\Handler;
 use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasPipelines as HasPipelinesInterface;
-use Folklore\Mediatheque\Contracts\Models\Audio as AudioContract;
-use Folklore\Mediatheque\Contracts\Models\Document as DocumentContract;
-use Folklore\Mediatheque\Contracts\Models\Font as FontContract;
-use Folklore\Mediatheque\Contracts\Models\Image as ImageContract;
-use Folklore\Mediatheque\Contracts\Models\Video as VideoContract;
-use Folklore\Mediatheque\Contracts\Models\File as FileContract;
-use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineModelContract;
-use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
+use Folklore\Mediatheque\Contracts\Model\Audio as AudioContract;
+use Folklore\Mediatheque\Contracts\Model\Document as DocumentContract;
+use Folklore\Mediatheque\Contracts\Model\Font as FontContract;
+use Folklore\Mediatheque\Contracts\Model\Image as ImageContract;
+use Folklore\Mediatheque\Contracts\Model\Video as VideoContract;
+use Folklore\Mediatheque\Contracts\Model\File as FileContract;
+use Folklore\Mediatheque\Contracts\Model\Pipeline as PipelineModelContract;
+use Folklore\Mediatheque\Contracts\Model\PipelineJob as PipelineJobContract;
 use Folklore\Mediatheque\Contracts\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
-use Folklore\Mediatheque\Contracts\MetadataGetter;
-use Folklore\Mediatheque\Contracts\DimensionGetter;
-use Folklore\Mediatheque\Contracts\DurationGetter;
-use Folklore\Mediatheque\Contracts\MimeGetter;
-use Folklore\Mediatheque\Contracts\ExtensionGetter;
-use Folklore\Mediatheque\Contracts\TypeGetter;
-use Folklore\Mediatheque\Contracts\PagesCountGetter;
-use Folklore\Mediatheque\Contracts\FamilyNameGetter;
+use Folklore\Mediatheque\Contracts\Getter\Metadata as MetadataGetter;
+use Folklore\Mediatheque\Contracts\Getter\Dimension as DimensionGetter;
+use Folklore\Mediatheque\Contracts\Getter\Duration as DurationGetter;
+use Folklore\Mediatheque\Contracts\Getter\Mime as MimeGetter;
+use Folklore\Mediatheque\Contracts\Getter\Extension as ExtensionGetter;
+use Folklore\Mediatheque\Contracts\Getter\Type as TypeGetter;
+use Folklore\Mediatheque\Contracts\Getter\PagesCount as PagesCountGetter;
+use Folklore\Mediatheque\Contracts\Getter\FamilyName as FamilyNameGetter;
 use Folklore\Mediatheque\Services\Metadata;
 use Folklore\Mediatheque\Services\ThumbnailCreator;
 use Folklore\Mediatheque\Services\FFMpeg;
@@ -119,8 +119,13 @@ class MediathequeServiceProvider extends ServiceProvider
         $config = $this->app['config']->get('mediatheque.routes', []);
         $router = app()->bound('router') ? app('router') : app();
         $groupConfig = array_only($config, ['middleware', 'domain', 'prefix', 'namespace']);
-        $router->group($groupConfig, function ($router) {
-            require __DIR__ .'/../../routes.php';
+        $router->group($groupConfig, function ($router) use ($config) {
+            if (array_get($config, 'api', null) !== false) {
+                require __DIR__ .'/../../routes/api.php';
+            }
+            if (array_get($config, 'upload', null) !== false) {
+                require __DIR__ .'/../../routes/upload.php';
+            }
         });
     }
 
@@ -161,30 +166,30 @@ class MediathequeServiceProvider extends ServiceProvider
      */
     public function registerModels()
     {
-        $this->app->bind(AudioContract::class, function () {
-            $model = $this->app['config']->get('mediatheque.types.audio.model', null);
-            return !is_null($model) ? new $model() : null;
-        });
+        $this->app->bind(
+            AudioContract::class,
+            \Folklore\Mediatheque\Models\Audio::class
+        );
 
-        $this->app->bind(DocumentContract::class, function () {
-            $model = $this->app['config']->get('mediatheque.types.document.model', null);
-            return !is_null($model) ? new $model() : null;
-        });
+        $this->app->bind(
+            DocumentContract::class,
+            \Folklore\Mediatheque\Models\Document::class
+        );
 
-        $this->app->bind(FontContract::class, function () {
-            $model = $this->app['config']->get('mediatheque.types.font.model', null);
-            return !is_null($model) ? new $model() : null;
-        });
+        $this->app->bind(
+            FontContract::class,
+            \Folklore\Mediatheque\Models\Font::class
+        );
 
-        $this->app->bind(ImageContract::class, function () {
-            $model = $this->app['config']->get('mediatheque.types.image.model', null);
-            return !is_null($model) ? new $model() : null;
-        });
+        $this->app->bind(
+            ImageContract::class,
+            \Folklore\Mediatheque\Models\Image::class
+        );
 
-        $this->app->bind(VideoContract::class, function () {
-            $model = $this->app['config']->get('mediatheque.types.video.model', null);
-            return !is_null($model) ? new $model() : null;
-        });
+        $this->app->bind(
+            VideoContract::class,
+            \Folklore\Mediatheque\Models\Video::class
+        );
 
         $this->app->bind(
             FileContract::class,
@@ -290,39 +295,6 @@ class MediathequeServiceProvider extends ServiceProvider
      */
     public function provides()
     {
-        return [
-            'mediatheque',
-            'mediatheque.source',
-            'mediatheque.services.metadata',
-            'mediatheque.services.imagick',
-            'mediatheque.services.audiowaveform',
-            'mediatheque.services.ffmpeg',
-            'mediatheque.services.otfinfo',
-            'mediatheque.services.thumbnail.audio',
-            'mediatheque.services.thumbnail.document',
-            'mediatheque.services.thumbnail.video',
-            'mediatheque.services.dimension.image',
-            'mediatheque.services.dimension.video',
-            'mediatheque.services.duration.audio',
-            'mediatheque.services.duration.video',
-            'mediatheque.services.familyname',
-            'mediatheque.services.pagescount',
-            AudioContract::class,
-            DocumentContract::class,
-            FontContract::class,
-            ImageContract::class,
-            VideoContract::class,
-            FileContract::class,
-            PipelineModelContract::class,
-            PipelineJobContract::class,
-            PipelineContract::class,
-            MetadataGetter::class,
-            DimensionGetter::class,
-            DurationGetter::class,
-            PagesCountGetter::class,
-            FamilyNameGetter::class,
-            MimeGetter::class,
-            ExtensionGetter::class,
-        ];
+        return [];
     }
 }

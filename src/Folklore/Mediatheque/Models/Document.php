@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Models;
 
-use Folklore\Mediatheque\Contracts\Models\Document as DocumentContract;
+use Folklore\Mediatheque\Contracts\Model\Document as DocumentContract;
 use Folklore\Mediatheque\Support\Interfaces\HasPages as HasPagesInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasThumbnails as HasThumbnailsInterface;
 use Folklore\Mediatheque\Support\Traits\HasPages;

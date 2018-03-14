@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Models;
 
-use Folklore\Mediatheque\Contracts\Models\Audio as AudioContract;
+use Folklore\Mediatheque\Contracts\Model\Audio as AudioContract;
 use Folklore\Mediatheque\Support\Interfaces\HasDuration as HasDurationInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasThumbnails as HasThumbnailsInterface;
 use Folklore\Mediatheque\Support\Traits\HasDuration;

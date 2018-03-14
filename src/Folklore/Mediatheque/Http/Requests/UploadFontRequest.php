@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Http\Requests;
 
-use Folklore\Mediatheque\Contracts\Models\Font as FontContract;
+use Folklore\Mediatheque\Contracts\Model\Font as FontContract;
 
 class UploadFontRequest extends UploadMediaRequest
 {

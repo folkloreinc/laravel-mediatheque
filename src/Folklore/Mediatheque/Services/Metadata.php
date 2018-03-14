@@ -3,14 +3,14 @@
 namespace Folklore\Mediatheque\Services;
 
 use Symfony\Component\HttpFoundation\File\MimeType\MimeTypeGuesser;
-use Folklore\Mediatheque\Contracts\MetadataGetter;
-use Folklore\Mediatheque\Contracts\MimeGetter;
-use Folklore\Mediatheque\Contracts\ExtensionGetter;
-use Folklore\Mediatheque\Contracts\TypeGetter;
-use Folklore\Mediatheque\Contracts\DimensionGetter;
-use Folklore\Mediatheque\Contracts\DurationGetter;
-use Folklore\Mediatheque\Contracts\PagesCountGetter;
-use Folklore\Mediatheque\Contracts\FamilyNameGetter;
+use Folklore\Mediatheque\Contracts\Getter\Metadata as MetadataGetter;
+use Folklore\Mediatheque\Contracts\Getter\Mime as MimeGetter;
+use Folklore\Mediatheque\Contracts\Getter\Extension as ExtensionGetter;
+use Folklore\Mediatheque\Contracts\Getter\Type as TypeGetter;
+use Folklore\Mediatheque\Contracts\Getter\Dimension as DimensionGetter;
+use Folklore\Mediatheque\Contracts\Getter\Duration as DurationGetter;
+use Folklore\Mediatheque\Contracts\Getter\PagesCount as PagesCountGetter;
+use Folklore\Mediatheque\Contracts\Getter\FamilyName as FamilyNameGetter;
 use Folklore\Mediatheque\Support\Interfaces\HasDuration as HasDurationInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasFamilyName as HasFamilyNameInterface;
 use Folklore\Mediatheque\Support\Interfaces\HasDimension as HasDimensionInterface;
@@ -37,13 +37,12 @@ class Metadata implements
     public function getMetadata($path)
     {
         $type = $this->getType($path);
-        $className = 'Folklore\\Mediatheque\\Contracts\\Models\\'.studly_case($type);
-        if (!app()->bound($className)) {
+        if (is_null($type)) {
             return [];
         }
 
         $metadata = [];
-        $model = app($className);
+        $model = $type->getModel();
         if ($model instanceof HasDurationInterface) {
             $duration = app(DurationGetter::class)->getDuration($path);
             if ($duration) {
@@ -180,14 +179,10 @@ class Metadata implements
     public function getType($path)
     {
         $fileMime = app(MimeGetter::class)->getMime($path);
-        $types = config('mediatheque.types');
-        foreach ($types as $name => $type) {
-            $mimes = array_get($type, 'mimes', []);
-            foreach ($mimes as $mime => $extension) {
-                $pattern = str_replace('\*', '[^\/]+', preg_quote($mime, '/'));
-                if (preg_match('/^'.$pattern.'$/', $fileMime)) {
-                    return $name;
-                }
+        $types = mediatheque()->types();
+        foreach ($types as $type) {
+            if ($type->isType($path, $mime)) {
+                return $type->getName();
             }
         }
         return null;

@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Support\Traits;
 
-use Folklore\Mediatheque\Contracts\DurationGetter;
+use Folklore\Mediatheque\Contracts\Getter\Duration as DurationGetter;
 use FFMpeg\Coordinate\TimeCode;
 
 trait HasDuration

@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Support\Traits;
 
-use Folklore\Mediatheque\Contracts\PagesCountGetter;
+use Folklore\Mediatheque\Contracts\Getter\PagesCount as PagesCountGetter;
 
 trait HasPages
 {

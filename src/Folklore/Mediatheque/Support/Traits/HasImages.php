@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Support\Traits;
 
-use Folklore\Mediatheque\Contracts\Models\Image as ImageContract;
+use Folklore\Mediatheque\Contracts\Model\Image as ImageContract;
 
 trait HasImages
 {

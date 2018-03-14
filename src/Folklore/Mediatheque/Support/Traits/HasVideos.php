@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Support\Traits;
 
-use Folklore\Mediatheque\Contracts\Models\Video as VideoContract;
+use Folklore\Mediatheque\Contracts\Model\Video as VideoContract;
 
 trait HasVideos
 {
