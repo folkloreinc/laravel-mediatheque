@@ -18,5 +18,9 @@ interface Type
 
     public function getMimes();
 
+    public function setPipeline($pipeline);
+
+    public function getPipeline();
+
     public function isType($path, $mime = null);
 }

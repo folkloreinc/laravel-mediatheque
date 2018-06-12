@@ -9,7 +9,6 @@ class MediaRestored
 {
     use SerializesModels;
 
-    public $model;
     public $type;
 
     /**
@@ -17,9 +16,8 @@ class MediaRestored
      *
      * @return void
      */
-    public function __construct($type, Model $model)
+    public function __construct(Model $model)
     {
-        $this->type = $type;
         $this->model = $model;
     }
 }

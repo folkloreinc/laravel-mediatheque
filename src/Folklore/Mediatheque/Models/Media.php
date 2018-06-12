@@ -30,4 +30,20 @@ class Media extends Model implements
             static::observe($observer);
         }
     }
+
+    protected function getTypeAttribute()
+    {
+        $type = array_get($this->attributes, 'type', null);
+        if (!is_null($type)) {
+            return $type;
+        }
+        $types = mediatheque()->types();
+        foreach ($types as $type) {
+            $modelClass = $type->getModel();
+            if ($this instanceof $modelClass) {
+                return $type->getName();
+            }
+        }
+        return null;
+    }
 }

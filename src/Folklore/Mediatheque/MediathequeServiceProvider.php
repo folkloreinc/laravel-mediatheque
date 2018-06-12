@@ -14,6 +14,7 @@ use Folklore\Mediatheque\Contracts\Model\Video as VideoContract;
 use Folklore\Mediatheque\Contracts\Model\File as FileContract;
 use Folklore\Mediatheque\Contracts\Model\Pipeline as PipelineModelContract;
 use Folklore\Mediatheque\Contracts\Model\PipelineJob as PipelineJobContract;
+use Folklore\Mediatheque\Contracts\Type as TypeContract;
 use Folklore\Mediatheque\Contracts\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
 use Folklore\Mediatheque\Contracts\Getter\Metadata as MetadataGetter;
@@ -139,6 +140,7 @@ class MediathequeServiceProvider extends ServiceProvider
         $this->registerMediatheque();
         $this->registerModels();
         $this->registerPipeline();
+        $this->registerType();
         $this->registerSourceManager();
         $this->registerServices();
         $this->registerThumbnailCreator();
@@ -155,6 +157,7 @@ class MediathequeServiceProvider extends ServiceProvider
         $this->app->singleton('mediatheque', function ($app) {
             $mediatheque = new Mediatheque($app);
             $mediatheque->setPipelines($app['config']->get('mediatheque.pipelines', []));
+            $mediatheque->setTypes($app['config']->get('mediatheque.types', []));
             return $mediatheque;
         });
     }
@@ -215,6 +218,19 @@ class MediathequeServiceProvider extends ServiceProvider
         $this->app->bind(
             PipelineContract::class,
             \Folklore\Mediatheque\Support\Pipeline::class
+        );
+    }
+
+    /**
+     * Register the type class
+     *
+     * @return void
+     */
+    public function registerType()
+    {
+        $this->app->bind(
+            TypeContract::class,
+            \Folklore\Mediatheque\Support\Type::class
         );
     }
 

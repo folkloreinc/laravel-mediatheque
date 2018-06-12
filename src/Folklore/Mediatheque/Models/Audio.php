@@ -49,9 +49,4 @@ class Audio extends Media implements
         });
         return $query;
     }
-
-    protected function getTypeAttribute()
-    {
-        return 'audio';
-    }
 }

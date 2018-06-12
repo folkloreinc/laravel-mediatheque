@@ -58,11 +58,4 @@ class Image extends Media implements
         $source = $this->getSource();
         return $source->getUrl($this->path);
     }
-
-
-
-    protected function getTypeAttribute()
-    {
-        return 'image';
-    }
 }

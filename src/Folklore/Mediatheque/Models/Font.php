@@ -44,9 +44,4 @@ class Font extends Media implements
         });
         return $query;
     }
-
-    protected function getTypeAttribute()
-    {
-        return 'font';
-    }
 }

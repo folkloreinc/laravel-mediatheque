@@ -3,21 +3,12 @@
 namespace Folklore\Mediatheque\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Folklore\Mediatheque\Http\Requests\UploadImageRequest;
-use Folklore\Mediatheque\Http\Requests\UploadAudioRequest;
-use Folklore\Mediatheque\Http\Requests\UploadVideoRequest;
-use Folklore\Mediatheque\Http\Requests\UploadDocumentRequest;
-use Folklore\Mediatheque\Http\Requests\UploadFontRequest;
-use Folklore\Mediatheque\Contracts\Getter\Mime as MimeGetter;
-use Folklore\Mediatheque\Contracts\Model\Image as ImageContract;
-use Folklore\Mediatheque\Contracts\Model\Audio as AudioContract;
-use Folklore\Mediatheque\Contracts\Model\Video as VideoContract;
-use Folklore\Mediatheque\Contracts\Model\Document as DocumentContract;
-use Folklore\Mediatheque\Contracts\Model\Font as FontContract;
+use Folklore\Mediatheque\Contracts\Getter\Type as TypeGetter;
+use Folklore\Mediatheque\Http\Requests\UploadMediaRequest;
 
 class UploadController extends Controller
 {
-    public function index(Request $request)
+    public function index(UploadMediaRequest $request, $type = null)
     {
         $file = $request->file('file');
 
@@ -26,10 +17,9 @@ class UploadController extends Controller
         }
 
         $type = $this->getFileType($file);
-        $typeConfig = config('mediatheque.types.'.$type, null);
-        $canUpload = $type !== null && $typeConfig !== null ? array_get($typeConfig, 'upload', true) : false;
-        if ($canUpload) {
-            return app()->call(static::class.'@'.$type);
+        if ($type->canUpload()) {
+            $item = app($type->getModel());
+            return $this->updateItemFromRequest($item, $request);
         }
 
         return abort(404);
@@ -46,50 +36,10 @@ class UploadController extends Controller
         return abort(500);
     }
 
-    public function image(UploadImageRequest $request)
-    {
-        $item = app(ImageContract::class);
-        return $this->updateItemFromRequest($item, $request);
-    }
-
-    public function audio(UploadAudioRequest $request)
-    {
-        $item = app(AudioContract::class);
-        return $this->updateItemFromRequest($item, $request);
-    }
-
-    public function video(UploadVideoRequest $request)
-    {
-        $item = app(VideoContract::class);
-        return $this->updateItemFromRequest($item, $request);
-    }
-
-    public function document(UploadDocumentRequest $request)
-    {
-        $item = app(DocumentContract::class);
-        return $this->updateItemFromRequest($item, $request);
-    }
-
-    public function font(UploadFontRequest $request)
-    {
-        $item = app(FontContract::class);
-        return $this->updateItemFromRequest($item, $request);
-    }
-
     protected function getFileType($file)
     {
-        $mime = app(MimeGetter::class)->getMime($file->getRealPath());
-        foreach (config('mediatheque.types') as $key => $type) {
-            $mimes = array_keys(array_get($type, 'mimes', []));
-            $foundMime = array_has($mimes, function ($it) use ($mime) {
-                $pattern = str_replace('\*', '[^\]+', preg_quote($it));
-                return preg_match('/^'.$pattern.'$/', $mime);
-            });
-            if ($foundMime) {
-                return $key;
-            }
-        }
-        return null;
+        $name = app(TypeGetter::class)->getType($file->getRealPath());
+        return mediatheque()->type($name);
     }
 
     protected function updateItemFromRequest($item, Request $request)
@@ -104,5 +54,14 @@ class UploadController extends Controller
         $item->load('files');
 
         return $item;
+    }
+
+    public function __call($method, $args)
+    {
+        if (mediatheque()->hasType($method)) {
+            $request = app(UploadMediaRequest::class);
+            return $this->index($request, $method);
+        }
+        return abort(404);
     }
 }

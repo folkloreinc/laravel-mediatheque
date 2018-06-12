@@ -48,9 +48,4 @@ class Document extends Media implements
         });
         return $query;
     }
-
-    protected function getTypeAttribute()
-    {
-        return 'document';
-    }
 }

@@ -11,9 +11,8 @@ class MediaObserver
     {
         $this->handleEvent('created', $model);
 
-        if ($model instanceof HasPipelinesInterface) {
-            $type = $this->getTypeFromModel($model);
-            $pipeline = config('mediatheque.types.'.$type.'.pipeline', null);
+        if ($model instanceof HasPipelinesInterface && $type = $this->getTypeFromModel($model)) {
+            $pipeline = $type->getPipeline();
             if (!is_null($pipeline)) {
                 $model->runPipeline($pipeline);
             }
@@ -44,14 +43,16 @@ class MediaObserver
     {
         $className = config('mediatheque.events.'.$name, null);
         if (!is_null($className)) {
-            $type = $this->getTypeFromModel($model);
-            $event = new $className($type, $model);
+            $event = new $className($model);
             event($event);
         }
     }
 
     protected function getTypeFromModel($model)
     {
-        return strtolower(class_basename($model));
+        if (isset($model->type)) {
+            return mediatheque()->type($model->type);
+        }
+        return null;
     }
 }

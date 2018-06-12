@@ -71,11 +71,4 @@ class Video extends Media implements
         });
         return $query;
     }
-
-
-
-    protected function getTypeAttribute()
-    {
-        return 'video';
-    }
 }

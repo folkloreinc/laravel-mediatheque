@@ -92,6 +92,12 @@ class Mediatheque
         return $this;
     }
 
+    public function hasType($name)
+    {
+        $type = array_get($this->types, $name, null);
+        return !is_null($type) || $this->container->bound($name);
+    }
+
     public function getTypes()
     {
         return $this->types;

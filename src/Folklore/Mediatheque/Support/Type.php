@@ -16,6 +16,8 @@ class Type extends Definition implements TypeContract
 
     protected $getters;
 
+    protected $upload = true;
+
     protected function model()
     {
         return null;
@@ -38,29 +40,34 @@ class Type extends Definition implements TypeContract
         ];
     }
 
-    public function setName($name)
-    {
-        return $this->set('name', $name);
-    }
-
     public function getName()
     {
         return $this->get('name');
     }
 
-    public function setModel($model)
+    public function setName($name)
     {
         return $this->set('name', $name);
     }
 
     public function getModel()
     {
-        return $this->get('name');
+        return $this->get('model');
     }
 
-    public function setMimes($mimes)
+    public function setModel($model)
     {
-        return $this->set('mimes', $mimes);
+        return $this->set('model', $model);
+    }
+
+    public function getPipeline()
+    {
+        return $this->get('pipeline');
+    }
+
+    public function setPipeline($pipeline)
+    {
+        return $this->set('pipeline', $pipeline);
     }
 
     public function getMimes()
@@ -68,7 +75,17 @@ class Type extends Definition implements TypeContract
         return $this->get('mimes');
     }
 
-    public function isType($path, $mime = null)
+    public function setMimes($mimes)
+    {
+        return $this->set('mimes', $mimes);
+    }
+
+    public function canUpload()
+    {
+        return $this->get('upload');
+    }
+
+    public function isType($path, $fileMime = null)
     {
         $mimes = $this->getMimes();
         foreach ($mimes as $mime => $extension) {
@@ -87,6 +104,7 @@ class Type extends Definition implements TypeContract
             'model' => $this->getModel(),
             'pipeline' => $this->getPipeline(),
             'mimes' => $this->getMimes(),
+            'upload' => $this->canUpload(),
         ];
     }
 }

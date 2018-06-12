@@ -42,7 +42,7 @@ class Metadata implements
         }
 
         $metadata = [];
-        $model = $type->getModel();
+        $model = mediatheque()->type($type)->getModel();
         if ($model instanceof HasDurationInterface) {
             $duration = app(DurationGetter::class)->getDuration($path);
             if ($duration) {
@@ -181,7 +181,7 @@ class Metadata implements
         $fileMime = app(MimeGetter::class)->getMime($path);
         $types = mediatheque()->types();
         foreach ($types as $type) {
-            if ($type->isType($path, $mime)) {
+            if ($type->isType($path, $fileMime)) {
                 return $type->getName();
             }
         }
