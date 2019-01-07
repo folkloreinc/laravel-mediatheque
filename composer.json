@@ -52,5 +52,7 @@
                 "Folklore\\Mediatheque\\MediathequeServiceProvider"
             ]
         }
-    }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
