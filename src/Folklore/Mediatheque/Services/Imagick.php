@@ -5,6 +5,7 @@ namespace Folklore\Mediatheque\Services;
 use Folklore\Mediatheque\Contracts\PagesCountGetter;
 use Folklore\Mediatheque\Contracts\DimensionGetter;
 use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
+use Folklore\Mediatheque\Contracts\MimeGetter;
 use Imagick as BaseImagick;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -46,7 +47,9 @@ class Imagick implements PagesCountGetter, DimensionGetter, ThumbnailCreatorCont
             return null;
         }
         try {
-            $image = new BaseImagick($path);
+            $mime = app(MimeGetter::class)->getMime($path);
+            $isGif = preg_match('/^image\/(x-)?gif$/', $mime) === 1;
+            $image = new BaseImagick($isGif ? $path.'[0]' : $path);
             $dimension = $image->getImageGeometry();
             $image->destroy();
             return $dimension;
