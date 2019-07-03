@@ -42,7 +42,10 @@ class ShellJob extends PipelineJob
     protected function makeProcess()
     {
         $arguments = array_merge([$this->bin()], $this->arguments());
-        return new Process($arguments);
+        $path = $this->getLocalFilePath($this->file);
+        $process = new Process($arguments);
+        $process->setWorkingDirectory(dirname($path));
+        return $process;
     }
 
     protected function runProcess($process)
