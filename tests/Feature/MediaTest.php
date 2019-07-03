@@ -11,7 +11,7 @@ class MediaTest extends TestCase
     {
         parent::setUp();
 
-        $this->artisan('migrate', ['--database' => 'testbench'])->run();
+        $this->artisan('migrate', ['--database' => 'testbench']);
     }
 
     public function tearDown()
