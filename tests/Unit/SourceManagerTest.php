@@ -7,13 +7,6 @@ use Folklore\Mediatheque\SourceManager;
  */
 class SourceManagerTest extends TestCase
 {
-    public function setUp()
-    {
-        parent::setUp();
-
-        $this->sourceManager = new SourceManager(app(), app('files'));
-    }
-
     /**
      * Test get default source
      *
@@ -22,7 +15,8 @@ class SourceManagerTest extends TestCase
      */
     public function testGetDefaultSource()
     {
-        $source = $this->sourceManager->getDefaultSource();
+        $sourceManager =  new SourceManager(app(), app('files'));
+        $source = $sourceManager->getDefaultSource();
         $this->assertEquals($source, config('mediatheque.source'));
     }
 
@@ -34,8 +28,9 @@ class SourceManagerTest extends TestCase
      */
     public function testSetDefaultSource()
     {
-        $this->sourceManager->setDefaultSource('cloud');
-        $source = $this->sourceManager->getDefaultSource();
+        $sourceManager =  new SourceManager(app(), app('files'));
+        $sourceManager->setDefaultSource('cloud');
+        $source = $sourceManager->getDefaultSource();
         $this->assertEquals('cloud', $source);
     }
 
@@ -47,7 +42,8 @@ class SourceManagerTest extends TestCase
      */
     public function testPublicSource()
     {
-        $source = $this->sourceManager->source('public');
+        $sourceManager =  new SourceManager(app(), app('files'));
+        $source = $sourceManager->source('public');
         $this->assertInstanceOf(\Folklore\Mediatheque\Sources\LocalSource::class, $source);
     }
 
@@ -59,7 +55,8 @@ class SourceManagerTest extends TestCase
      */
     public function testCloudSource()
     {
-        $source = $this->sourceManager->source('cloud');
+        $sourceManager =  new SourceManager(app(), app('files'));
+        $source = $sourceManager->source('cloud');
         $this->assertInstanceOf(\Folklore\Mediatheque\Sources\FilesystemSource::class, $source);
     }
 }

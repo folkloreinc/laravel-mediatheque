@@ -8,17 +8,6 @@ use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineContract;
  */
 class MediathequeTest extends TestCase
 {
-    public function setUp()
-    {
-        parent::setUp();
-
-        $this->mediatheque = new Mediatheque(
-            app(),
-            app('mediatheque.types'),
-            app('mediatheque.pipelines')
-        );
-    }
-
     /**
      * Test getting a pipeline
      *
@@ -27,7 +16,12 @@ class MediathequeTest extends TestCase
      */
     public function testPipeline()
     {
-        $pipeline = $this->mediatheque->pipeline('video');
+        $mediatheque = new Mediatheque(
+            app(),
+            app('mediatheque.types'),
+            app('mediatheque.pipelines')
+        );
+        $pipeline = $mediatheque->pipeline('video');
         $this->assertInstanceOf(PipelineContract::class, $pipeline);
         $this->assertEquals('video', $pipeline->getName());
         $this->assertEquals(config('mediatheque.pipelines.video.jobs'), $pipeline->getJobs());
@@ -41,6 +35,11 @@ class MediathequeTest extends TestCase
      */
     public function testHasPipeline()
     {
-        $this->assertTrue($this->mediatheque->hasPipeline('video'));
+        $mediatheque = new Mediatheque(
+            app(),
+            app('mediatheque.types'),
+            app('mediatheque.pipelines')
+        );
+        $this->assertTrue($mediatheque->hasPipeline('video'));
     }
 }

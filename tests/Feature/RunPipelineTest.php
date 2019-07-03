@@ -6,14 +6,14 @@ use Illuminate\Support\Facades\Storage;
 
 class RunPipelineTest extends TestCase
 {
-    public function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
 
         $this->artisan('migrate', ['--database' => 'testbench']);
     }
 
-    public function tearDown()
+    protected function tearDown()
     {
         $filesPath = public_path('files');
         if (app('files')->exists($filesPath)) {
