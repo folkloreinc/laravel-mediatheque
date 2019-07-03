@@ -18,6 +18,7 @@ addons:
 php:
     - 7.0
     - 7.1
+    - 7.3
 
 env:
     global:
@@ -25,7 +26,6 @@ env:
       - FFPROBE_BIN=/usr/bin/ffprobe
       - AUDIOWAVEFORM_BIN=/usr/bin/audiowaveform
     matrix:
-      - ILLUMINATE_VERSION=5.5.* PHPUNIT_VERSION=~6.0
       - ILLUMINATE_VERSION=5.5.* PHPUNIT_VERSION=~6.0
       - ILLUMINATE_VERSION=5.6.* PHPUNIT_VERSION=~7.0
       - ILLUMINATE_VERSION=5.7.* PHPUNIT_VERSION=~7.0
