@@ -3,11 +3,18 @@
 namespace Folklore\Mediatheque\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Folklore\Mediatheque\Contracts\Getter\Type as TypeGetter;
+use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 use Folklore\Mediatheque\Http\Requests\UploadMediaRequest;
 
 class UploadController extends Controller
 {
+    protected $typeFactory;
+
+    public function __construct(TypeFactory $typeFactory)
+    {
+        $this->typeFactory = $typeFactory;
+    }
+
     public function index(UploadMediaRequest $request, $type = null)
     {
         $file = $request->file('file');
@@ -38,8 +45,7 @@ class UploadController extends Controller
 
     protected function getFileType($file)
     {
-        $name = app(TypeGetter::class)->getType($file->getRealPath());
-        return mediatheque()->type($name);
+        return $this->typeFactory->typeFromPath($file->getRealPath());
     }
 
     protected function updateItemFromRequest($item, Request $request)

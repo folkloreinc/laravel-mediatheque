@@ -18,10 +18,9 @@ $router->group($uploadGroupConfig, function ($router) {
         'uses' => $controller.'@pull'
     ]);
 
-    $types = config('mediatheque.types');
-    foreach ($types as $name => $type) {
-        $canUpload = array_get($type, 'upload', true);
-        if ($canUpload) {
+    foreach (mediatheque()->types() as $type) {
+        if ($type->canUpload()) {
+            $name = $type->getName();
             $router->post($name, [
                 'as' => 'mediatheque.upload.'.$name,
                 'uses' => $controller.'@'.$name

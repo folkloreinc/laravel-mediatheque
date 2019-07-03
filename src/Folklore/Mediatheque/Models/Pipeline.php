@@ -3,9 +3,8 @@
 namespace Folklore\Mediatheque\Models;
 
 use Carbon\Carbon;
-use Folklore\Mediatheque\Contracts\Model\Pipeline as PipelineContract;
-use Folklore\Mediatheque\Contracts\Model\PipelineJob as PipelineJobContract;
-use Illuminate\Bus\Dispatcher;
+use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
+use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
 use Folklore\Mediatheque\Jobs\RunPipeline;
 use Folklore\Mediatheque\Observers\PipelineObserver;
 use Exception;
@@ -87,11 +86,10 @@ class Pipeline extends Model implements PipelineContract
 
         $shouldQueue = $this->definition->queue;
         $model = $this->getModel();
-        $job = new RunPipeline($model, $this);
         if ($shouldQueue) {
-            app(Dispatcher::class)->dispatch($job);
+            RunPipeline::dispatch($model, $this);
         } else {
-            app(Dispatcher::class)->dispatchNow($job);
+            RunPipeline::dispatchNow($model, $this);
         }
     }
 

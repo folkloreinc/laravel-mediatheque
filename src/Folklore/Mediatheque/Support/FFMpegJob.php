@@ -2,8 +2,8 @@
 
 namespace Folklore\Mediatheque\Support;
 
-use Folklore\Mediatheque\Contracts\Model\File as FileContract;
-use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesContract;
+use Folklore\Mediatheque\Contracts\Models\File as FileContract;
+use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesContract;
 use FFMpeg\FFMpeg as BaseFFMpeg;
 
 class FFMpegJob extends PipelineJob
@@ -16,13 +16,21 @@ class FFMpegJob extends PipelineJob
         'passes' => null,
         'quality' => null,
         'resize' => null,
-        'extension' => '.mp4',
+        'path_format' => '{dirname}/{filename}-{name}.{extension}',
+        'extension' => 'mp4',
         'parameters' => []
     ];
 
-    public function __construct(FileContract $file, $options = [], HasFilesContract $model = null)
-    {
-        $this->options = array_merge($this->defaultFFmpegOptions, $this->defaultOptions, $options);
+    public function __construct(
+        FileContract $file,
+        $options = [],
+        HasFilesContract $model = null
+    ) {
+        $this->options = array_merge(
+            $this->defaultFFmpegOptions,
+            $this->defaultOptions,
+            $options
+        );
         $this->file = $file;
         $this->model = $model;
     }
@@ -30,26 +38,15 @@ class FFMpegJob extends PipelineJob
     public function handle()
     {
         $path = $this->getLocalFilePath($this->file);
-        $destPath = $this->getDestinationPath($path);
+        $destinationPath = $this->formatDestinationPath($path);
 
         $format = $this->getFormat();
 
         $ffmpeg = BaseFFMpeg::create(config('mediatheque.services.ffmpeg'));
         $media = $ffmpeg->open($path);
-        $media->save($format, $destPath);
+        $media->save($format, $destinationPath);
 
-        $newFile = app(FileContract::class);
-        $newFile->setFile($destPath);
-
-        return $newFile;
-    }
-
-    protected function getDestinationPath($path)
-    {
-        // Replace extension
-        $extension = array_get($this->options, 'extension', '');
-        $filename = pathinfo($path, PATHINFO_FILENAME);
-        return dirname($path).'/'.(!empty($extension) ? $filename.$extension : $filename);
+        return $this->makeFileFromPath($destinationPath);
     }
 
     protected function getFormat()
@@ -93,7 +90,11 @@ class FFMpegJob extends PipelineJob
         $resize = array_get($this->options, 'resize', null);
         if (!is_null($resize)) {
             $parameters[] = '-vf';
-            $parameters[] = 'scale='.array_get($resize, 0, '-1').':'.array_get($resize, 1, '-1');
+            $parameters[] =
+                'scale=' .
+                array_get($resize, 0, '-1') .
+                ':' .
+                array_get($resize, 1, '-1');
         }
 
         return $parameters;

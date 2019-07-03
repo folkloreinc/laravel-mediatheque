@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Observers;
 
-use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesContract;
+use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesContract;
 
 class HasFilesObserver
 {

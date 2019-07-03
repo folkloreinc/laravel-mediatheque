@@ -1,49 +1,43 @@
-<?php namespace Folklore\Mediatheque\Models;
+<?php
 
-use Folklore\Mediatheque\Contracts\Model\File as FileContract;
-use Folklore\Mediatheque\Collections\FilesCollection;
-use Folklore\Mediatheque\Contracts\Getter\Mime as MimeGetter;
-use Folklore\Mediatheque\Contracts\Getter\Extension as ExtensionGetter;
-use Folklore\Mediatheque\Contracts\Getter\Type as TypeGetter;
-use Folklore\Mediatheque\Contracts\Getter\Metadata as MetadataGetter;
-use Folklore\Mediatheque\Support\Interfaces\HasUrl as HasUrlInterface;
+namespace Folklore\Mediatheque\Models;
+
+use Folklore\Mediatheque\Contracts\Models\File as FileContract;
+use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
+use Folklore\Mediatheque\Contracts\Source\Factory as SourceFactory;
+use Folklore\Mediatheque\Contracts\Services\Mime as MimeService;
+use Folklore\Mediatheque\Contracts\Services\Extension as ExtensionService;
+use Folklore\Mediatheque\Contracts\Services\Metadata as MetadataService;
+use Folklore\Mediatheque\Contracts\Services\PathFormatter as PathFormatterService;
+use Folklore\Mediatheque\Contracts\Support\HasMetadatas as HasMetadatasInterface;
+use Folklore\Mediatheque\Contracts\Support\HasUrl as HasUrlInterface;
 use Folklore\Mediatheque\Support\Traits\HasUrl;
+use Folklore\Mediatheque\Support\Traits\HasMetadatas;
+use Folklore\Mediatheque\Models\Collections\FilesCollection;
 
 use Symfony\Component\HttpFoundation\File\File as HttpFile;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
 
-class File extends Model implements FileContract, HasUrlInterface
+class File extends Model implements
+    FileContract,
+    HasUrlInterface,
+    HasMetadatasInterface
 {
-    use HasUrl;
+    use HasUrl, HasMetadatas;
 
     protected $table = 'files';
 
-    protected $fillable = [
-        'handle',
-        'name',
-        'path',
-        'source',
-        'type',
-        'mime',
-        'size',
-        'metadata'
-    ];
+    protected $fillable = ['handle', 'name', 'path', 'source', 'mime', 'size'];
 
-    protected $appends = [
-        'url',
-        'size_human',
-        'type'
-    ];
+    protected $appends = ['url', 'size_human', 'type'];
 
     protected $casts = [
         'handle' => 'string',
         'name' => 'string',
         'path' => 'string',
         'source' => 'string',
-        'type' => 'string',
         'mime' => 'string',
-        'size' => 'int',
-        'metadata' => 'object'
+        'size' => 'int'
     ];
 
     public static function boot()
@@ -63,55 +57,67 @@ class File extends Model implements FileContract, HasUrlInterface
         }
 
         $path = $file->getRealPath();
+        $name =
+            $file instanceof SymfonyUploadedFile
+                ? $file->getClientOriginalName()
+                : $file->getFilename();
+        $extension =
+            $file instanceof SymfonyUploadedFile
+                ? $file->guessClientExtension()
+                : $file->guessExtension();
 
-        if (!isset($data['source'])) {
-            $data['source'] = config('mediatheque.source');
+        if (!isset($data['name'])) {
+            $data['name'] = $name;
+        }
+
+        if (!isset($data['type'])) {
+            $data['type'] = app(TypeFactory::class)->typeFromPath($path);
         }
 
         if (!isset($data['mime'])) {
-            $data['mime'] = app(MimeGetter::class)->getMime($path);
-        }
-
-        if (!isset($data['name'])) {
-            $data['name'] = $file instanceof SymfonyUploadedFile ?
-                $file->getClientOriginalName() : $file->getFilename();
+            $data['mime'] = app(MimeService::class)->getMime($path);
         }
 
         if (!isset($data['extension'])) {
-            $defaultExtension = $file instanceof SymfonyUploadedFile ?
-                $file->guessClientExtension() : $file->guessExtension();
-            $extension = app(ExtensionGetter::class)->getExtension($path, array_get($data, 'name'));
-            $data['extension'] = !empty($extension) ? $extension : $defaultExtension;
+            $defaultExtension = $extension;
+            $extension = app(ExtensionService::class)->getExtension(
+                $path,
+                $data['name']
+            );
+            $data['extension'] = !empty($extension)
+                ? $extension
+                : $defaultExtension;
         }
 
         if (!isset($data['size'])) {
             $data['size'] = $file->getSize();
         }
 
-        if (!isset($data['type'])) {
-            $data['type'] = app(TypeGetter::class)->getType($path);
-        }
-
         if (!isset($data['metadata'])) {
-            $data['metadata'] = app(MetadataGetter::class)->getMetadata($path, $data['type']);
+            $data['metadata'] = app(MetadataService::class)->getMetadata(
+                $path
+            );
         }
 
         if (!isset($data['path'])) {
-            if ($this->getKey() === null) {
+            if (!$this->exists) {
                 $this->save();
             }
-            $replaces = array_merge([
-                'id' => $this->id
-            ], $this->toArray(), $data);
-            $format = config('mediatheque.file_path_format');
-            $data['path'] = $this->formatPath($format, $replaces);
+            $data['path'] = app(PathFormatterService::class)->formatPath(
+                config('mediatheque.file_path_format'),
+                $this,
+                $data
+            );
         }
 
-        $source = $this->getSource($data['source']);
+        $source = $this->getSource(array_get($data, 'source'));
         $source->putFromLocalPath($data['path'], $path);
 
-        $this->fill(array_only($data, $this->fillable));
-        $this->save();
+        $this->fill(array_only($data, $this->fillable))
+            ->setMetadata(array_get($data, 'metadata', []))
+            ->save();
+
+        return $this;
     }
 
     public function deleteFile()
@@ -143,37 +149,17 @@ class File extends Model implements FileContract, HasUrlInterface
         if (!$source) {
             $source = $this->source;
         }
-        return app('mediatheque.source')->driver($source);
-    }
-
-    protected function formatPath($format, $replaces)
-    {
-        $destination = ltrim($format, '/');
-        foreach ($replaces as $key => $value) {
-            if (preg_match_all('/\{\s*'.strtolower($key).'\s*\}/', $destination, $matches)) {
-                if (sizeof($matches)) {
-                    for ($i = 0; $i < sizeof($matches[0]); $i++) {
-                        $destination = str_replace($matches[0][$i], $value, $destination);
-                    }
-                }
-            }
-        }
-        if (preg_match_all('/\{\s*date\(([^\)]+)\)\s*\}/', $destination, $matches)) {
-            if (sizeof($matches)) {
-                for ($i = 0; $i < sizeof($matches[0]); $i++) {
-                    $destination = str_replace($matches[0][$i], date($matches[1][$i]), $destination);
-                }
-            }
-        }
-
-        return $destination;
+        return app(SourceFactory::class)->source($source);
     }
 
     protected function getHandleAttribute()
     {
         $handle = array_get($this->attributes, 'handle');
         if ($handle === null) {
-            $handle = $this->pivot && $this->pivot->handle ? $this->pivot->handle : null;
+            $handle =
+                $this->pivot && $this->pivot->handle
+                    ? $this->pivot->handle
+                    : null;
         }
         return $handle;
     }
@@ -185,7 +171,8 @@ class File extends Model implements FileContract, HasUrlInterface
             return null;
         }
         $i = floor(log($size, 1024));
-        return round($size / pow(1024, $i), [0,0,2,2,3][$i]).['B','kB','MB','GB','TB'][$i];
+        return round($size / pow(1024, $i), [0, 0, 2, 2, 3][$i]) .
+            ['B', 'kB', 'MB', 'GB', 'TB'][$i];
     }
 
     /**
@@ -202,9 +189,9 @@ class File extends Model implements FileContract, HasUrlInterface
     public function scopeSearch($query, $text)
     {
         $query->where(function ($query) use ($text) {
-            $query->where('handle', 'LIKE', '%'.$text.'%');
-            $query->where('name', 'LIKE', '%'.$text.'%');
-            $query->where('path', 'LIKE', '%'.$text.'%');
+            $query->where('handle', 'LIKE', '%' . $text . '%');
+            $query->where('name', 'LIKE', '%' . $text . '%');
+            $query->where('path', 'LIKE', '%' . $text . '%');
         });
 
         return $query;

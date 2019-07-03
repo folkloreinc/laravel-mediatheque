@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque\Support;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
+use Illuminate\Support\Str;
 use \JsonSerializable;
 
 abstract class Definition implements JsonSerializable, Arrayable, Jsonable
@@ -18,8 +19,9 @@ abstract class Definition implements JsonSerializable, Arrayable, Jsonable
     public function setDefinition($definition)
     {
         foreach ($definition as $key => $value) {
-            if ($this->hasProperty($key)) {
-                $methodName = 'set'.studly_case($key);
+            $propertyName = Str::camel($key);
+            if ($this->hasProperty($propertyName)) {
+                $methodName = 'set'.Str::studly($key);
                 $this->{$methodName}($value);
             }
         }

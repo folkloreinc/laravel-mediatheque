@@ -3,122 +3,72 @@
 namespace Folklore\Mediatheque\Services;
 
 use Symfony\Component\HttpFoundation\File\MimeType\MimeTypeGuesser;
-use Folklore\Mediatheque\Contracts\Getter\Metadata as MetadataGetter;
-use Folklore\Mediatheque\Contracts\Getter\Mime as MimeGetter;
-use Folklore\Mediatheque\Contracts\Getter\Extension as ExtensionGetter;
-use Folklore\Mediatheque\Contracts\Getter\Type as TypeGetter;
-use Folklore\Mediatheque\Contracts\Getter\Dimension as DimensionGetter;
-use Folklore\Mediatheque\Contracts\Getter\Duration as DurationGetter;
-use Folklore\Mediatheque\Contracts\Getter\PagesCount as PagesCountGetter;
-use Folklore\Mediatheque\Contracts\Getter\FamilyName as FamilyNameGetter;
-use Folklore\Mediatheque\Support\Interfaces\HasDuration as HasDurationInterface;
-use Folklore\Mediatheque\Support\Interfaces\HasFamilyName as HasFamilyNameInterface;
-use Folklore\Mediatheque\Support\Interfaces\HasDimension as HasDimensionInterface;
-use Folklore\Mediatheque\Support\Interfaces\HasPages as HasPagesInterface;
-use Exception;
+use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
+use Folklore\Mediatheque\Contracts\Metadata\Factory as MetadataFactory;
+use Folklore\Mediatheque\Contracts\Services\Metadata as MetadataService;
+use Folklore\Mediatheque\Contracts\Services\Mime as MimeService;
+use Folklore\Mediatheque\Contracts\Services\Extension as ExtensionService;
+use Folklore\Mediatheque\Contracts\Services\Thumbnail as ThumbnailService;
+use Folklore\Mediatheque\Contracts\Services\AudioThumbnail;
+use Folklore\Mediatheque\Contracts\Services\DocumentThumbnail;
+use Folklore\Mediatheque\Contracts\Services\ImageThumbnail;
+use Folklore\Mediatheque\Contracts\Services\VideoThumbnail;
+use Folklore\Mediatheque\Contracts\Services\Dimension as DimensionService;
+use Folklore\Mediatheque\Contracts\Services\ImageDimension;
+use Folklore\Mediatheque\Contracts\Services\VideoDimension;
+use Folklore\Mediatheque\Contracts\Services\Duration as DurationService;
+use Folklore\Mediatheque\Contracts\Services\AudioDuration;
+use Folklore\Mediatheque\Contracts\Services\VideoDuration;
+use Folklore\Mediatheque\Metadata\ValuesCollection;
 use Illuminate\Support\Facades\Log;
+use Exception;
 
 class Metadata implements
-    MetadataGetter,
-    MimeGetter,
-    ExtensionGetter,
-    TypeGetter,
-    DimensionGetter,
-    DurationGetter,
-    PagesCountGetter,
-    FamilyNameGetter
+    MetadataService,
+    MimeService,
+    ExtensionService,
+    ThumbnailService,
+    DimensionService,
+    DurationService
 {
+    protected $metadataFactory;
+
+    public function __construct(MetadataFactory $metadataFactory)
+    {
+        $this->metadataFactory = $metadataFactory;
+    }
+
     /**
-     * Get metadata
+     * Get metadata from path
      *
      * @param  string  $path
-     * @return array
+     * @return \Folklore\Mediatheque\Metadata\ValuesCollection
      */
-    public function getMetadata($path)
+    public function getMetadata($path, $type = null)
     {
-        $type = $this->getType($path);
+        if (is_null($type)) {
+            $type = app(TypeFactory::class)->typeFromPath($path);
+        }
         if (is_null($type)) {
             return [];
         }
 
-        $metadata = [];
-        $model = mediatheque()->type($type)->getModel();
-        if ($model instanceof HasDurationInterface) {
-            $duration = app(DurationGetter::class)->getDuration($path);
-            if ($duration) {
-                $metadata['duration'] = $duration;
+        $data = new ValuesCollection();
+        $type = is_string($type) ? mediatheque()->type($type) : $type;
+        foreach ($type->getMetadatas() as $metadata) {
+            $metadata = $this->metadataFactory->metadata($metadata);
+            if ($metadata->hasMultipleValues()) {
+                $values = $metadata->getValue($path);
+                $data = $data->merge($values);
+            } else {
+                $value = $metadata->getValue($path);
+                if (!is_null($value)) {
+                    $data->push($value);
+                }
             }
         }
 
-        if ($model instanceof HasFamilyNameInterface) {
-            $familyName = app(FamilyNameGetter::class)->getFamilyName($path);
-            if ($familyName) {
-                $metadata['family_name'] = $familyName;
-            }
-        }
-
-        if ($model instanceof HasDimensionInterface) {
-            $dimension = app(DimensionGetter::class)->getDimension($path);
-            if ($dimension) {
-                $metadata['width'] = $dimension['width'];
-                $metadata['height'] = $dimension['height'];
-            }
-        }
-
-        if ($model instanceof HasPagesInterface) {
-            $pages = app(PagesCountGetter::class)->getPagesCount($path);
-            if ($pages) {
-                $metadata['pages'] = $pages;
-            }
-        }
-
-        return $metadata;
-    }
-
-    /**
-     * Get pages count
-     *
-     * @param  string  $path
-     * @return int
-     */
-    public function getPagesCount($path)
-    {
-        return app('mediatheque.services.pagescount')->getPagesCount($path);
-    }
-
-    /**
-     * Get family name of a file
-     *
-     * @param  string  $path
-     * @return float
-     */
-    public function getFamilyName($path)
-    {
-        return app('mediatheque.services.familyname')->getFamilyName($path);
-    }
-
-    /**
-     * Get dimension
-     *
-     * @param  string  $path
-     * @return array
-     */
-    public function getDimension($path)
-    {
-        $type = $this->getType($path);
-        return $type ? app('mediatheque.services.dimension.'.$type)->getDimension($path) : null;
-    }
-
-    /**
-     * Get duration of a file
-     *
-     * @param  string  $path
-     * @return float
-     */
-    public function getDuration($path)
-    {
-        $type = $this->getType($path);
-        return $type ? app('mediatheque.services.duration.'.$type)->getDuration($path) : 0;
+        return $data;
     }
 
     /**
@@ -161,7 +111,7 @@ class Metadata implements
      */
     public function getExtension($path, $filename = null)
     {
-        $mime = app(MimeGetter::class)->getMime($path);
+        $mime = app(MimeService::class)->getMime($path);
         $types = array_values(config('mediatheque.types'));
         $fileExtension = pathinfo(!empty($filename) ? $filename : $path, PATHINFO_EXTENSION);
         return array_reduce($types, function ($extension, $type) use ($mime) {
@@ -171,19 +121,62 @@ class Metadata implements
     }
 
     /**
-     * Get type of a path
-     *
-     * @param  string  $path
-     * @return string
+     * Get the thumbnail of a path
+     * @param  string $source The source path
+     * @param  string $destination The destination path
+     * @param  array $options The options
+     * @return string The path of the thumbnail
      */
-    public function getType($path)
+    public function getThumbnail($source, $destination, $options = [])
     {
-        $fileMime = app(MimeGetter::class)->getMime($path);
-        $types = mediatheque()->types();
-        foreach ($types as $type) {
-            if ($type->isType($path, $fileMime)) {
-                return $type->getName();
-            }
+        $mime = $this->getMime($source);
+        if (is_null($mime)) {
+            return null;
+        }
+        if (preg_match('/^audio\//', $mime)) {
+            return app(AudioThumbnail::class)->getThumbnail($source, $destination, $options);
+        } elseif (preg_match('/^video\//', $mime)) {
+            return app(VideoThumbnail::class)->getThumbnail($source, $destination, $options);
+        } elseif (preg_match('/^image\//', $mime)) {
+            return app(ImageThumbnail::class)->getThumbnail($source, $destination, $options);
+        }
+        return app(DocumentThumbnail::class)->getThumbnail($source, $destination, $options);
+    }
+
+    /**
+     * Get the dimension of a path
+     * @param  string $path The path of a file
+     * @return array The dimension
+     */
+    public function getDimension($path)
+    {
+        $mime = $this->getMime($path);
+        if (is_null($mime)) {
+            return null;
+        }
+        if (preg_match('/^image\//', $mime)) {
+            return app(ImageDimension::class)->getDimension($path);
+        } elseif (preg_match('/^video\//', $mime)) {
+            return app(VideoDimension::class)->getDimension($path);
+        }
+        return null;
+    }
+
+    /**
+     * Get the duration of a path
+     * @param  string $path The path of a file
+     * @return float The duration in seconds
+     */
+    public function getDuration($path)
+    {
+        $mime = $this->getMime($path);
+        if (is_null($mime)) {
+            return null;
+        }
+        if (preg_match('/^audio\//', $mime)) {
+            return app(AudioDuration::class)->getDuration($path);
+        } elseif (preg_match('/^video\//', $mime)) {
+            return app(VideoDuration::class)->getDuration($path);
         }
         return null;
     }

@@ -2,19 +2,19 @@
 
 namespace Folklore\Mediatheque\Services;
 
-use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
+use Folklore\Mediatheque\Contracts\Services\AudioThumbnail;
 use Exception;
 
-class AudioWaveForm implements ThumbnailCreatorContract
+class AudioWaveForm implements AudioThumbnail
 {
     /**
-     * Create a thumbnail
-     *
-     * @param  string  $source
-     * @param  string  $destination
-     * @return boolean
+     * Get the thumbnail of a path
+     * @param  string $source The source path
+     * @param  string $destination The destination path
+     * @param  array $options The options
+     * @return string The path of the thumbnail
      */
-    public function createThumbnail($source, $destination, $options = [])
+    public function getThumbnail($source, $destination, $options = [])
     {
         $zoom = array_get($options, 'zoom', 600);
         $width = array_get($options, 'width', 1200);

@@ -3,8 +3,8 @@
 namespace Folklore\Mediatheque\Models;
 
 use Carbon\Carbon;
-use Folklore\Mediatheque\Contracts\Model\Pipeline as PipelineContract;
-use Folklore\Mediatheque\Contracts\Model\PipelineJob as PipelineJobContract;
+use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
+use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
 use Illuminate\Bus\Dispatcher;
 use Folklore\Mediatheque\Jobs\RunPipelineJob;
 use Exception;

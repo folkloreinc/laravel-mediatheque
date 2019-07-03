@@ -19,7 +19,6 @@ class CreateMediathequeFilesTable extends Migration
             $table->string('source')->nullable();
             $table->string('name')->nullable();
             $table->string('path')->nullable();
-            $table->string('type', 50)->nullable();
             $table->string('mime', 50)->nullable();
             $table->integer('size')->unsigned()->default(0);
             $table->timestamps();
@@ -28,7 +27,7 @@ class CreateMediathequeFilesTable extends Migration
             $table->index('name');
             $table->index('source');
             $table->index('path');
-            $table->index('type');
+            $table->index('mime');
         });
     }
 

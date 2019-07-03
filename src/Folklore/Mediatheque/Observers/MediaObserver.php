@@ -3,7 +3,7 @@
 namespace Folklore\Mediatheque\Observers;
 
 use Folklore\Mediatheque\Models\Model;
-use Folklore\Mediatheque\Support\Interfaces\HasPipelines as HasPipelinesInterface;
+use Folklore\Mediatheque\Contracts\Support\HasPipelines as HasPipelinesInterface;
 
 class MediaObserver
 {

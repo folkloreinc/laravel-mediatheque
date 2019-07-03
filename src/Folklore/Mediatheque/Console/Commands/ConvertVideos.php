@@ -4,8 +4,8 @@ namespace Folklore\Mediatheque\Console\Commands;
 
 use Illuminate\Console\Command;
 
-use Folklore\Mediatheque\Contracts\Model\Video as VideoContract;
-use Folklore\Mediatheque\Contracts\Model\File as FileContract;
+use Folklore\Mediatheque\Contracts\Models\Video as VideoContract;
+use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use FFMpeg\FFMpeg;
 use FFMpeg\Format\Video\X264;
 

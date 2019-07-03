@@ -11,55 +11,55 @@ class SourceManagerTest extends TestCase
     {
         parent::setUp();
 
-        $this->sourceManager = new SourceManager(app());
+        $this->sourceManager = new SourceManager(app(), app('files'));
     }
 
     /**
-     * Test get default driver
+     * Test get default source
      *
      * @test
-     * @covers ::getDefaultDriver
+     * @covers ::getDefaultSource
      */
-    public function testGetDefaultDriver()
+    public function testGetDefaultSource()
     {
-        $driver = $this->sourceManager->getDefaultDriver();
-        $this->assertEquals($driver, config('mediatheque.source'));
+        $source = $this->sourceManager->getDefaultSource();
+        $this->assertEquals($source, config('mediatheque.source'));
     }
 
     /**
-     * Test set default driver
+     * Test set default source
      *
      * @test
-     * @covers ::setDefaultDriver
+     * @covers ::setDefaultSource
      */
-    public function testSetDefaultDriver()
+    public function testSetDefaultSource()
     {
-        $this->sourceManager->setDefaultDriver('cloud');
-        $driver = $this->sourceManager->getDefaultDriver();
-        $this->assertEquals('cloud', $driver);
+        $this->sourceManager->setDefaultSource('cloud');
+        $source = $this->sourceManager->getDefaultSource();
+        $this->assertEquals('cloud', $source);
     }
 
     /**
-     * Test the local driver
+     * Test the local source
      *
      * @test
-     * @covers ::createLocalDriver
+     * @covers ::createLocalSource
      */
-    public function testPublicDriver()
+    public function testPublicSource()
     {
-        $driver = $this->sourceManager->driver('public');
-        $this->assertInstanceOf(\Folklore\Mediatheque\Sources\LocalSource::class, $driver);
+        $source = $this->sourceManager->source('public');
+        $this->assertInstanceOf(\Folklore\Mediatheque\Sources\LocalSource::class, $source);
     }
 
     /**
-     * Test the cloud driver
+     * Test the cloud source
      *
      * @test
-     * @covers ::createFilesystemDriver
+     * @covers ::createFilesystemSource
      */
-    public function testCloudDriver()
+    public function testCloudSource()
     {
-        $driver = $this->sourceManager->driver('cloud');
-        $this->assertInstanceOf(\Folklore\Mediatheque\Sources\FilesystemSource::class, $driver);
+        $source = $this->sourceManager->source('cloud');
+        $this->assertInstanceOf(\Folklore\Mediatheque\Sources\FilesystemSource::class, $source);
     }
 }

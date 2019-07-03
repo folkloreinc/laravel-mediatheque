@@ -1,4 +1,8 @@
-<?php namespace Folklore\Mediatheque\Http\Requests;
+<?php
+
+namespace Folklore\Mediatheque\Http\Requests;
+
+use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 
 class UploadMediaRequest extends Request
 {
@@ -15,8 +19,9 @@ class UploadMediaRequest extends Request
                 'file' => ['required'],
             ];
         }
-        $type = $this->getFileType($file);
-        $model = app($type->getModel());
+        $path = $file->getRealPath();
+        $type = app(TypeFactory::class)->typeFromPath($path);
+        $model = $type->newModel();
         return [
             'id' => 'exists:'.$model->getTable(),
             'file' => ['required'],

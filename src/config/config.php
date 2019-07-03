@@ -34,11 +34,7 @@ return [
         'api' => [
             'prefix' => 'api',
             'controllers' => [
-                'audio' => \Folklore\Mediatheque\Http\Controllers\AudioController::class,
-                'document' => \Folklore\Mediatheque\Http\Controllers\DocumentController::class,
-                'font' => \Folklore\Mediatheque\Http\Controllers\FontController::class,
-                'image' => \Folklore\Mediatheque\Http\Controllers\ImageController::class,
-                'video' => \Folklore\Mediatheque\Http\Controllers\VideoController::class,
+                'media' => \Folklore\Mediatheque\Http\Controllers\MediaController::class,
             ],
         ]
     ],
@@ -92,33 +88,36 @@ return [
     */
     'types' => [
         'audio' => [
-            'model' => \Folklore\Mediatheque\Contracts\Model\Audio::class,
             'pipeline' => 'audio',
-            'upload' => true,
+            'can_upload' => true,
             'mimes' => [
                 'audio/*' => '*',
                 'audio/wave' => 'wav',
                 'audio/x-wave' => 'wav',
                 'audio/x-wav' => 'wav',
                 'audio/mpeg' => 'mp3',
+            ],
+            'metadatas' => [
+                'duration'
             ]
         ],
 
         'document' => [
-            'model' => \Folklore\Mediatheque\Contracts\Model\Document::class,
             'pipeline' => 'document',
-            'upload' => true,
+            'can_upload' => true,
             'mimes' => [
                 'application/pdf' => 'pdf',
                 'application/octet-stream' => '*',
                 'text/plain' => '*'
+            ],
+            'metadatas' => [
+                'pages_count'
             ]
         ],
 
         'font' => [
-            'model' => \Folklore\Mediatheque\Contracts\Model\Font::class,
             'pipeline' => 'font',
-            'upload' => true,
+            'can_upload' => true,
             'mimes' => [
                 'application/x-font-truetype' => 'ttf',
                 'application/x-font-ttf' => 'ttf',
@@ -130,13 +129,15 @@ return [
                 'application/font-woff' => 'woff',
                 'application/font-woff2' => 'woff2',
                 'font/woff2' => 'woff2'
+            ],
+            'metadatas' => [
+                'font_family_name'
             ]
         ],
 
         'image' => [
-            'model' => \Folklore\Mediatheque\Contracts\Model\Image::class,
             'pipeline' => 'image',
-            'upload' => true,
+            'can_upload' => true,
             'mimes' => [
                 'image/*' => '*',
                 'image/jpeg' => 'jpg',
@@ -145,20 +146,38 @@ return [
                 'image/svg+xml' => 'svg',
                 'image/xml' => 'svg',
             ],
+            'metadatas' => [
+                'dimension'
+            ]
         ],
 
         'video' => [
-            'model' => \Folklore\Mediatheque\Contracts\Model\Video::class,
             'pipeline' => 'video',
-            'upload' => true,
+            'can_upload' => true,
             'mimes' => [
                 'video/*' => '*',
                 'video/quicktime' => 'mov',
                 'video/mpeg' => 'mp4',
                 'video/mpeg-4' => 'mp4',
                 'video/x-m4v' => 'mp4'
+            ],
+            'metadatas' => [
+                'dimension',
+                'duration'
             ]
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Metadata readers
+    |--------------------------------------------------------------------------
+    */
+    'metadatas' => [
+        'duration' => \Folklore\Mediatheque\Metadata\Duration::class,
+        'dimension' => \Folklore\Mediatheque\Metadata\Dimension::class,
+        'pages_count' => \Folklore\Mediatheque\Metadata\PagesCount::class,
+        'font_family_name' => \Folklore\Mediatheque\Metadata\FontFamilyName::class,
     ],
 
     /*
@@ -297,7 +316,7 @@ return [
         ],
 
         'convertFonts' => [
-            'bin' => env('CONVERTFONTS_BIN', '/usr/local/bin/convertFonts')
+            'bin' => env('CONVERTFONTS_BIN', '/usr/local/bin/convertFonts.sh')
         ]
     ]
 

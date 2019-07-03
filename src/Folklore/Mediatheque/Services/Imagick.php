@@ -2,14 +2,19 @@
 
 namespace Folklore\Mediatheque\Services;
 
-use Folklore\Mediatheque\Contracts\Getter\PagesCount as PagesCountGetter;
-use Folklore\Mediatheque\Contracts\Getter\Dimension as DimensionGetter;
-use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
+use Folklore\Mediatheque\Contracts\Services\PagesCount;
+use Folklore\Mediatheque\Contracts\Services\ImageDimension;
+use Folklore\Mediatheque\Contracts\Services\ImageThumbnail;
+use Folklore\Mediatheque\Contracts\Services\DocumentThumbnail;
 use Imagick as BaseImagick;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
-class Imagick implements PagesCountGetter, DimensionGetter, ThumbnailCreatorContract
+class Imagick implements
+    PagesCount,
+    ImageDimension,
+    ImageThumbnail,
+    DocumentThumbnail
 {
     /**
      * Get pages count of a file
@@ -64,7 +69,14 @@ class Imagick implements PagesCountGetter, DimensionGetter, ThumbnailCreatorCont
         }
     }
 
-    public function createThumbnail($source, $destination, $options = [])
+    /**
+     * Get the thumbnail of a path
+     * @param  string $source The source path
+     * @param  string $destination The destination path
+     * @param  array $options The options
+     * @return string The path of the thumbnail
+     */
+    public function getThumbnail($source, $destination, $options = [])
     {
         $resolution = array_get($options, 'resolution', 150);
         $format = array_get($options, 'format', 'jpeg');

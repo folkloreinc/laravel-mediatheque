@@ -2,9 +2,10 @@
 
 namespace Folklore\Mediatheque\Services;
 
-use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
-use Folklore\Mediatheque\Contracts\Getter\Dimension as DimensionGetter;
-use Folklore\Mediatheque\Contracts\Getter\Duration as DurationGetter;
+use Folklore\Mediatheque\Contracts\Services\VideoThumbnail;
+use Folklore\Mediatheque\Contracts\Services\VideoDimension;
+use Folklore\Mediatheque\Contracts\Services\VideoDuration;
+use Folklore\Mediatheque\Contracts\Services\AudioDuration;
 
 use FFMpeg\FFProbe;
 use FFMpeg\FFMpeg as BaseFFMpeg;
@@ -12,7 +13,11 @@ use FFMpeg\Coordinate\TimeCode;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
-class FFMpeg implements DimensionGetter, ThumbnailCreatorContract, DurationGetter
+class FFMpeg implements
+    VideoThumbnail,
+    VideoDimension,
+    VideoDuration,
+    AudioDuration
 {
     /**
      * Get duration of a file
@@ -50,24 +55,23 @@ class FFMpeg implements DimensionGetter, ThumbnailCreatorContract, DurationGette
     }
 
     /**
-     * Create a thumbnail
-     *
-     * @param  string  $source
-     * @param  string  $destination
-     * @return string
+     * Get the thumbnail of a path
+     * @param  string $source The source path
+     * @param  string $destination The destination path
+     * @param  array $options The options
+     * @return string The path of the thumbnails
      */
-    public function createThumbnail($source, $destination, $options = [])
+    public function getThumbnail($source, $destination, $options = [])
     {
         $path = $source;
         $time = array_get($options, 'time', 0);
         if (preg_match('/^(.*)\[([0-9\.]+)\]$/', $source, $matches)) {
             $path = $matches[1];
-            $time = (float)$matches[2];
+            $time = (float) $matches[2];
         }
         $ffmpeg = BaseFFMpeg::create(config('mediatheque.services.ffmpeg'));
         $video = $ffmpeg->open($path);
-        $video->frame(TimeCode::fromSeconds($time))
-            ->save($destination);
+        $video->frame(TimeCode::fromSeconds($time))->save($destination);
 
         return $destination;
     }
@@ -82,9 +86,10 @@ class FFMpeg implements DimensionGetter, ThumbnailCreatorContract, DurationGette
     {
         try {
             $ffprobe = FFProbe::create(config('mediatheque.services.ffmpeg'));
-            $stream = $ffprobe->streams($path)
-                                ->videos()
-                                ->first();
+            $stream = $ffprobe
+                ->streams($path)
+                ->videos()
+                ->first();
             $width = $stream->get('width');
             $height = $stream->get('height');
         } catch (Exception $e) {

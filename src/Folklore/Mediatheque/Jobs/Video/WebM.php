@@ -11,6 +11,6 @@ class WebM extends FFMpegJob
 
     protected $defaultOptions = [
         'quality' => 20,
-        'extension' => '.webm'
+        'extension' => 'webm'
     ];
 }

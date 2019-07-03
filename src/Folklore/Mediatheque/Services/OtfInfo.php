@@ -2,12 +2,12 @@
 
 namespace Folklore\Mediatheque\Services;
 
-use Folklore\Mediatheque\Contracts\Getter\FamilyName as FamilyNameGetter;
-
+use Folklore\Mediatheque\Contracts\Services\FontFamilyName;
 use Illuminate\Support\Facades\Log;
-use Exception;
+use Symfony\Component\Process\Process;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
-class OtfInfo implements FamilyNameGetter
+class OtfInfo implements FontFamilyName
 {
     /**
      * Get family name from a file
@@ -15,26 +15,27 @@ class OtfInfo implements FamilyNameGetter
      * @param  string  $path
      * @return string
      */
-    public function getFamilyName($path)
+    public function getFontFamilyName($path)
     {
         try {
-            $command = [
+            $process = new Process([
                 config('mediatheque.services.otfinfo.bin'),
                 '-a',
-                escapeshellarg($path),
-                '2>&1'
-            ];
+                $path,
+            ]);
 
-            $output = [];
-            $return = 0;
-            exec(implode(' ', $command), $output, $return);
+            $process->run();
 
-            if ($return !== 0) {
-                throw new Exception('otfinfo failed return code :'.$return.' '.implode(PHP_EOL, $output));
+            if (!$process->isSuccessful()) {
+                throw new ProcessFailedException($process);
             }
 
-            return trim(implode(' ', $output));
-        } catch (Exception $e) {
+            return trim($process->getOutput());
+        } catch (ProcessFailedException $e) {
+            $errorOutput = $process->getErrorOutput();
+            if (preg_match('/(not an OpenType font|OTF file corrupted)/', $errorOutput)) {
+                return null;
+            }
             if (config('mediatheque.debug')) {
                 throw $e;
             } else {

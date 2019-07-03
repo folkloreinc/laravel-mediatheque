@@ -3,8 +3,8 @@
 namespace Folklore\Mediatheque\Support;
 
 use Ramsey\Uuid\Uuid;
-use Folklore\Mediatheque\Contracts\Pipeline as PipelineContract;
-use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesContract;
+use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineContract;
+use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesContract;
 
 class Pipeline extends Definition implements PipelineContract
 {

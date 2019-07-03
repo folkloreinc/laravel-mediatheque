@@ -1,8 +1,7 @@
 <?php
 
 use Folklore\Mediatheque\Support\Pipeline;
-use Folklore\Mediatheque\Contracts\Model\Video;
-use Folklore\Mediatheque\Contracts\Model\Audio;
+use Folklore\Mediatheque\Contracts\Models\Media;
 use Illuminate\Support\Facades\Storage;
 
 class RunPipelineTest extends TestCase
@@ -57,7 +56,7 @@ class RunPipelineTest extends TestCase
         ];
 
         $filePath = public_path('test.mp4');
-        $model = app(Video::class);
+        $model = app(Media::class);
         $model->setOriginalFile($filePath);
         $pipelineModel = $model->runPipeline($pipeline);
         $pipelineModel = $pipelineModel->fresh();
@@ -95,7 +94,7 @@ class RunPipelineTest extends TestCase
         ];
 
         $filePath = public_path('test.wav');
-        $model = app(Audio::class);
+        $model = app(Media::class);
         $model->setOriginalFile($filePath);
         $pipelineModel = $model->runPipeline($pipeline);
         $pipelineModel = $pipelineModel->fresh();

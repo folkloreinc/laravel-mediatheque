@@ -4,33 +4,6 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Bus\Dispatcher;
 use Folklore\Mediatheque\Jobs\Handler;
-use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
-use Folklore\Mediatheque\Support\Interfaces\HasPipelines as HasPipelinesInterface;
-use Folklore\Mediatheque\Contracts\Model\Audio as AudioContract;
-use Folklore\Mediatheque\Contracts\Model\Document as DocumentContract;
-use Folklore\Mediatheque\Contracts\Model\Font as FontContract;
-use Folklore\Mediatheque\Contracts\Model\Image as ImageContract;
-use Folklore\Mediatheque\Contracts\Model\Video as VideoContract;
-use Folklore\Mediatheque\Contracts\Model\File as FileContract;
-use Folklore\Mediatheque\Contracts\Model\Pipeline as PipelineModelContract;
-use Folklore\Mediatheque\Contracts\Model\PipelineJob as PipelineJobContract;
-use Folklore\Mediatheque\Contracts\Type as TypeContract;
-use Folklore\Mediatheque\Contracts\Pipeline as PipelineContract;
-use Folklore\Mediatheque\Contracts\ThumbnailCreator as ThumbnailCreatorContract;
-use Folklore\Mediatheque\Contracts\Getter\Metadata as MetadataGetter;
-use Folklore\Mediatheque\Contracts\Getter\Dimension as DimensionGetter;
-use Folklore\Mediatheque\Contracts\Getter\Duration as DurationGetter;
-use Folklore\Mediatheque\Contracts\Getter\Mime as MimeGetter;
-use Folklore\Mediatheque\Contracts\Getter\Extension as ExtensionGetter;
-use Folklore\Mediatheque\Contracts\Getter\Type as TypeGetter;
-use Folklore\Mediatheque\Contracts\Getter\PagesCount as PagesCountGetter;
-use Folklore\Mediatheque\Contracts\Getter\FamilyName as FamilyNameGetter;
-use Folklore\Mediatheque\Services\Metadata;
-use Folklore\Mediatheque\Services\ThumbnailCreator;
-use Folklore\Mediatheque\Services\FFMpeg;
-use Folklore\Mediatheque\Services\Imagick;
-use Folklore\Mediatheque\Services\AudioWaveForm;
-use Folklore\Mediatheque\Services\OtfInfo;
 use InvalidArgumentException;
 
 class MediathequeServiceProvider extends ServiceProvider
@@ -70,27 +43,45 @@ class MediathequeServiceProvider extends ServiceProvider
         }
 
         // Publish
-        $this->publishes([
-            $migrationsPath => base_path('database/migrations')
-        ], 'migrations');
+        $this->publishes(
+            [
+                $migrationsPath => base_path('database/migrations')
+            ],
+            'migrations'
+        );
 
-        $this->publishes([
-            $configPath => config_path('mediatheque.php')
-        ], 'config');
+        $this->publishes(
+            [
+                $configPath => config_path('mediatheque.php')
+            ],
+            'config'
+        );
     }
 
     public function bootEvents()
     {
         // File attach and detach event
         $fileObserver = $this->app['config']->get('mediatheque.observers.file');
-        $fileAttachedEvent = $this->app['config']->get('mediatheque.events.file_attached', null);
+        $fileAttachedEvent = $this->app['config']->get(
+            'mediatheque.events.file_attached',
+            null
+        );
         if (!is_null($fileAttachedEvent)) {
-            $this->app['events']->listen($fileAttachedEvent, $fileObserver.'@attached');
+            $this->app['events']->listen(
+                $fileAttachedEvent,
+                $fileObserver . '@attached'
+            );
         }
 
-        $fileDetachedEvent = $this->app['config']->get('mediatheque.events.file_detached', null);
+        $fileDetachedEvent = $this->app['config']->get(
+            'mediatheque.events.file_detached',
+            null
+        );
         if (!is_null($fileDetachedEvent)) {
-            $this->app['events']->listen($fileDetachedEvent, $fileObserver.'@detached');
+            $this->app['events']->listen(
+                $fileDetachedEvent,
+                $fileObserver . '@detached'
+            );
         }
     }
 
@@ -99,14 +90,17 @@ class MediathequeServiceProvider extends ServiceProvider
         $dispatcher = app(Dispatcher::class);
         if (method_exists($dispatcher, 'mapUsing')) {
             $dispatcher->mapUsing(function ($command) {
+                // prettier-ignore
                 if ($command instanceof \Folklore\Mediatheque\Jobs\RunPipeline ||
                     $command instanceof \Folklore\Mediatheque\Jobs\RunPipelineJob ||
                     $command instanceof \Folklore\Mediatheque\Support\PipelineJob
                 ) {
-                    return Handler::class.'@handle';
+                    return Handler::class . '@handle';
                 }
                 $className = get_class($command);
-                throw new InvalidArgumentException("No handler registered for command [{$className}]");
+                throw new InvalidArgumentException(
+                    "No handler registered for command [{$className}]"
+                );
             });
         }
     }
@@ -119,13 +113,18 @@ class MediathequeServiceProvider extends ServiceProvider
 
         $config = $this->app['config']->get('mediatheque.routes', []);
         $router = app()->bound('router') ? app('router') : app();
-        $groupConfig = array_only($config, ['middleware', 'domain', 'prefix', 'namespace']);
+        $groupConfig = array_only($config, [
+            'middleware',
+            'domain',
+            'prefix',
+            'namespace'
+        ]);
         $router->group($groupConfig, function ($router) use ($config) {
             if (array_get($config, 'api', null) !== false) {
-                require __DIR__ .'/../../routes/api.php';
+                require __DIR__ . '/../../routes/api.php';
             }
             if (array_get($config, 'upload', null) !== false) {
-                require __DIR__ .'/../../routes/upload.php';
+                require __DIR__ . '/../../routes/upload.php';
             }
         });
     }
@@ -137,14 +136,79 @@ class MediathequeServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->registerMediatheque();
+        $this->registerTypeManager();
+        $this->registerPipelineManager();
+        $this->registerMetadataManager();
+        $this->registerSourceManager();
         $this->registerModels();
         $this->registerPipeline();
         $this->registerType();
-        $this->registerSourceManager();
         $this->registerServices();
-        $this->registerThumbnailCreator();
-        $this->registerGetters();
+        $this->registerMediatheque();
+    }
+
+    /**
+     * Register the type manager
+     *
+     * @return void
+     */
+    public function registerTypeManager()
+    {
+        $this->app->singleton('mediatheque.types', function ($app) {
+            return new TypeManager($app);
+        });
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Type\Factory::class,
+            'mediatheque.types'
+        );
+    }
+
+    /**
+     * Register the pipeline manager
+     *
+     * @return void
+     */
+    public function registerPipelineManager()
+    {
+        $this->app->singleton('mediatheque.pipelines', function ($app) {
+            return new PipelineManager($app);
+        });
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Pipeline\Factory::class,
+            'mediatheque.pipelines'
+        );
+    }
+
+    /**
+     * Register the source manager
+     *
+     * @return void
+     */
+    public function registerSourceManager()
+    {
+        $this->app->bind('mediatheque.sources', function ($app) {
+            return new SourceManager($app, $app['files']);
+        });
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Source\Factory::class,
+            'mediatheque.sources'
+        );
+    }
+
+    /**
+     * Register the source manager
+     *
+     * @return void
+     */
+    public function registerMetadataManager()
+    {
+        $this->app->bind('mediatheque.metadatas', function ($app) {
+            return new MetadataManager($app);
+        });
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Metadata\Factory::class,
+            'mediatheque.metadatas'
+        );
     }
 
     /**
@@ -155,9 +219,11 @@ class MediathequeServiceProvider extends ServiceProvider
     public function registerMediatheque()
     {
         $this->app->singleton('mediatheque', function ($app) {
-            $mediatheque = new Mediatheque($app);
-            $mediatheque->setPipelines($app['config']->get('mediatheque.pipelines', []));
-            $mediatheque->setTypes($app['config']->get('mediatheque.types', []));
+            $mediatheque = new Mediatheque(
+                $app,
+                $app['mediatheque.types'],
+                $app['mediatheque.pipelines']
+            );
             return $mediatheque;
         });
     }
@@ -170,40 +236,27 @@ class MediathequeServiceProvider extends ServiceProvider
     public function registerModels()
     {
         $this->app->bind(
-            AudioContract::class,
-            \Folklore\Mediatheque\Models\Audio::class
+            \Folklore\Mediatheque\Contracts\Models\Media::class,
+            \Folklore\Mediatheque\Models\Media::class
         );
 
         $this->app->bind(
-            DocumentContract::class,
-            \Folklore\Mediatheque\Models\Document::class
+            \Folklore\Mediatheque\Contracts\Models\Metadata::class,
+            \Folklore\Mediatheque\Models\Metadata::class
         );
 
         $this->app->bind(
-            FontContract::class,
-            \Folklore\Mediatheque\Models\Font::class
-        );
-
-        $this->app->bind(
-            ImageContract::class,
-            \Folklore\Mediatheque\Models\Image::class
-        );
-
-        $this->app->bind(
-            VideoContract::class,
-            \Folklore\Mediatheque\Models\Video::class
-        );
-
-        $this->app->bind(
-            FileContract::class,
+            \Folklore\Mediatheque\Contracts\Models\File::class,
             \Folklore\Mediatheque\Models\File::class
         );
+
         $this->app->bind(
-            PipelineModelContract::class,
+            \Folklore\Mediatheque\Contracts\Models\Pipeline::class,
             \Folklore\Mediatheque\Models\Pipeline::class
         );
+
         $this->app->bind(
-            PipelineJobContract::class,
+            \Folklore\Mediatheque\Contracts\Models\PipelineJob::class,
             \Folklore\Mediatheque\Models\PipelineJob::class
         );
     }
@@ -216,7 +269,7 @@ class MediathequeServiceProvider extends ServiceProvider
     public function registerPipeline()
     {
         $this->app->bind(
-            PipelineContract::class,
+            \Folklore\Mediatheque\Contracts\Pipeline\Pipeline::class,
             \Folklore\Mediatheque\Support\Pipeline::class
         );
     }
@@ -229,21 +282,9 @@ class MediathequeServiceProvider extends ServiceProvider
     public function registerType()
     {
         $this->app->bind(
-            TypeContract::class,
+            \Folklore\Mediatheque\Contracts\Type\Type::class,
             \Folklore\Mediatheque\Support\Type::class
         );
-    }
-
-    /**
-     * Register the source manager
-     *
-     * @return void
-     */
-    public function registerSourceManager()
-    {
-        $this->app->bind('mediatheque.source', function ($app) {
-            return new SourceManager($app);
-        });
     }
 
     /**
@@ -253,50 +294,116 @@ class MediathequeServiceProvider extends ServiceProvider
      */
     public function registerServices()
     {
-        $this->app->singleton('mediatheque.services.metadata', Metadata::class);
-        $this->app->singleton('mediatheque.services.ffmpeg', FFMpeg::class);
-        $this->app->singleton('mediatheque.services.imagick', Imagick::class);
-        $this->app->singleton('mediatheque.services.audiowaveform', AudioWaveForm::class);
-        $this->app->singleton('mediatheque.services.otfinfo', OtfInfo::class);
-    }
+        $this->app->singleton(
+            'mediatheque.services.metadata',
+            \Folklore\Mediatheque\Services\Metadata::class
+        );
+        $this->app->singleton(
+            'mediatheque.services.ffmpeg',
+            \Folklore\Mediatheque\Services\FFMpeg::class
+        );
+        $this->app->singleton(
+            'mediatheque.services.imagick',
+            \Folklore\Mediatheque\Services\Imagick::class
+        );
+        $this->app->singleton(
+            'mediatheque.services.audiowaveform',
+            \Folklore\Mediatheque\Services\AudioWaveForm::class
+        );
+        $this->app->singleton(
+            'mediatheque.services.otfinfo',
+            \Folklore\Mediatheque\Services\OtfInfo::class
+        );
+        $this->app->singleton(
+            'mediatheque.services.path_formatter',
+            \Folklore\Mediatheque\Services\PathFormatter::class
+        );
 
-    /**
-     * Register getters
-     *
-     * @return void
-     */
-    public function registerGetters()
-    {
-        $this->app->bind(MimeGetter::class, 'mediatheque.services.metadata');
-        $this->app->bind(ExtensionGetter::class, 'mediatheque.services.metadata');
-        $this->app->bind(MetadataGetter::class, 'mediatheque.services.metadata');
-        $this->app->bind(TypeGetter::class, 'mediatheque.services.metadata');
+        // Font family
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\FontFamilyName::class,
+            'mediatheque.services.otfinfo'
+        );
 
-        $this->app->bind(DimensionGetter::class, 'mediatheque.services.metadata');
-        $this->app->bind('mediatheque.services.dimension.image', 'mediatheque.services.imagick');
-        $this->app->bind('mediatheque.services.dimension.video', 'mediatheque.services.ffmpeg');
+        // Pages count
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\PagesCount::class,
+            'mediatheque.services.imagick'
+        );
 
-        $this->app->bind(DurationGetter::class, 'mediatheque.services.metadata');
-        $this->app->bind('mediatheque.services.duration.audio', 'mediatheque.services.ffmpeg');
-        $this->app->bind('mediatheque.services.duration.video', 'mediatheque.services.ffmpeg');
+        // Dimension
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\Dimension::class,
+            'mediatheque.services.metadata'
+        );
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\ImageDimension::class,
+            'mediatheque.services.imagick'
+        );
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\VideoDimension::class,
+            'mediatheque.services.ffmpeg'
+        );
 
-        $this->app->bind(PagesCountGetter::class, 'mediatheque.services.metadata');
-        $this->app->bind('mediatheque.services.pagescount', 'mediatheque.services.imagick');
+        // Duration
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\Duration::class,
+            'mediatheque.services.metadata'
+        );
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\AudioDuration::class,
+            'mediatheque.services.ffmpeg'
+        );
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\VideoDuration::class,
+            'mediatheque.services.ffmpeg'
+        );
 
-        $this->app->bind(FamilyNameGetter::class, 'mediatheque.services.metadata');
-        $this->app->bind('mediatheque.services.familyname', 'mediatheque.services.otfinfo');
-    }
+        // Thumbnails
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\Thumbnail::class,
+            'mediatheque.services.metadata'
+        );
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\AudioThumbnail::class,
+            'mediatheque.services.audiowaveform'
+        );
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\DocumentThumbnail::class,
+            'mediatheque.services.imagick'
+        );
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\ImageThumbnail::class,
+            'mediatheque.services.imagick'
+        );
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\VideoThumbnail::class,
+            'mediatheque.services.ffmpeg'
+        );
 
-    /**
-     * Register the thumbnail creator
-     *
-     * @return void
-     */
-    public function registerThumbnailCreator()
-    {
-        $this->app->bind('mediatheque.services.thumbnail.audio', 'mediatheque.services.audiowaveform');
-        $this->app->bind('mediatheque.services.thumbnail.video', 'mediatheque.services.ffmpeg');
-        $this->app->bind('mediatheque.services.thumbnail.document', 'mediatheque.services.imagick');
+        // Mime
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\Mime::class,
+            'mediatheque.services.metadata'
+        );
+
+        // Extension
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\Extension::class,
+            'mediatheque.services.metadata'
+        );
+
+        // Metadata
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\Metadata::class,
+            'mediatheque.services.metadata'
+        );
+
+        // Path formatter
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\PathFormatter::class,
+            'mediatheque.services.path_formatter',
+        );
     }
 
     protected function getRouter()

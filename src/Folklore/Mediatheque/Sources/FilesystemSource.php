@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Sources;
 
-use Folklore\Mediatheque\Contracts\Source;
+use Folklore\Mediatheque\Contracts\Source\Source;
 use League\Flysystem\Adapter\Local;
 use Illuminate\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\File\File;

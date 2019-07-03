@@ -3,8 +3,8 @@
 namespace Folklore\Mediatheque\Events;
 
 use Illuminate\Queue\SerializesModels;
-use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
-use Folklore\Mediatheque\Contracts\Model\File as FileContract;
+use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesInterface;
+use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 
 class FileDetached
 {

@@ -2,45 +2,55 @@
 
 namespace Folklore\Mediatheque\Jobs\Font;
 
-use Folklore\Mediatheque\Support\PipelineJob;
-use Folklore\Mediatheque\Contracts\Model\File as FileContract;
-use Exception;
+use Folklore\Mediatheque\Support\ShellJob;
+use Folklore\Mediatheque\Services\PathFormatter as PathFormatterService;
 
-class WebFonts extends PipelineJob
+class WebFonts extends ShellJob
 {
     protected $defaultOptions = [
-        'formats' => ['ttf', 'otf', 'eot', 'woff', 'woff2', 'svg'],
+        'formats' => ['ttf', 'otf', 'eot', 'woff', 'woff2', 'svg']
     ];
 
-    public function handle()
+    protected function getLocalFilePath($file)
+    {
+        if (isset($this->localFilePath)) {
+            return $this->localFilePath;
+        }
+
+        $path = parent::getLocalFilePath($file);
+        $destinationPath = $this->formatDestinationPath($path);
+        app('files')->copy($path, $destinationPath);
+        $this->localFilePath = $destinationPath;
+        return $this->localFilePath;
+    }
+
+    protected function bin()
+    {
+        return config('mediatheque.services.convertFonts.bin');
+    }
+
+    protected function arguments()
     {
         $path = $this->getLocalFilePath($this->file);
+        return [$path];
+    }
 
-        $command = [
-            config('mediatheque.services.convertFonts.bin'),
-            escapeshellarg($path),
-            '2>&1'
-        ];
-
-        $output = [];
-        $return = 0;
-        exec(implode(' ', $command), $output, $return);
-
-        if ($return !== 0) {
-            throw new Exception('convertFonts failed return code :'.$return.' '.implode(PHP_EOL, $output));
-        }
-
+    protected function getOutputFromProcess($process)
+    {
+        $path = $this->getLocalFilePath($this->file);
         $files = [];
         $formats = array_get($this->options, 'formats', []);
+        $pathParts = pathinfo($path);
+        $pathFormatter = app(PathFormatterService::class);
+        $filesystem = app('files');
         foreach ($formats as $format) {
-            $filePath = preg_replace('/\.[a-z0-9]{3,4}$/', '', $path).'.'.$format;
-            if (file_exists($filePath)) {
-                $newFile = app(FileContract::class);
-                $newFile->setFile($filePath);
-                $files[$format] = $newFile;
+            $filePath = $pathFormatter->formatPath('{dirname}/{filename}.{format}', $pathParts, [
+                'format' => $format,
+            ]);
+            if ($filesystem->exists($filePath)) {
+                $files[$format] = $this->makeFileFromPath($filePath);
             }
         }
-
         return $files;
     }
 }

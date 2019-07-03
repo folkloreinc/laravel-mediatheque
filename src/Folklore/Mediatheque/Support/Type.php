@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Support;
 
-use Folklore\Mediatheque\Contracts\Type as TypeContract;
+use Folklore\Mediatheque\Contracts\Type\Type as TypeContract;
 
 class Type extends Definition implements TypeContract
 {
@@ -14,13 +14,13 @@ class Type extends Definition implements TypeContract
 
     protected $mimes;
 
-    protected $getters;
+    protected $metadatas;
 
-    protected $upload = true;
+    protected $canUpload = true;
 
     protected function model()
     {
-        return null;
+        return \Folklore\Mediatheque\Contracts\Models\Media::class;
     }
 
     protected function pipeline()
@@ -33,11 +33,22 @@ class Type extends Definition implements TypeContract
         return [];
     }
 
-    protected function interfaces()
+    protected function metadatas()
     {
-        return [
-            \Folklore\Mediatheque\Contracts\Getter\Metadata::class,
-        ];
+        return [];
+    }
+
+    public function newModel()
+    {
+        $model = resolve($this->getModel());
+        $model->setType($this->getName());
+        return $model;
+    }
+
+    public function newQuery()
+    {
+        $model = resolve($this->getModel());
+        return $model->newQuery()->where($model->getTypeName(), $this->getName());
     }
 
     public function getName()
@@ -58,6 +69,16 @@ class Type extends Definition implements TypeContract
     public function setModel($model)
     {
         return $this->set('model', $model);
+    }
+
+    public function getMetadatas()
+    {
+        return $this->get('metadatas');
+    }
+
+    public function setMetadatas($metadatas)
+    {
+        return $this->set('metadatas', $metadatas);
     }
 
     public function getPipeline()
@@ -82,10 +103,10 @@ class Type extends Definition implements TypeContract
 
     public function canUpload()
     {
-        return $this->get('upload');
+        return $this->get('canUpload');
     }
 
-    public function isType($path, $fileMime = null)
+    public function pathIsType($path, $fileMime = null)
     {
         $mimes = $this->getMimes();
         foreach ($mimes as $mime => $extension) {
@@ -104,7 +125,13 @@ class Type extends Definition implements TypeContract
             'model' => $this->getModel(),
             'pipeline' => $this->getPipeline(),
             'mimes' => $this->getMimes(),
+            'metadatas' => $this->getMetadatas(),
             'upload' => $this->canUpload(),
         ];
+    }
+
+    public function __toString()
+    {
+        return $this->getName();
     }
 }

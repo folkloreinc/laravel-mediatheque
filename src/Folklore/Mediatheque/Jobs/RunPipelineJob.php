@@ -6,18 +6,19 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Bus\Dispatcher;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Folklore\Mediatheque\Support\Pipeline;
-use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
-use Folklore\Mediatheque\Contracts\Model\Pipeline as PipelineModel;
-use Folklore\Mediatheque\Contracts\Model\PipelineJob as PipelineJobModel;
+use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesInterface;
+use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineModel;
+use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobModel;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
-use Illuminate\Contracts\Logging\Log;
 use Exception;
 
 class RunPipelineJob implements ShouldQueue
 {
-    use InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $model;
     public $pipeline;
@@ -69,9 +70,9 @@ class RunPipelineJob implements ShouldQueue
         foreach ($files as $index => $file) {
             $fileHandle = $isIndexed && !is_null($name) ? $name.'.'.$index : $name;
             if (!is_null($fileHandle)) {
-                $this->model->setFile($fileHandle, $newFile);
+                $this->model->setFile($fileHandle, $file);
             } else {
-                $this->model->addFile($newFile);
+                $this->model->addFile($file);
             }
         }
 

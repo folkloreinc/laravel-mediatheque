@@ -1,8 +1,9 @@
 <?php namespace Folklore\Mediatheque\Support\Traits;
 
 use Illuminate\Contracts\Bus\Dispatcher;
-use Folklore\Mediatheque\Contracts\Model\File as FileContract;
-use Folklore\Mediatheque\Contracts\Getter\Metadata as MetadataGetter;
+use Folklore\Mediatheque\Contracts\Models\File as FileContract;
+use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
+use Folklore\Mediatheque\Contracts\Services\Metadata as MetadataService;
 
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -17,67 +18,109 @@ trait HasFiles
         }
     }
 
-    public function setOriginalFile($file, $data = [])
+    public function setOriginalFile($file, $extraData = [])
     {
         if (is_string($file)) {
             $file = new File($file);
         }
 
-        $name = $file instanceof UploadedFile ? $file->getClientOriginalName() : $file->getFilename();
-        $metadata = app(MetadataGetter::class)->getMetadata($file);
-        $modelData = array_merge([
-            'name' => $name
-        ], $metadata, $data);
-        $fileData = array_merge([
-            'metadata' => $metadata,
-            'handle' => 'original'
-        ], $modelData);
-
-        $originalFile = app(FileContract::class);
-        $originalFile->setFile($file, $fileData);
-        $originalFile->save();
-
-        if (sizeof($modelData) || $this->getKey() === null) {
-            $this->fill($modelData);
-            $this->save();
+        // Gather data about the media
+        $name =
+            $file instanceof UploadedFile
+                ? $file->getClientOriginalName()
+                : $file->getFilename();
+        $path = $file->getRealPath();
+        $metadata = app(MetadataService::class)->getMetadata($path);
+        $data = array_merge(
+            [
+                'name' => $name,
+                'type' => $this->type
+            ],
+            $extraData
+        );
+        if (!isset($data['type'])) {
+            $data['type'] = app(TypeFactory::class)->typeFromPath($path);
         }
 
-        $this->setFile('original', $originalFile);
+        // Build original file model
+        $originalFile = app(FileContract::class);
+        $originalFile
+            ->setFile(
+                $file,
+                array_merge($data, [
+                    'handle' => 'original',
+                    'metadata' => $metadata
+                ])
+            )
+            ->save();
+
+        // Save the media model
+        $this->fill($data)
+            ->setMetadata($metadata)
+            ->setFile('original', $originalFile)
+            ->save();
+
+        return $this;
     }
 
+    /**
+     * Get the original file
+     * @return \Folklore\Mediatheque\Contracts\Model\File
+     */
     public function getOriginalFile()
     {
+        $this->loadMissing('files');
         return $this->files->original;
     }
 
+    /**
+     * Set the file for a specific handle
+     * @param string $handle The handle
+     * @param \Folklore\Mediatheque\Contracts\Model\File $file The file to set
+     * @return $this
+     */
     public function setFile($handle, $file)
     {
+        $this->loadMissing('files');
         $currentFile = $this->files->{$handle};
         if ($currentFile) {
             $this->removeFile($currentFile);
         }
-
         if (!is_null($file)) {
             $this->addFile($file, $handle);
         }
+        return $this;
     }
 
+    /**
+     * Remove a file from the files relationship
+     * @param  string|\Folklore\Mediatheque\Contracts\Model\File $handle The handle or tthe file to remove
+     * @return $this
+     */
     public function removeFile($handle)
     {
-        $table = app(FileContract::class)->getTable().'_pivot';
-        $file = $handle instanceof FileContract
-            ? $handle
-            : $this->files()
-                ->where($table.'.handle', $handle)
-                ->first();
+        $table = app(FileContract::class)->getTable() . '_pivot';
+        $file =
+            $handle instanceof FileContract
+                ? $handle
+                : $this->files()
+                    ->where($table . '.handle', $handle)
+                    ->first();
         if ($file) {
             $this->files()->detach($file);
             $this->load('files');
             $eventClass = config('mediatheque.events.file_detached');
             event(new $eventClass($this, $file));
         }
+        return $this;
     }
 
+    /**
+     * Add a file to the files relationship
+     * @param \Folklore\Mediatheque\Contracts\Model\File $file The file model
+     * @param string $handle The handle of the file
+     * @return $this
+     */
     public function addFile($file, $handle = null)
     {
         $this->files()->attach($file, [
@@ -86,6 +129,7 @@ trait HasFiles
         $this->load('files');
         $eventClass = config('mediatheque.events.file_attached');
         event(new $eventClass($this, $file));
+        return $this;
     }
 
     /**
@@ -99,11 +143,11 @@ trait HasFiles
         $key = 'file_id';
         $model = app(FileContract::class);
         $modelClass = get_class($model);
-        $table = $model->getTable().'_pivot';
+        $table = $model->getTable() . '_pivot';
         $query = $this->morphToMany($modelClass, $morphName, $table, null, $key)
-                        ->withTimestamps()
-                        ->withPivot('handle', 'order')
-                        ->orderBy('order', 'asc');
+            ->withTimestamps()
+            ->withPivot('handle', 'order')
+            ->orderBy('order', 'asc');
         return $query;
     }
 

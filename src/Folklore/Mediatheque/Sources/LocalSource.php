@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Sources;
 
-use Folklore\Mediatheque\Contracts\Source;
+use Folklore\Mediatheque\Contracts\Source\Source;
 use Illuminate\Filesystem\Filesystem;
 
 class LocalSource implements Source

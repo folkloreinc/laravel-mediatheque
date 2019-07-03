@@ -1,6 +1,6 @@
 <?php namespace Folklore\Mediatheque\Support\Traits;
 
-use Folklore\Mediatheque\Support\Interfaces\HasFiles as HasFilesInterface;
+use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesInterface;
 
 trait HasUrl
 {

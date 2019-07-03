@@ -14,8 +14,9 @@ if (!function_exists('mediatheque')) {
 
 if (!function_exists('media')) {
     /**
-     * Get the mediatheque instance
+     * Get a model instance from type
      *
+     * @param string $path The path to the media file
      * @return \Folklore\Mediatheque\Mediatheque The mediatheque instance
      */
     function media($path = null)
@@ -24,8 +25,8 @@ if (!function_exists('media')) {
             return app('mediatheque');
         }
         return app('mediatheque')
-            ->type(app(\Folklore\Mediatheque\Contracts\Getter\Type::class)->getType($path))
-            ->model()
+            ->typeFromPath($path)
+            ->newModel()
             ->setOriginalFile($path);
     }
 }

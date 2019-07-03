@@ -13,7 +13,7 @@ class H264 extends FFMpegJob
         'audio_codec' => 'aac',
         'passes' => 1,
         'quality' => 20,
-        'extension' => '.mp4',
+        'extension' => 'mp4',
         'parameters' => [
             '-y',
             '-preset',
