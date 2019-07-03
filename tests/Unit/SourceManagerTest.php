@@ -43,7 +43,7 @@ class SourceManagerTest extends TestCase
      * Test the local source
      *
      * @test
-     * @covers ::createLocalSource
+     * @covers ::createLocalDriver
      */
     public function testPublicSource()
     {
@@ -55,7 +55,7 @@ class SourceManagerTest extends TestCase
      * Test the cloud source
      *
      * @test
-     * @covers ::createFilesystemSource
+     * @covers ::createFilesystemDriver
      */
     public function testCloudSource()
     {

@@ -51,17 +51,4 @@ class MediaTest extends TestCase
         $this->assertEquals($media->type, 'audio');
         $this->assertArrayHasKey('duration', $media->metadata);
     }
-
-    /**
-     * Test font pipeline
-     *
-     * @test
-     */
-    public function testFont()
-    {
-        $media = media(public_path('font.otf'));
-        $media->load('files', 'metadatas');
-        $this->assertEquals($media->type, 'font');
-        $this->assertArrayHasKey('font_family_name', $media->metadata);
-    }
 }
