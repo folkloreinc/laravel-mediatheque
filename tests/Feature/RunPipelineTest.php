@@ -13,7 +13,7 @@ class RunPipelineTest extends TestCase
         $this->artisan('migrate', ['--database' => 'testbench']);
     }
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         $filesPath = public_path('files');
         if (app('files')->exists($filesPath)) {
