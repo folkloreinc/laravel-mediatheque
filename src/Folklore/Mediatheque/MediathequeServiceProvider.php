@@ -402,7 +402,7 @@ class MediathequeServiceProvider extends ServiceProvider
         // Path formatter
         $this->app->bind(
             \Folklore\Mediatheque\Contracts\Services\PathFormatter::class,
-            'mediatheque.services.path_formatter',
+            'mediatheque.services.path_formatter'
         );
     }
 

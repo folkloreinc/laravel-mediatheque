@@ -10,17 +10,7 @@ class RunPipelineTest extends TestCase
     {
         parent::setUp();
 
-        $definition = app('command.migrate')->getDefinition();
-        if ($definition->hasOption('realpath')) {
-            $this->loadMigrationsFrom([
-                '--database' => 'testbench',
-                '--realpath' => realpath(__DIR__.'/../../src/migrations'),
-            ]);
-        } else {
-            $this->artisan('migrate', [
-                '--database' => 'testbench',
-            ]);
-        }
+        $this->artisan('migrate', ['--database' => 'testbench'])->run();
     }
 
     public function tearDown()

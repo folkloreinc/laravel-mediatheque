@@ -8,10 +8,10 @@
 
 @font-face {
   font-family: 'BrandonGrotesque-Regular';
-  src: url('/Users/dmp/Code/laravel-mediatheque/tests/fixture/files/font/2019-07-03/1-060617-webfonts.eot?') format('eot'),
-       url('/Users/dmp/Code/laravel-mediatheque/tests/fixture/files/font/2019-07-03/1-060617-webfonts.woff2') format('woff2'),
-       url('/Users/dmp/Code/laravel-mediatheque/tests/fixture/files/font/2019-07-03/1-060617-webfonts.woff') format('woff'),
-       url('/Users/dmp/Code/laravel-mediatheque/tests/fixture/files/font/2019-07-03/1-060617-webfonts.otf')  format('opentype'),
-       url('/Users/dmp/Code/laravel-mediatheque/tests/fixture/files/font/2019-07-03/1-060617-webfonts.ttf')  format('truetype'),
-       url('/Users/dmp/Code/laravel-mediatheque/tests/fixture/files/font/2019-07-03/1-060617-webfonts.svg#') format('svg');
+  src: url('/Users/dmp/Code/laravel-mediatheque/tests/fixture/files/font/2019-07-03/1-082704-webfonts.eot?') format('eot'),
+       url('/Users/dmp/Code/laravel-mediatheque/tests/fixture/files/font/2019-07-03/1-082704-webfonts.woff2') format('woff2'),
+       url('/Users/dmp/Code/laravel-mediatheque/tests/fixture/files/font/2019-07-03/1-082704-webfonts.woff') format('woff'),
+       url('/Users/dmp/Code/laravel-mediatheque/tests/fixture/files/font/2019-07-03/1-082704-webfonts.otf')  format('opentype'),
+       url('/Users/dmp/Code/laravel-mediatheque/tests/fixture/files/font/2019-07-03/1-082704-webfonts.ttf')  format('truetype'),
+       url('/Users/dmp/Code/laravel-mediatheque/tests/fixture/files/font/2019-07-03/1-082704-webfonts.svg#') format('svg');
 }
