@@ -4,7 +4,7 @@ namespace Folklore\Mediatheque\Contracts\Models;
 
 use Folklore\Mediatheque\Contracts\Metadata\Value;
 
-interface Media
+interface Metadata
 {
     public function fillFromValue(Value $value);
 
