@@ -319,91 +319,42 @@ class MediathequeServiceProvider extends ServiceProvider
             \Folklore\Mediatheque\Services\PathFormatter::class
         );
 
-        // Font family
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\FontFamilyName::class,
-            'mediatheque.services.otfinfo'
-        );
-
-        // Pages count
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\PagesCount::class,
-            'mediatheque.services.imagick'
-        );
-
-        // Dimension
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\Dimension::class,
-            'mediatheque.services.metadata'
-        );
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\ImageDimension::class,
-            'mediatheque.services.imagick'
-        );
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\VideoDimension::class,
-            'mediatheque.services.ffmpeg'
-        );
-
-        // Duration
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\Duration::class,
-            'mediatheque.services.metadata'
-        );
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\AudioDuration::class,
-            'mediatheque.services.ffmpeg'
-        );
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\VideoDuration::class,
-            'mediatheque.services.ffmpeg'
-        );
-
-        // Thumbnails
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\Thumbnail::class,
-            'mediatheque.services.metadata'
-        );
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\AudioThumbnail::class,
-            'mediatheque.services.audiowaveform'
-        );
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\DocumentThumbnail::class,
-            'mediatheque.services.imagick'
-        );
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\ImageThumbnail::class,
-            'mediatheque.services.imagick'
-        );
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\VideoThumbnail::class,
-            'mediatheque.services.ffmpeg'
-        );
-
-        // Mime
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\Mime::class,
-            'mediatheque.services.metadata'
-        );
-
-        // Extension
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\Extension::class,
-            'mediatheque.services.metadata'
-        );
-
-        // Metadata
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\Metadata::class,
-            'mediatheque.services.metadata'
-        );
-
-        // Path formatter
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\PathFormatter::class,
-            'mediatheque.services.path_formatter'
-        );
+        $services = [
+            'mediatheque.services.otfinfo' => [
+                \Folklore\Mediatheque\Contracts\Services\FontFamilyName::class
+            ],
+            'mediatheque.services.imagick' => [
+                \Folklore\Mediatheque\Contracts\Services\ImageDimension::class,
+                \Folklore\Mediatheque\Contracts\Services\PagesCount::class,
+                \Folklore\Mediatheque\Contracts\Services\DocumentThumbnail::class,
+                \Folklore\Mediatheque\Contracts\Services\ImageThumbnail::class
+            ],
+            'mediatheque.services.metadata' => [
+                \Folklore\Mediatheque\Contracts\Services\Dimension::class,
+                \Folklore\Mediatheque\Contracts\Services\Duration::class,
+                \Folklore\Mediatheque\Contracts\Services\Thumbnail::class,
+                \Folklore\Mediatheque\Contracts\Services\Mime::class,
+                \Folklore\Mediatheque\Contracts\Services\Extension::class,
+                \Folklore\Mediatheque\Contracts\Services\Metadata::class
+            ],
+            'mediatheque.services.ffmpeg' => [
+                \Folklore\Mediatheque\Contracts\Services\VideoDimension::class,
+                \Folklore\Mediatheque\Contracts\Services\AudioDuration::class,
+                \Folklore\Mediatheque\Contracts\Services\VideoDuration::class,
+                \Folklore\Mediatheque\Contracts\Services\VideoThumbnail::class
+            ],
+            'mediatheque.services.audiowaveform' => [
+                \Folklore\Mediatheque\Contracts\Services\AudioThumbnail::class
+            ],
+            'mediatheque.services.path_formatter' => [
+                \Folklore\Mediatheque\Contracts\Services\PathFormatter::class
+            ]
+        ];
+        foreach ($services as $key => $aliases) {
+            foreach ($aliases as $alias) {
+                $this->app->alias($key, $alias);
+            }
+        }
     }
 
     protected function getRouter()

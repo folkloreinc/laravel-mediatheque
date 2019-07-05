@@ -30,7 +30,7 @@ class RunPipelineTest extends TestCase
      */
     public function testVideo()
     {
-        config()->set('mediatheque.types.video.pipeline', null);
+        mediatheque()->type('video')->setPipeline(null);
 
         $pipeline = Pipeline::fromJobs([
             'h264' => \Folklore\Mediatheque\Jobs\Video\H264::class,

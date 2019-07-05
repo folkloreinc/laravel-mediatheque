@@ -24,36 +24,31 @@ class Mediatheque
 
     public function types()
     {
-        return $this->typeFactory;
+        return $this->typeFactory->types();
     }
 
     public function type($name)
     {
-        return $this->types()->type($name);
+        return $this->typeFactory->type($name);
     }
 
     public function hasType($name)
     {
-        return $this->types()->hasType($name);
+        return $this->typeFactory->hasType($name);
     }
 
     public function typeFromPath($path)
     {
-        return $this->types()->typeFromPath($path);
-    }
-
-    public function pipelines()
-    {
-        return $this->pipelineFactory;
+        return $this->typeFactory->typeFromPath($path);
     }
 
     public function pipeline($name)
     {
-        return $this->pipelines()->pipeline($name);
+        return $this->pipelineFactory->pipeline($name);
     }
 
     public function hasPipeline($name)
     {
-        return $this->pipelines()->hasPipeline($name);
+        return $this->pipelineFactory->hasPipeline($name);
     }
 }
