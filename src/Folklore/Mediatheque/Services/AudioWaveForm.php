@@ -16,14 +16,14 @@ class AudioWaveForm implements AudioThumbnail
      */
     public function getThumbnail($source, $destination, $options = [])
     {
-        $zoom = array_get($options, 'zoom', 600);
-        $width = array_get($options, 'width', 1200);
-        $height = array_get($options, 'height', 400);
-        $backgroundColor = array_get($options, 'background_color', 'FFFFFF00');
-        $color = array_get($options, 'color', '000000');
-        $borderColor = array_get($options, 'border_color', null);
-        $axisColor = array_get($options, 'axis_label_color', null);
-        $axisLabel = array_get($options, 'axis_label', false);
+        $zoom = data_get($options, 'zoom', 600);
+        $width = data_get($options, 'width', 1200);
+        $height = data_get($options, 'height', 400);
+        $backgroundColor = data_get($options, 'background_color', 'FFFFFF00');
+        $color = data_get($options, 'color', '000000');
+        $borderColor = data_get($options, 'border_color', null);
+        $axisColor = data_get($options, 'axis_label_color', null);
+        $axisLabel = data_get($options, 'axis_label', false);
 
         $command = [];
         $command[] = config('mediatheque.services.audiowaveform.bin');

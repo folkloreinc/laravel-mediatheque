@@ -3,6 +3,7 @@
 namespace Folklore\Mediatheque\Models\Collections;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\HigherOrderCollectionProxy;
 
 class FilesCollection extends Collection
 {
@@ -13,6 +14,10 @@ class FilesCollection extends Collection
     */
     public function __get($key)
     {
+        if (in_array($key, static::$proxies)) {
+            return new HigherOrderCollectionProxy($this, $key);
+        }
+
         return $this->first(function ($item, $index) use ($key) {
             if (!is_object($item)) {
                 $item = $index;

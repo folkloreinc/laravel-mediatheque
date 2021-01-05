@@ -1,4 +1,5 @@
-<?php namespace Folklore\Mediatheque\Models;
+<?php
+namespace Folklore\Mediatheque\Models;
 
 use Illuminate\Database\Eloquent\Model as Eloquent;
 

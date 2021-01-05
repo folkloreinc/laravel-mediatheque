@@ -39,7 +39,7 @@ class WebFonts extends ShellJob
     {
         $path = $this->getLocalFilePath($this->file);
         $files = [];
-        $formats = array_get($this->options, 'formats', []);
+        $formats = data_get($this->options, 'formats', []);
         $pathParts = pathinfo($path);
         $pathFormatter = app(PathFormatterService::class);
         $filesystem = app('files');

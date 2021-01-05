@@ -1,4 +1,5 @@
-<?php namespace Folklore\Mediatheque\Support\Facades;
+<?php
+namespace Folklore\Mediatheque\Support\Facades;
 
 use Illuminate\Support\Facades\Facade;
 

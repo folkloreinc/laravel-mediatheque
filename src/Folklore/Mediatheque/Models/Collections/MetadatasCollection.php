@@ -3,6 +3,7 @@
 namespace Folklore\Mediatheque\Models\Collections;
 
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\HigherOrderCollectionProxy;
 
 class MetadatasCollection extends Collection
 {
@@ -13,6 +14,10 @@ class MetadatasCollection extends Collection
     */
     public function __get($key)
     {
+        if (in_array($key, static::$proxies)) {
+            return new HigherOrderCollectionProxy($this, $key);
+        }
+
         return $this->first(function ($item) use ($key) {
             return $item->name === $key;
         });

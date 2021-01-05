@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque\Models;
 
+use Illuminate\Support\Arr;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 use Folklore\Mediatheque\Contracts\Source\Factory as SourceFactory;
@@ -110,11 +111,11 @@ class File extends Model implements
             );
         }
 
-        $source = $this->getSource(array_get($data, 'source'));
+        $source = $this->getSource(data_get($data, 'source'));
         $source->putFromLocalPath($data['path'], $path);
 
-        $this->fill(array_only($data, $this->fillable))
-            ->setMetadata(array_get($data, 'metadata', []))
+        $this->fill(Arr::only($data, $this->fillable))
+            ->setMetadata(data_get($data, 'metadata', []))
             ->save();
 
         return $this;
@@ -154,7 +155,7 @@ class File extends Model implements
 
     protected function getHandleAttribute()
     {
-        $handle = array_get($this->attributes, 'handle');
+        $handle = data_get($this->attributes, 'handle');
         if ($handle === null) {
             $handle =
                 $this->pivot && $this->pivot->handle
@@ -166,7 +167,7 @@ class File extends Model implements
 
     protected function getSizeHumanAttribute()
     {
-        $size = array_get($this->attributes, 'size');
+        $size = data_get($this->attributes, 'size');
         if (empty($size)) {
             return null;
         }

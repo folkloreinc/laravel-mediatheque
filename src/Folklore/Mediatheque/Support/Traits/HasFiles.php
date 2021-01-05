@@ -1,4 +1,5 @@
-<?php namespace Folklore\Mediatheque\Support\Traits;
+<?php
+namespace Folklore\Mediatheque\Support\Traits;
 
 use Illuminate\Contracts\Bus\Dispatcher;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;

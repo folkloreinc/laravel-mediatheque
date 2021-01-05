@@ -64,7 +64,7 @@ class FFMpeg implements
     public function getThumbnail($source, $destination, $options = [])
     {
         $path = $source;
-        $time = array_get($options, 'time', 0);
+        $time = data_get($options, 'time', 0);
         if (preg_match('/^(.*)\[([0-9\.]+)\]$/', $source, $matches)) {
             $path = $matches[1];
             $time = (float) $matches[2];

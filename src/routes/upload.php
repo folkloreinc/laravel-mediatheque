@@ -1,10 +1,12 @@
 <?php
 
+use Illuminate\Support\Arr;
+
 /**
  * Upload
  */
 $uploadConfig = config('mediatheque.routes.upload', []);
-$uploadGroupConfig = array_only($uploadConfig, ['middleware', 'domain', 'prefix', 'namespace']);
+$uploadGroupConfig = Arr::only($uploadConfig, ['middleware', 'domain', 'prefix', 'namespace']);
 $router->group($uploadGroupConfig, function ($router) {
     $controller = config('mediatheque.routes.upload.controller');
 

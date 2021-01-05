@@ -1,4 +1,5 @@
-<?php namespace Folklore\Mediatheque\Contracts\Support;
+<?php
+namespace Folklore\Mediatheque\Contracts\Support;
 
 interface HasFiles
 {

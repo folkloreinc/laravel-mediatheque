@@ -100,7 +100,7 @@ class LocalSource implements Source
 
     public function getUrl($path)
     {
-        $publicPath = array_get($this->config, 'url', '/');
+        $publicPath = data_get($this->config, 'url', '/');
         return rtrim($publicPath, '/').'/'.ltrim($path, '/');
     }
 }

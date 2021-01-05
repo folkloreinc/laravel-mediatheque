@@ -1,4 +1,5 @@
-<?php namespace Folklore\Mediatheque\Support\Traits;
+<?php
+namespace Folklore\Mediatheque\Support\Traits;
 
 use Folklore\Mediatheque\Contracts\Models\Metadata as MetadataContract;
 use Folklore\Mediatheque\Metadata\ValuesCollection;

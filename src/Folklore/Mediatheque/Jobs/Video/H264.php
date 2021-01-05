@@ -31,7 +31,7 @@ class H264 extends FFMpegJob
     {
         $parameters = parent::getAdditionalParameters();
 
-        $audioCodec = array_get($this->options, 'audio_codec', 'aac');
+        $audioCodec = data_get($this->options, 'audio_codec', 'aac');
         if ($audioCodec === 'aac') {
             $parameters[] = '-strict';
             $parameters[] = '-2';

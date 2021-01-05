@@ -54,17 +54,17 @@ class FFMpegJob extends PipelineJob
         $formatClass = $this->format;
         $format = new $formatClass();
 
-        $audioCodec = array_get($this->options, 'audio_codec', null);
+        $audioCodec = data_get($this->options, 'audio_codec', null);
         if (!is_null($audioCodec)) {
             $format->setAudioCodec($audioCodec);
         }
 
-        $videoCodec = array_get($this->options, 'video_codec', null);
+        $videoCodec = data_get($this->options, 'video_codec', null);
         if (!is_null($videoCodec)) {
             $format->setVideoCodec($videoCodec);
         }
 
-        $passes = array_get($this->options, 'passes', null);
+        $passes = data_get($this->options, 'passes', null);
         if (!is_null($passes)) {
             $format->setPasses($passes);
         }
@@ -79,22 +79,22 @@ class FFMpegJob extends PipelineJob
 
     protected function getAdditionalParameters()
     {
-        $parameters = array_get($this->options, 'parameters', null);
+        $parameters = data_get($this->options, 'parameters', null);
 
-        $quality = array_get($this->options, 'quality', null);
+        $quality = data_get($this->options, 'quality', null);
         if (!is_null($quality)) {
             $parameters[] = '-crf';
             $parameters[] = $quality;
         }
 
-        $resize = array_get($this->options, 'resize', null);
+        $resize = data_get($this->options, 'resize', null);
         if (!is_null($resize)) {
             $parameters[] = '-vf';
             $parameters[] =
                 'scale=' .
-                array_get($resize, 0, '-1') .
+                data_get($resize, 0, '-1') .
                 ':' .
-                array_get($resize, 1, '-1');
+                data_get($resize, 1, '-1');
         }
 
         return $parameters;

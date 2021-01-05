@@ -1,5 +1,8 @@
-<?php namespace Folklore\Mediatheque;
+<?php
+namespace Folklore\Mediatheque;
 
+use Illuminate\Support\Str;
+use Illuminate\Support\Arr;
 use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\Pipeline\Factory as PipelineFactoryContract;
 use Closure;
@@ -102,8 +105,8 @@ class PipelineManager implements PipelineFactoryContract
         if (is_string($config)) {
             $pipeline = $this->app->make($config);
         } elseif (is_array($config)) {
-            $options = array_except($config, ['jobs']);
-            $jobs = array_get($config, 'jobs', []);
+            $options = Arr::except($config, ['jobs']);
+            $jobs = data_get($config, 'jobs', []);
             $pipeline = $this->app->make(PipelineContract::class);
             $pipeline->setOptions($options);
             $pipeline->setJobs($jobs);

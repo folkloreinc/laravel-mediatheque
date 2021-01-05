@@ -49,8 +49,8 @@ class PipelineJob extends Model implements PipelineJobContract
         $pipeline = $this->pipeline;
         $pipelineDefinition = $pipeline->definition;
         $model = app($pipeline->pipelinable_type)->find($pipeline->pipelinable_id);
-        $shouldQueue = array_get($definition, 'queue', $pipelineDefinition->queue);
-        $fromFile = array_get($definition, 'from_file', $pipelineDefinition->from_file);
+        $shouldQueue = data_get($definition, 'queue', $pipelineDefinition->queue);
+        $fromFile = data_get($definition, 'from_file', $pipelineDefinition->from_file);
 
         $file = $model->files->{$fromFile};
         if (!$file) {
@@ -111,7 +111,7 @@ class PipelineJob extends Model implements PipelineJobContract
             !$this->started &&
             !$this->ended &&
             !$this->failed &&
-            array_get($this->definition, 'from_file') === $name
+            data_get($this->definition, 'from_file') === $name
         );
     }
 

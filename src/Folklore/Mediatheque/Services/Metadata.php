@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Services;
 
-use Symfony\Component\HttpFoundation\File\MimeType\MimeTypeGuesser;
+use Symfony\Component\Mime\MimeTypeGuesserInterface;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 use Folklore\Mediatheque\Contracts\Metadata\Factory as MetadataFactory;
 use Folklore\Mediatheque\Contracts\Services\Metadata as MetadataService;
@@ -32,10 +32,12 @@ class Metadata implements
     DurationService
 {
     protected $metadataFactory;
+    protected $mimeTypes;
 
-    public function __construct(MetadataFactory $metadataFactory)
+    public function __construct(MetadataFactory $metadataFactory, MimeTypeGuesserInterface $mimeTypes)
     {
         $this->metadataFactory = $metadataFactory;
+        $this->mimeTypes = $mimeTypes;
     }
 
     /**
@@ -80,7 +82,7 @@ class Metadata implements
     public function getMime($path)
     {
         try {
-            $mime = MimeTypeGuesser::getInstance()->guess($path);
+            $mime = $this->mimeTypes->guessMimeType($path);
             if ($mime === 'application/octet-stream') {
                 $types = array_values(config('mediatheque.types'));
                 $fileExtension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
@@ -115,7 +117,7 @@ class Metadata implements
         $types = array_values(config('mediatheque.types'));
         $fileExtension = pathinfo(!empty($filename) ? $filename : $path, PATHINFO_EXTENSION);
         return array_reduce($types, function ($extension, $type) use ($mime) {
-            $mimes = array_get($type, 'mimes', []);
+            $mimes = data_get($type, 'mimes', []);
             return isset($mimes[$mime]) && $mimes[$mime] !== '*' ? $mimes[$mime] : $extension;
         }, $fileExtension);
     }

@@ -3,6 +3,7 @@
 namespace Folklore\Mediatheque\Support;
 
 use Ramsey\Uuid\Uuid;
+use Illuminate\Support\Arr;
 use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesContract;
 
@@ -24,8 +25,8 @@ class Pipeline extends Definition implements PipelineContract
 
     public function __construct($options = [])
     {
-        $jobs = array_get($options, 'jobs', []);
-        $options = array_except($options, ['jobs']);
+        $jobs = data_get($options, 'jobs', []);
+        $options = Arr::except($options, ['jobs']);
         $this->setOptions($options);
         $this->setOptions($jobs);
     }
@@ -106,7 +107,7 @@ class Pipeline extends Definition implements PipelineContract
     public function __get($name)
     {
         $options = $this->getOptions();
-        return array_get($options, $name);
+        return data_get($options, $name);
     }
 
     public function __sleep()

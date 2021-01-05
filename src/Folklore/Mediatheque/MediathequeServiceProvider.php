@@ -1,6 +1,8 @@
-<?php namespace Folklore\Mediatheque;
+<?php
+namespace Folklore\Mediatheque;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Bus\Dispatcher;
 use Folklore\Mediatheque\Jobs\Handler;
@@ -112,18 +114,18 @@ class MediathequeServiceProvider extends ServiceProvider
         }
 
         $config = $this->app['config']->get('mediatheque.routes', []);
-        $router = app()->bound('router') ? app('router') : app();
-        $groupConfig = array_only($config, [
+        $router = $this->app->bound('router') ? $this->app['router'] : $this->app;
+        $groupConfig = Arr::only($config, [
             'middleware',
             'domain',
             'prefix',
             'namespace'
         ]);
         $router->group($groupConfig, function ($router) use ($config) {
-            if (array_get($config, 'api', null) !== false) {
+            if (data_get($config, 'api', null) !== false) {
                 require __DIR__ . '/../../routes/api.php';
             }
-            if (array_get($config, 'upload', null) !== false) {
+            if (data_get($config, 'upload', null) !== false) {
                 require __DIR__ . '/../../routes/upload.php';
             }
         });
@@ -145,6 +147,7 @@ class MediathequeServiceProvider extends ServiceProvider
         $this->registerType();
         $this->registerServices();
         $this->registerMediatheque();
+        $this->registerMimeTypesGuesser();
     }
 
     /**
@@ -225,6 +228,18 @@ class MediathequeServiceProvider extends ServiceProvider
                 $app['mediatheque.pipelines']
             );
             return $mediatheque;
+        });
+    }
+
+    /**
+     * Register the mime type guesser
+     *
+     * @return void
+     */
+    public function registerMimeTypesGuesser()
+    {
+        $this->app->bind(\Symfony\Component\Mime\MimeTypeGuesserInterface::class, function () {
+            return new \Symfony\Component\Mime\MimeTypes();
         });
     }
 

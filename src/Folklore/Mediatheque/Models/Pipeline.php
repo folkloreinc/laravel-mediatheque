@@ -129,7 +129,7 @@ class Pipeline extends Model implements PipelineContract
 
     public function getDefinitionAttribute()
     {
-        $definition = array_get($this->attributes, 'definition', null);
+        $definition = data_get($this->attributes, 'definition', null);
         return is_string($definition) ? unserialize($definition) : $definition;
     }
 }

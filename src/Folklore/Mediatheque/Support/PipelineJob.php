@@ -58,7 +58,7 @@ abstract class PipelineJob
     protected function formatDestinationPath($path, ...$replaces)
     {
         $pathParts = pathinfo($path);
-        $format = array_get(
+        $format = data_get(
             $this->options,
             'path_format',
             '{dirname}/{filename}-{name}.{extension}'

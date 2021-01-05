@@ -78,11 +78,11 @@ class Imagick implements
      */
     public function getThumbnail($source, $destination, $options = [])
     {
-        $resolution = array_get($options, 'resolution', 150);
-        $format = array_get($options, 'format', 'jpeg');
-        $quality = array_get($options, 'quality', 100);
-        $backgroundColor = array_get($options, 'background', 'white');
-        $font = array_get($options, 'font');
+        $resolution = data_get($options, 'resolution', 150);
+        $format = data_get($options, 'format', 'jpeg');
+        $quality = data_get($options, 'quality', 100);
+        $backgroundColor = data_get($options, 'background', 'white');
+        $font = data_get($options, 'font');
 
         $image = new BaseImagick();
         $image->setResolution($resolution, $resolution);

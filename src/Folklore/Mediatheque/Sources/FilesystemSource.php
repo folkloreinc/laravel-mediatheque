@@ -104,13 +104,13 @@ class FilesystemSource implements Source
 
     protected function getFullPath($path)
     {
-        $prefixPath = array_get($this->config, 'path', '/');
+        $prefixPath = data_get($this->config, 'path', '/');
         return rtrim($prefixPath, '/').'/'.ltrim($path, '/');
     }
 
     protected function getCacheFullPath($path)
     {
-        $prefix = array_get($this->config, 'cache_path', null);
+        $prefix = data_get($this->config, 'cache_path', null);
         $cachePath = $this->getCachePath($path);
         $extension = pathinfo($path, \PATHINFO_EXTENSION);
         return rtrim($prefix, '/').'/'.$cachePath.(empty($extension) ? '':('.'.$extension));
@@ -131,7 +131,7 @@ class FilesystemSource implements Source
 
     protected function existsOnCache($path)
     {
-        $cachePath = array_get($this->config, 'cache_path', null);
+        $cachePath = data_get($this->config, 'cache_path', null);
         if ($cachePath) {
             return file_exists($this->getCacheFullPath($path));
         }

@@ -1,4 +1,5 @@
-<?php namespace Folklore\Mediatheque;
+<?php
+namespace Folklore\Mediatheque;
 
 use Folklore\Mediatheque\Sources\LocalSource;
 use Folklore\Mediatheque\Sources\FilesystemSource;

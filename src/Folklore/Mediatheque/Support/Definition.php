@@ -63,7 +63,7 @@ abstract class Definition implements JsonSerializable, Arrayable, Jsonable
     {
         if (preg_match('/^(set|get)([A-Z].*)$/', $name, $matches)) {
             $method = $matches[1];
-            $property = camel_case($matches[2]);
+            $property = Str::camel($matches[2]);
             if ($this->hasProperty($property)) {
                 array_unshift($arguments, $property);
                 return call_user_func_array([$this, $method], $arguments);
