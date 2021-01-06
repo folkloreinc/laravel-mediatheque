@@ -5,7 +5,6 @@ namespace Folklore\Mediatheque\Models;
 use Carbon\Carbon;
 use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
-use Illuminate\Bus\Dispatcher;
 use Folklore\Mediatheque\Jobs\RunPipelineJob;
 use Exception;
 
@@ -18,7 +17,7 @@ class PipelineJob extends Model implements PipelineJobContract
         'ended' => false,
         'failed' => false,
     ];
-    
+
     protected $dates = [
         'started_at',
         'ended_at',
@@ -57,11 +56,10 @@ class PipelineJob extends Model implements PipelineJobContract
             return;
         }
 
-        $job = new RunPipelineJob($model, $pipeline, $this);
         if ($shouldQueue) {
-            app(Dispatcher::class)->dispatch($job);
+            RunPipelineJob::dispatch($this, $model);
         } else {
-            app(Dispatcher::class)->dispatchNow($job);
+            RunPipelineJob::dispatchNow($this, $model);
         }
     }
 

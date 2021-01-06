@@ -5,6 +5,7 @@ namespace Folklore\Mediatheque\Services;
 use Symfony\Component\Mime\MimeTypeGuesserInterface;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 use Folklore\Mediatheque\Contracts\Metadata\Factory as MetadataFactory;
+use Folklore\Mediatheque\Contracts\Metadata\Values as ValuesContract;
 use Folklore\Mediatheque\Contracts\Services\Metadata as MetadataService;
 use Folklore\Mediatheque\Contracts\Services\Mime as MimeService;
 use Folklore\Mediatheque\Contracts\Services\Extension as ExtensionService;
@@ -34,8 +35,10 @@ class Metadata implements
     protected $metadataFactory;
     protected $mimeTypes;
 
-    public function __construct(MetadataFactory $metadataFactory, MimeTypeGuesserInterface $mimeTypes)
-    {
+    public function __construct(
+        MetadataFactory $metadataFactory,
+        MimeTypeGuesserInterface $mimeTypes
+    ) {
         $this->metadataFactory = $metadataFactory;
         $this->mimeTypes = $mimeTypes;
     }
@@ -59,14 +62,9 @@ class Metadata implements
         $type = is_string($type) ? mediatheque()->type($type) : $type;
         foreach ($type->getMetadatas() as $metadata) {
             $metadata = $this->metadataFactory->metadata($metadata);
-            if ($metadata->hasMultipleValues()) {
-                $values = $metadata->getValue($path);
-                $data = $data->merge($values);
-            } else {
-                $value = $metadata->getValue($path);
-                if (!is_null($value)) {
-                    $data->push($value);
-                }
+            $value = $metadata->getValue($path);
+            if (!is_null($value)) {
+                $data = $data->{$value instanceof ValuesContract ? 'merge' : 'push'}($value);
             }
         }
 
@@ -116,10 +114,14 @@ class Metadata implements
         $mime = app(MimeService::class)->getMime($path);
         $types = array_values(config('mediatheque.types'));
         $fileExtension = pathinfo(!empty($filename) ? $filename : $path, PATHINFO_EXTENSION);
-        return array_reduce($types, function ($extension, $type) use ($mime) {
-            $mimes = data_get($type, 'mimes', []);
-            return isset($mimes[$mime]) && $mimes[$mime] !== '*' ? $mimes[$mime] : $extension;
-        }, $fileExtension);
+        return array_reduce(
+            $types,
+            function ($extension, $type) use ($mime) {
+                $mimes = data_get($type, 'mimes', []);
+                return isset($mimes[$mime]) && $mimes[$mime] !== '*' ? $mimes[$mime] : $extension;
+            },
+            $fileExtension
+        );
     }
 
     /**

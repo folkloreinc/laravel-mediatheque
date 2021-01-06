@@ -2,6 +2,7 @@
 namespace Folklore\Mediatheque;
 
 use Folklore\Mediatheque\Contracts\Metadata\Factory as MetadataFactory;
+use Folklore\Mediatheque\Contracts\Metadata\Reader as MetadataReader;
 
 class MetadataManager implements MetadataFactory
 {
@@ -24,7 +25,7 @@ class MetadataManager implements MetadataFactory
      *
      * @var array
      */
-    protected $readers = [];
+    protected $instances = [];
 
     /**
      * Create a new manager instance.
@@ -45,16 +46,16 @@ class MetadataManager implements MetadataFactory
      *
      * @throws \InvalidArgumentException
      */
-    public function metadata($name)
+    public function metadata($name): MetadataReader
     {
         // If the given driver has not been created before, we will create the instances
         // here and cache it so we can return it next time very quickly. If there is
         // already a driver created by this name, we'll just return that instance.
-        if (!isset($this->readers[$name])) {
-            $this->readers[$name] = $this->createReader($name);
+        if (!isset($this->instances[$name])) {
+            $this->instances[$name] = $this->createReader($name);
         }
 
-        return $this->readers[$name];
+        return $this->instances[$name];
     }
 
     /**
@@ -133,13 +134,13 @@ class MetadataManager implements MetadataFactory
     }
 
     /**
-     * Get all of the created "metadata readers".
+     * Get all of the created "metadata instances".
      *
      * @return array
      */
-    public function getMetadatas()
+    public function getInstances()
     {
-        return $this->readers;
+        return $this->instances;
     }
 
     /**
@@ -148,7 +149,7 @@ class MetadataManager implements MetadataFactory
      * @param string $name
      * @return boolean
      */
-    public function hasMetadata($name)
+    public function hasMetadata($name): bool
     {
         return !is_null(
             $this->app['config']->get('mediatheque.metadatas.' . $name)

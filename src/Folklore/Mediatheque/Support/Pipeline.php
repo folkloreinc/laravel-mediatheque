@@ -23,19 +23,21 @@ class Pipeline extends Definition implements PipelineContract
 
     protected $jobs;
 
-    public function __construct($options = [])
-    {
-        $jobs = data_get($options, 'jobs', []);
-        $options = Arr::except($options, ['jobs']);
-        $this->setOptions($options);
-        $this->setOptions($jobs);
-    }
-
     public static function fromJobs($jobs, $options = [])
     {
         $pipeline = new static($options);
         $pipeline->setJobs($jobs);
         return $pipeline;
+    }
+
+    public function setDefinition($definition)
+    {
+        $this->name = data_get($definition, 'name');
+        $jobs = data_get($definition, 'jobs', []);
+        $options = Arr::except($definition, ['jobs', 'name']);
+        $this->setOptions($options);
+        $this->setJobs($jobs);
+        return $this;
     }
 
     protected function options()

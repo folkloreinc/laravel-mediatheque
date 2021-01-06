@@ -17,7 +17,7 @@ class Value implements ValueContract
         $this->type = $type;
     }
 
-    public function getName()
+    public function getName(): ?string
     {
         return $this->name;
     }
@@ -27,7 +27,7 @@ class Value implements ValueContract
         return $this->value;
     }
 
-    public function getType()
+    public function getType(): string
     {
         return $this->type;
     }

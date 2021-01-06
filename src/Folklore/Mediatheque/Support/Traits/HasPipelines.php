@@ -18,23 +18,23 @@ trait HasPipelines
         return $this->morphMany($modelClass, $morphName);
     }
 
-    public function getRunningPipeline($name)
+    public function hasRunningPipeline($name): bool
     {
         return $this->pipelines()
             ->where('name', $name)
             ->where('ended', false)
-            ->first();
+            ->exists();
     }
 
-    public function runPipeline($pipeline)
+    public function runPipeline($pipeline): ?PipelineContract
     {
         if (is_string($pipeline)) {
             $pipeline = app('mediatheque')->pipeline($pipeline);
         }
 
         $name = $pipeline->getName();
-        if ($pipeline->unique && $this->getRunningPipeline($name)) {
-            return;
+        if ($pipeline->unique && $this->hasRunningPipeline($name)) {
+            return null;
         }
 
         $pipelineModel = app(PipelineContract::class);

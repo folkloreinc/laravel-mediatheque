@@ -2,13 +2,11 @@
 
 namespace Folklore\Mediatheque\Contracts\Metadata;
 
-use Imagine\Image\ImageInterface;
+use Illuminate\Support\Collection;
 
 interface Factory
 {
-    public function metadata($name);
+    public function metadata($name): Reader;
 
-    public function hasMetadata($name);
-
-    public function getMetadatas();
+    public function hasMetadata($name): bool;
 }

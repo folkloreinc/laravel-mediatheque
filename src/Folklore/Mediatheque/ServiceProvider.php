@@ -4,7 +4,6 @@ namespace Folklore\Mediatheque;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Bus\Dispatcher;
 use Folklore\Mediatheque\Jobs\Handler;
 use InvalidArgumentException;
 
@@ -26,7 +25,6 @@ class ServiceProvider extends BaseServiceProvider
     {
         $this->bootPublishes();
         $this->bootEvents();
-        $this->bootDispatcher();
         $this->bootRouter();
     }
 
@@ -78,26 +76,6 @@ class ServiceProvider extends BaseServiceProvider
         $fileDetachedEvent = $this->app['config']->get('mediatheque.events.file_detached', null);
         if (!is_null($fileDetachedEvent)) {
             $this->app['events']->listen($fileDetachedEvent, $fileObserver . '@detached');
-        }
-    }
-
-    public function bootDispatcher()
-    {
-        $dispatcher = app(Dispatcher::class);
-        if (method_exists($dispatcher, 'mapUsing')) {
-            $dispatcher->mapUsing(function ($command) {
-                // prettier-ignore
-                if ($command instanceof \Folklore\Mediatheque\Jobs\RunPipeline ||
-                    $command instanceof \Folklore\Mediatheque\Jobs\RunPipelineJob ||
-                    $command instanceof \Folklore\Mediatheque\Support\PipelineJob
-                ) {
-                    return Handler::class . '@handle';
-                }
-                $className = get_class($command);
-                throw new InvalidArgumentException(
-                    "No handler registered for command [{$className}]"
-                );
-            });
         }
     }
 

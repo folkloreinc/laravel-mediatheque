@@ -4,11 +4,11 @@ namespace Folklore\Mediatheque\Contracts\Metadata;
 
 interface Reader
 {
-    public function setName($name);
+    public function setName(string $name): void;
 
-    public function getName();
+    public function getName(): string;
 
-    public function hasMultipleValues();
+    public function hasMultipleValues(): bool;
 
-    public function getValue($path);
+    public function getValue($path): ?Value;
 }

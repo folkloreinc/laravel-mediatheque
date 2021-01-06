@@ -8,18 +8,17 @@ abstract class Reader implements ReaderContract
 {
     protected $name;
 
-    public function setName($name)
+    public function setName(string $name): void
     {
         $this->name = $name;
-        return $this;
     }
 
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
 
-    public function hasMultipleValues()
+    public function hasMultipleValues(): bool
     {
         return false;
     }

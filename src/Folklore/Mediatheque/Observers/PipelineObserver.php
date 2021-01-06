@@ -2,9 +2,7 @@
 
 namespace Folklore\Mediatheque\Observers;
 
-use Illuminate\Bus\Dispatcher;
 use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
-use Folklore\Mediatheque\Jobs\RunPipeline;
 
 class PipelineObserver
 {

@@ -2,6 +2,10 @@
 
 namespace Folklore\Mediatheque\Support;
 
+use Illuminate\Bus\Queueable;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Support\Str;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesContract;
@@ -10,6 +14,8 @@ use Folklore\Mediatheque\Sources\LocalSource;
 
 abstract class PipelineJob
 {
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
     protected $defaultOptions = [
         'path_format' => '{dirname}/{filename}-{name}.{extension}',
     ];

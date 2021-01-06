@@ -4,9 +4,9 @@ namespace Folklore\Mediatheque\Contracts\Metadata;
 
 interface Value
 {
-    public function getName();
+    public function getName(): ?string;
 
     public function getValue();
 
-    public function getType();
+    public function getType(): string;
 }

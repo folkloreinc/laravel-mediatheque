@@ -3,7 +3,6 @@
 namespace Folklore\Mediatheque\Jobs;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Bus\Dispatcher;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -26,10 +25,10 @@ class RunPipeline implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(HasFilesInterface $model, Pipeline $pipeline = null)
+    public function __construct(Pipeline $pipeline, HasFilesInterface $model)
     {
-        $this->model = $model;
         $this->pipeline = $pipeline;
+        $this->model = $model;
     }
 
     /**

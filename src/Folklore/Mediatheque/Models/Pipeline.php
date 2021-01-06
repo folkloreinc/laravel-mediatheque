@@ -3,6 +3,8 @@
 namespace Folklore\Mediatheque\Models;
 
 use Carbon\Carbon;
+use Illuminate\Support\Arr;
+use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineDefinitionContract;
 use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
 use Folklore\Mediatheque\Jobs\RunPipeline;
@@ -87,9 +89,9 @@ class Pipeline extends Model implements PipelineContract
         $shouldQueue = $this->definition->queue;
         $model = $this->getModel();
         if ($shouldQueue) {
-            RunPipeline::dispatch($model, $this);
+            RunPipeline::dispatch($this, $model);
         } else {
-            RunPipeline::dispatchNow($model, $this);
+            RunPipeline::dispatchNow($this, $model);
         }
     }
 
@@ -119,17 +121,19 @@ class Pipeline extends Model implements PipelineContract
         $this->save();
     }
 
-    public function setDefinitionAttribute($value)
+    public function setDefinitionAttribute(PipelineDefinitionContract $value)
     {
         if (!isset($this->attributes['name'])) {
             $this->attributes['name'] = $value->getName();
         }
-        $this->attributes['definition'] = is_object($value) ? serialize($value) : $value;
+        $this->attributes['definition'] = json_encode($value);
     }
 
-    public function getDefinitionAttribute()
+    public function getDefinitionAttribute($value): ?PipelineDefinitionContract
     {
-        $definition = data_get($this->attributes, 'definition', null);
-        return is_string($definition) ? unserialize($definition) : $definition;
+        $definition = json_decode($value, true);
+        $pipeline = resolve(PipelineDefinitionContract::class);
+        $pipeline->setDefinition($definition);
+        return $pipeline;
     }
 }

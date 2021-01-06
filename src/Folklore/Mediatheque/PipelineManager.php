@@ -26,11 +26,11 @@ class PipelineManager implements PipelineFactoryContract
     protected $customPipelines = [];
 
     /**
-     * The array of created "pipelines".
+     * The array of created "pipelines instances".
      *
      * @var array
      */
-    protected $pipelines = [];
+    protected $instances = [];
 
     /**
      * Create a new manager instance.
@@ -51,16 +51,16 @@ class PipelineManager implements PipelineFactoryContract
      *
      * @throws \InvalidArgumentException
      */
-    public function pipeline($name)
+    public function pipeline($name): PipelineContract
     {
         // If the given driver has not been created before, we will create the instances
         // here and cache it so we can return it next time very quickly. If there is
         // already a driver created by this name, we'll just return that instance.
-        if (!isset($this->pipelines[$name])) {
-            $this->pipelines[$name] = $this->createPipeline($name);
+        if (!isset($this->instances[$name])) {
+            $this->instances[$name] = $this->createPipeline($name);
         }
 
-        return $this->pipelines[$name];
+        return $this->instances[$name];
     }
 
     /**
@@ -105,11 +105,8 @@ class PipelineManager implements PipelineFactoryContract
         if (is_string($config)) {
             $pipeline = $this->app->make($config);
         } elseif (is_array($config)) {
-            $options = Arr::except($config, ['jobs']);
-            $jobs = data_get($config, 'jobs', []);
             $pipeline = $this->app->make(PipelineContract::class);
-            $pipeline->setOptions($options);
-            $pipeline->setJobs($jobs);
+            $pipeline->setDefinition($config);
         } elseif (is_object($config)) {
             $pipeline = $config;
         }
@@ -150,13 +147,13 @@ class PipelineManager implements PipelineFactoryContract
     }
 
     /**
-     * Get all of the created "drivers".
+     * Get all of the created "instances".
      *
      * @return array
      */
-    public function getPipelines()
+    public function getInstances()
     {
-        return $this->pipelines;
+        return $this->instances;
     }
 
     /**
@@ -165,7 +162,7 @@ class PipelineManager implements PipelineFactoryContract
      * @param string $name
      * @return boolean
      */
-    public function hasPipeline($name)
+    public function hasPipeline($name): bool
     {
         return !is_null(
             $this->app['config']->get('mediatheque.pipelines.' . $name)
