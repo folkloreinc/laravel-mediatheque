@@ -1,14 +1,14 @@
 <?php
 namespace Folklore\Mediatheque;
 
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Bus\Dispatcher;
 use Folklore\Mediatheque\Jobs\Handler;
 use InvalidArgumentException;
 
-class MediathequeServiceProvider extends ServiceProvider
+class ServiceProvider extends BaseServiceProvider
 {
     /**
      * Indicates if loading of the provider is deferred.

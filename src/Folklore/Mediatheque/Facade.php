@@ -1,9 +1,9 @@
 <?php
-namespace Folklore\Mediatheque\Support\Facades;
+namespace Folklore\Mediatheque;
 
-use Illuminate\Support\Facades\Facade;
+use Illuminate\Support\Facades\Facade as BaseFacade;
 
-class Mediatheque extends Facade
+class Facade extends BaseFacade
 {
     /**
      * Get the registered name of the component.

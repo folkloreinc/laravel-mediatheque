@@ -27,14 +27,14 @@ class TestCase extends BaseTestCase
     protected function getPackageProviders($app)
     {
         return [
-            \Folklore\Mediatheque\MediathequeServiceProvider::class,
+            \Folklore\Mediatheque\ServiceProvider::class,
         ];
     }
 
     protected function getPackageAliases($app)
     {
         return [
-            'Mediatheque' => \Folklore\Mediatheque\Support\Facades\Mediatheque::class,
+            'Mediatheque' => \Folklore\Mediatheque\Facade::class,
         ];
     }
 }
