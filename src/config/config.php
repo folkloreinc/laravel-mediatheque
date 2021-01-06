@@ -14,33 +14,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Routes
-    |--------------------------------------------------------------------------
-    |
-    | Default configuration for routing in the packages.
-    |
-    */
-    'routes' => [
-        'prefix' => 'mediatheque',
-        'domain' => null,
-        'namespace' => null,
-        'middleware' => ['api'],
-
-        'upload' => [
-            'prefix' => 'upload',
-            'controller' => \Folklore\Mediatheque\Http\Controllers\UploadController::class,
-        ],
-
-        'api' => [
-            'prefix' => 'api',
-            'controllers' => [
-                'media' => \Folklore\Mediatheque\Http\Controllers\MediaController::class,
-            ],
-        ]
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Sources
     |--------------------------------------------------------------------------
     |

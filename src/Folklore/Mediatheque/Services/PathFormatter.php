@@ -31,7 +31,7 @@ class PathFormatter implements PathFormatterContract
             return preg_quote($key, '/');
         }, array_keys($replaces));
         $path = preg_replace_callback(
-            '/\{\s*(' . implode($replaceKeys, '|') . ')\s*\}/i',
+            '/\{\s*(' . implode('|', $replaceKeys) . ')\s*\}/i',
             function ($matches) use ($replaces) {
                 return $replaces[$matches[1]];
             },

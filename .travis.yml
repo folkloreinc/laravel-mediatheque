@@ -25,13 +25,12 @@ env:
       - FFPROBE_BIN=/usr/bin/ffprobe
       - AUDIOWAVEFORM_BIN=/usr/bin/audiowaveform
     matrix:
-      - ILLUMINATE_VERSION=^7.0 PHPUNIT_VERSION=^9.3.3 COVERAGE=true
+      - ILLUMINATE_VERSION=^7.0 COVERAGE=true
 
 before_install:
     - cp ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/xdebug.ini ~/xdebug.ini
     - phpenv config-rm xdebug.ini
     - composer require "illuminate/support:${ILLUMINATE_VERSION}" --no-update --prefer-dist
-    - composer require "phpunit/phpunit:${PHPUNIT_VERSION}" --no-update --prefer-dist
 
 install: travis_retry composer install --no-interaction --prefer-dist
 

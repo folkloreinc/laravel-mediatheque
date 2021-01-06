@@ -35,28 +35,34 @@ class MediathequeServiceProvider extends ServiceProvider
         // Config file path
         $configPath = __DIR__ . '/../../config/config.php';
         $migrationsPath = __DIR__ . '/../../migrations';
+        $routesPath = __DIR__ . '/../../routes';
 
         // Merge files
         $this->mergeConfigFrom($configPath, 'mediatheque');
 
         // Migrations
-        if (method_exists($this, 'loadMigrationsFrom')) {
-            $this->loadMigrationsFrom($migrationsPath);
-        }
+        $this->loadMigrationsFrom($migrationsPath);
 
         // Publish
         $this->publishes(
             [
-                $migrationsPath => base_path('database/migrations')
+                $migrationsPath => base_path('database/migrations'),
             ],
             'migrations'
         );
 
         $this->publishes(
             [
-                $configPath => config_path('mediatheque.php')
+                $configPath => config_path('mediatheque.php'),
             ],
             'config'
+        );
+
+        $this->publishes(
+            [
+                $routesPath => base_path('routes'),
+            ],
+            'routes'
         );
     }
 
@@ -64,26 +70,14 @@ class MediathequeServiceProvider extends ServiceProvider
     {
         // File attach and detach event
         $fileObserver = $this->app['config']->get('mediatheque.observers.file');
-        $fileAttachedEvent = $this->app['config']->get(
-            'mediatheque.events.file_attached',
-            null
-        );
+        $fileAttachedEvent = $this->app['config']->get('mediatheque.events.file_attached', null);
         if (!is_null($fileAttachedEvent)) {
-            $this->app['events']->listen(
-                $fileAttachedEvent,
-                $fileObserver . '@attached'
-            );
+            $this->app['events']->listen($fileAttachedEvent, $fileObserver . '@attached');
         }
 
-        $fileDetachedEvent = $this->app['config']->get(
-            'mediatheque.events.file_detached',
-            null
-        );
+        $fileDetachedEvent = $this->app['config']->get('mediatheque.events.file_detached', null);
         if (!is_null($fileDetachedEvent)) {
-            $this->app['events']->listen(
-                $fileDetachedEvent,
-                $fileObserver . '@detached'
-            );
+            $this->app['events']->listen($fileDetachedEvent, $fileObserver . '@detached');
         }
     }
 
@@ -109,25 +103,8 @@ class MediathequeServiceProvider extends ServiceProvider
 
     public function bootRouter()
     {
-        if ($this->app->routesAreCached()) {
-            return;
-        }
-
-        $config = $this->app['config']->get('mediatheque.routes', []);
-        $router = $this->app->bound('router') ? $this->app['router'] : $this->app;
-        $groupConfig = Arr::only($config, [
-            'middleware',
-            'domain',
-            'prefix',
-            'namespace'
-        ]);
-        $router->group($groupConfig, function ($router) use ($config) {
-            if (data_get($config, 'api', null) !== false) {
-                require __DIR__ . '/../../routes/api.php';
-            }
-            if (data_get($config, 'upload', null) !== false) {
-                require __DIR__ . '/../../routes/upload.php';
-            }
+        $this->app['router']->macro('mediatheque', function ($opts = []) {
+            return $this->app['mediatheque.router']->mediatheque($opts);
         });
     }
 
@@ -146,6 +123,7 @@ class MediathequeServiceProvider extends ServiceProvider
         $this->registerPipeline();
         $this->registerType();
         $this->registerServices();
+        $this->registerRouter();
         $this->registerMediatheque();
         $this->registerMimeTypesGuesser();
     }
@@ -160,10 +138,7 @@ class MediathequeServiceProvider extends ServiceProvider
         $this->app->singleton('mediatheque.types', function ($app) {
             return new TypeManager($app);
         });
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Type\Factory::class,
-            'mediatheque.types'
-        );
+        $this->app->bind(\Folklore\Mediatheque\Contracts\Type\Factory::class, 'mediatheque.types');
     }
 
     /**
@@ -189,7 +164,7 @@ class MediathequeServiceProvider extends ServiceProvider
      */
     public function registerSourceManager()
     {
-        $this->app->bind('mediatheque.sources', function ($app) {
+        $this->app->singleton('mediatheque.sources', function ($app) {
             return new SourceManager($app, $app['files']);
         });
         $this->app->bind(
@@ -205,7 +180,7 @@ class MediathequeServiceProvider extends ServiceProvider
      */
     public function registerMetadataManager()
     {
-        $this->app->bind('mediatheque.metadatas', function ($app) {
+        $this->app->singleton('mediatheque.metadatas', function ($app) {
             return new MetadataManager($app);
         });
         $this->app->bind(
@@ -222,12 +197,19 @@ class MediathequeServiceProvider extends ServiceProvider
     public function registerMediatheque()
     {
         $this->app->singleton('mediatheque', function ($app) {
-            $mediatheque = new Mediatheque(
-                $app,
-                $app['mediatheque.types'],
-                $app['mediatheque.pipelines']
-            );
-            return $mediatheque;
+            return new Mediatheque($app, $app['mediatheque.types'], $app['mediatheque.pipelines']);
+        });
+    }
+
+    /**
+     * Register router
+     *
+     * @return void
+     */
+    public function registerRouter()
+    {
+        $this->app->singleton('mediatheque.router', function ($app) {
+            return new Router($app['router'], $app['mediatheque']);
         });
     }
 
@@ -336,13 +318,13 @@ class MediathequeServiceProvider extends ServiceProvider
 
         $services = [
             'mediatheque.services.otfinfo' => [
-                \Folklore\Mediatheque\Contracts\Services\FontFamilyName::class
+                \Folklore\Mediatheque\Contracts\Services\FontFamilyName::class,
             ],
             'mediatheque.services.imagick' => [
                 \Folklore\Mediatheque\Contracts\Services\ImageDimension::class,
                 \Folklore\Mediatheque\Contracts\Services\PagesCount::class,
                 \Folklore\Mediatheque\Contracts\Services\DocumentThumbnail::class,
-                \Folklore\Mediatheque\Contracts\Services\ImageThumbnail::class
+                \Folklore\Mediatheque\Contracts\Services\ImageThumbnail::class,
             ],
             'mediatheque.services.metadata' => [
                 \Folklore\Mediatheque\Contracts\Services\Dimension::class,
@@ -350,20 +332,20 @@ class MediathequeServiceProvider extends ServiceProvider
                 \Folklore\Mediatheque\Contracts\Services\Thumbnail::class,
                 \Folklore\Mediatheque\Contracts\Services\Mime::class,
                 \Folklore\Mediatheque\Contracts\Services\Extension::class,
-                \Folklore\Mediatheque\Contracts\Services\Metadata::class
+                \Folklore\Mediatheque\Contracts\Services\Metadata::class,
             ],
             'mediatheque.services.ffmpeg' => [
                 \Folklore\Mediatheque\Contracts\Services\VideoDimension::class,
                 \Folklore\Mediatheque\Contracts\Services\AudioDuration::class,
                 \Folklore\Mediatheque\Contracts\Services\VideoDuration::class,
-                \Folklore\Mediatheque\Contracts\Services\VideoThumbnail::class
+                \Folklore\Mediatheque\Contracts\Services\VideoThumbnail::class,
             ],
             'mediatheque.services.audiowaveform' => [
-                \Folklore\Mediatheque\Contracts\Services\AudioThumbnail::class
+                \Folklore\Mediatheque\Contracts\Services\AudioThumbnail::class,
             ],
             'mediatheque.services.path_formatter' => [
-                \Folklore\Mediatheque\Contracts\Services\PathFormatter::class
-            ]
+                \Folklore\Mediatheque\Contracts\Services\PathFormatter::class,
+            ],
         ];
         foreach ($services as $key => $aliases) {
             foreach ($aliases as $alias) {
