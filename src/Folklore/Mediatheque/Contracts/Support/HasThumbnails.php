@@ -1,9 +1,9 @@
 <?php
 namespace Folklore\Mediatheque\Contracts\Support;
 
-use Folklore\Mediatheque\Metadata\ValuesCollection;
+use Illuminate\Support\Collection;
 
 interface HasThumbnails
 {
-    public function getThumbnails();
+    public function getThumbnails(): Collection;
 }

@@ -2,10 +2,9 @@
 
 namespace Folklore\Mediatheque\Services;
 
+use Illuminate\Support\Collection;
 use Symfony\Component\Mime\MimeTypeGuesserInterface;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
-use Folklore\Mediatheque\Contracts\Metadata\Factory as MetadataFactory;
-use Folklore\Mediatheque\Contracts\Metadata\Values as ValuesContract;
 use Folklore\Mediatheque\Contracts\Services\Metadata as MetadataService;
 use Folklore\Mediatheque\Contracts\Services\Mime as MimeService;
 use Folklore\Mediatheque\Contracts\Services\Extension as ExtensionService;
@@ -20,7 +19,6 @@ use Folklore\Mediatheque\Contracts\Services\VideoDimension;
 use Folklore\Mediatheque\Contracts\Services\Duration as DurationService;
 use Folklore\Mediatheque\Contracts\Services\AudioDuration;
 use Folklore\Mediatheque\Contracts\Services\VideoDuration;
-use Folklore\Mediatheque\Metadata\ValuesCollection;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
@@ -32,14 +30,10 @@ class Metadata implements
     DimensionService,
     DurationService
 {
-    protected $metadataFactory;
     protected $mimeTypes;
 
-    public function __construct(
-        MetadataFactory $metadataFactory,
-        MimeTypeGuesserInterface $mimeTypes
-    ) {
-        $this->metadataFactory = $metadataFactory;
+    public function __construct(MimeTypeGuesserInterface $mimeTypes)
+    {
         $this->mimeTypes = $mimeTypes;
     }
 
@@ -49,26 +43,23 @@ class Metadata implements
      * @param  string  $path
      * @return \Folklore\Mediatheque\Metadata\ValuesCollection
      */
-    public function getMetadata($path, $type = null)
+    public function getMetadata($path, $type = null): Collection
     {
         if (is_null($type)) {
             $type = app(TypeFactory::class)->typeFromPath($path);
         }
         if (is_null($type)) {
-            return [];
+            return collect([]);
         }
 
-        $data = new ValuesCollection();
         $type = is_string($type) ? mediatheque()->type($type) : $type;
-        foreach ($type->getMetadatas() as $metadata) {
-            $metadata = $this->metadataFactory->metadata($metadata);
+        return $type->metadatas()->reduce(function ($values, $metadata) use ($path) {
             $value = $metadata->getValue($path);
-            if (!is_null($value)) {
-                $data = $data->{$value instanceof ValuesContract ? 'merge' : 'push'}($value);
+            if (is_null($value)) {
+                return $values;
             }
-        }
-
-        return $data;
+            return $values->{$value instanceof Collection ? 'merge' : 'push'}($value);
+        }, collect([]));
     }
 
     /**

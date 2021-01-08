@@ -23,8 +23,8 @@ class MediathequeTest extends TestCase
         );
         $pipeline = $mediatheque->pipeline('video');
         $this->assertInstanceOf(PipelineContract::class, $pipeline);
-        $this->assertEquals('video', $pipeline->getName());
-        $this->assertEquals(config('mediatheque.pipelines.video.jobs'), $pipeline->getJobs());
+        $this->assertEquals('video', $pipeline->name());
+        $this->assertEquals(config('mediatheque.pipelines.video.jobs'), $pipeline->jobs()->toArray());
     }
 
     /**

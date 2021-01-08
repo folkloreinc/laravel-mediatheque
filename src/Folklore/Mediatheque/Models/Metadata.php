@@ -34,11 +34,16 @@ class Metadata extends Model
     public static function makeFromValue(Value $value)
     {
         $model = static::create();
-        $model->fillFromValue($value);
+        $model->setValue($value);
         return $model;
     }
 
-    public function fillFromValue(Value $value)
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setValue(Value $value)
     {
         $type = $value->getType();
         $valueKey = sprintf('value_%s', $type);
@@ -49,17 +54,9 @@ class Metadata extends Model
         ]);
     }
 
-    public function value()
+    public function getValue()
     {
         $valueKey = sprintf('value_%s', $this->type);
         return $this->{$valueKey};
-    }
-
-    /**
-     * Collections
-     */
-    public function newCollection(array $models = [])
-    {
-        return new MetadatasCollection($models);
     }
 }

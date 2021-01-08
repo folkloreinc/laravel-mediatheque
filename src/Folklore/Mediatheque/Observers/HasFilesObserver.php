@@ -15,8 +15,8 @@ class HasFilesObserver
     public function deleting(HasFilesContract $model)
     {
         $model->load('files');
-        foreach ($model->files as $file) {
+        $model->getFiles()->forEach(function ($file) {
             $file->delete();
-        }
+        });
     }
 }

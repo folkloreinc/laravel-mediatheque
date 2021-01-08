@@ -21,8 +21,7 @@ abstract class Definition implements JsonSerializable, Arrayable, Jsonable
         foreach ($definition as $key => $value) {
             $propertyName = Str::camel($key);
             if ($this->hasProperty($propertyName)) {
-                $methodName = 'set'.Str::studly($key);
-                $this->{$methodName}($value);
+                $this->set($key, $value);
             }
         }
         return $this;
@@ -36,15 +35,12 @@ abstract class Definition implements JsonSerializable, Arrayable, Jsonable
 
     public function get($key)
     {
-        if (isset($this->{$key})) {
-            return $this->{$key};
-        }
-        return $this->{$key}();
+        return isset($this->{$key}) ? $this->{$key} : null;
     }
 
     protected function hasProperty($key)
     {
-        return property_exists($this, $key) || method_exists($this, $key);
+        return property_exists($this, $key);
     }
 
     abstract public function toArray();
@@ -57,17 +53,5 @@ abstract class Definition implements JsonSerializable, Arrayable, Jsonable
     public function toJson($options = 0)
     {
         return json_encode($this->toArray(), $options);
-    }
-
-    public function __call($name, $arguments)
-    {
-        if (preg_match('/^(set|get)([A-Z].*)$/', $name, $matches)) {
-            $method = $matches[1];
-            $property = Str::camel($matches[2]);
-            if ($this->hasProperty($property)) {
-                array_unshift($arguments, $property);
-                return call_user_func_array([$this, $method], $arguments);
-            }
-        }
     }
 }

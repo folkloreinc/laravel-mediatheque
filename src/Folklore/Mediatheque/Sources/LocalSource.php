@@ -98,7 +98,7 @@ class LocalSource implements Source
         return $this->filesystem->copy($realPath, $localPath);
     }
 
-    public function getUrl($path)
+    public function getUrl($path): string
     {
         $publicPath = data_get($this->config, 'url', '/');
         return rtrim($publicPath, '/').'/'.ltrim($path, '/');

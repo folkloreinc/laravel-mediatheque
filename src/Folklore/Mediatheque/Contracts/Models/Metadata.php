@@ -6,7 +6,9 @@ use Folklore\Mediatheque\Contracts\Metadata\Value;
 
 interface Metadata
 {
-    public function fillFromValue(Value $value);
+    public function getName(): string;
 
-    public function value();
+    public function setValue(Value $value);
+
+    public function getValue();
 }

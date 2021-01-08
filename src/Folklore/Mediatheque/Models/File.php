@@ -6,6 +6,7 @@ use Illuminate\Support\Arr;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 use Folklore\Mediatheque\Contracts\Source\Factory as SourceFactory;
+use Folklore\Mediatheque\Contracts\Source\Source as SourceContract;
 use Folklore\Mediatheque\Contracts\Services\Mime as MimeService;
 use Folklore\Mediatheque\Contracts\Services\Extension as ExtensionService;
 use Folklore\Mediatheque\Contracts\Services\Metadata as MetadataService;
@@ -19,10 +20,7 @@ use Folklore\Mediatheque\Models\Collections\FilesCollection;
 use Symfony\Component\HttpFoundation\File\File as HttpFile;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
 
-class File extends Model implements
-    FileContract,
-    HasUrlInterface,
-    HasMetadatasInterface
+class File extends Model implements FileContract, HasUrlInterface, HasMetadatasInterface
 {
     use HasUrl, HasMetadatas;
 
@@ -30,7 +28,7 @@ class File extends Model implements
 
     protected $fillable = ['handle', 'name', 'path', 'source', 'mime', 'size'];
 
-    protected $appends = ['url', 'size_human', 'type'];
+    protected $appends = ['url', 'size_human'];
 
     protected $casts = [
         'handle' => 'string',
@@ -38,7 +36,7 @@ class File extends Model implements
         'path' => 'string',
         'source' => 'string',
         'mime' => 'string',
-        'size' => 'int'
+        'size' => 'int',
     ];
 
     public static function boot()
@@ -51,7 +49,16 @@ class File extends Model implements
         }
     }
 
-    public function setFile($file, $data = [])
+    public function getHandle(): string
+    {
+        $handle = data_get($this->attributes, 'handle');
+        if ($handle === null) {
+            $handle = $this->pivot && $this->pivot->handle ? $this->pivot->handle : null;
+        }
+        return $handle;
+    }
+
+    public function setFile($file, array $data = []): void
     {
         if (is_string($file)) {
             $file = new HttpFile($file);
@@ -81,13 +88,8 @@ class File extends Model implements
 
         if (!isset($data['extension'])) {
             $defaultExtension = $extension;
-            $extension = app(ExtensionService::class)->getExtension(
-                $path,
-                $data['name']
-            );
-            $data['extension'] = !empty($extension)
-                ? $extension
-                : $defaultExtension;
+            $extension = app(ExtensionService::class)->getExtension($path, $data['name']);
+            $data['extension'] = !empty($extension) ? $extension : $defaultExtension;
         }
 
         if (!isset($data['size'])) {
@@ -95,9 +97,7 @@ class File extends Model implements
         }
 
         if (!isset($data['metadata'])) {
-            $data['metadata'] = app(MetadataService::class)->getMetadata(
-                $path
-            );
+            $data['metadata'] = app(MetadataService::class)->getMetadata($path);
         }
 
         if (!isset($data['path'])) {
@@ -115,56 +115,42 @@ class File extends Model implements
         $source->putFromLocalPath($data['path'], $path);
 
         $this->fill(Arr::only($data, $this->fillable))
-            ->setMetadata(data_get($data, 'metadata', []))
+            ->setMetadatas(data_get($data, 'metadata', []))
             ->save();
-
-        return $this;
     }
 
-    public function deleteFile()
+    public function deleteFile(): void
     {
         $source = $this->getSource();
-        return $source->delete($this->path);
+        $source->delete($this->path);
     }
 
-    public function moveFile($newPath)
+    public function moveFile(string $newPath): void
     {
         $source = $this->getSource();
-        return $source->move($this->path, $newPath);
+        $source->move($this->path, $newPath);
     }
 
-    public function copyFile($destinationPath)
+    public function copyFile(string $destinationPath): void
     {
         $source = $this->getSource();
-        return $source->copy($this->path, $destinationPath);
+        $source->copy($this->path, $destinationPath);
     }
 
-    public function downloadFile($localPath)
+    public function downloadFile(string $localPath): void
     {
         $source = $this->getSource();
-        return $source->copyToLocalPath($this->path, $localPath);
+        $source->copyToLocalPath($this->path, $localPath);
     }
 
-    public function getSource($source = null)
+    public function getSource(): SourceContract
     {
-        if (!$source) {
-            $source = $this->source;
-        }
-        return app(SourceFactory::class)->source($source);
+        return app(SourceFactory::class)->source($this->source);
     }
 
-    protected function getHandleAttribute()
-    {
-        $handle = data_get($this->attributes, 'handle');
-        if ($handle === null) {
-            $handle =
-                $this->pivot && $this->pivot->handle
-                    ? $this->pivot->handle
-                    : null;
-        }
-        return $handle;
-    }
-
+    /**
+     * Accessors
+     */
     protected function getSizeHumanAttribute()
     {
         $size = data_get($this->attributes, 'size');
@@ -176,12 +162,9 @@ class File extends Model implements
             ['B', 'kB', 'MB', 'GB', 'TB'][$i];
     }
 
-    /**
-     * Collections
-     */
-    public function newCollection(array $models = [])
+    protected function getUrlAttribute()
     {
-        return new FilesCollection($models);
+        return $this->getUrl();
     }
 
     /**
@@ -196,10 +179,5 @@ class File extends Model implements
         });
 
         return $query;
-    }
-
-    protected function getTypeAttribute()
-    {
-        return 'file';
     }
 }

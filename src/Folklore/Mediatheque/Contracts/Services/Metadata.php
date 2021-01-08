@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque\Contracts\Services;
 
+use Illuminate\Support\Collection;
 use Imagine\Image\ImageInterface;
 
 interface Metadata
@@ -12,5 +13,5 @@ interface Metadata
      * @param  string  $path
      * @return array
      */
-    public function getMetadata($path, $type = null);
+    public function getMetadata($path, $type = null): Collection;
 }

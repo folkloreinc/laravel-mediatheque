@@ -2,27 +2,26 @@
 
 namespace Folklore\Mediatheque\Contracts\Type;
 
+use Illuminate\Support\Collection;
+use Folklore\Mediatheque\Contracts\Models\Media;
+use Folklore\Mediatheque\Contracts\Pipeline\Pipeline;
+use Illuminate\Database\Eloquent\Builder as QueryBuilder;
+
 interface Type
 {
-    public function setName($name);
+    public function name(): string;
 
-    public function getName();
+    public function model(): string;
 
-    public function setModel($model);
+    public function newModel(): Media;
 
-    public function getModel();
+    public function newQuery(): QueryBuilder;
 
-    public function setMimes($mimes);
+    public function metadatas(): Collection;
 
-    public function getMimes();
+    public function pipeline(): ?Pipeline;
 
-    public function setMetadatas($metadatas);
+    public function canUpload(): bool;
 
-    public function getMetadatas();
-
-    public function setPipeline($pipeline);
-
-    public function getPipeline();
-
-    public function pathIsType($path, $mime = null);
+    public function pathIsType(string $path): bool;
 }

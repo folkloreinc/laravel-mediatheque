@@ -1,8 +1,9 @@
 <?php
 namespace Folklore\Mediatheque\Support\Traits;
 
+use Illuminate\Support\Collection;
 use Folklore\Mediatheque\Contracts\Models\Metadata as MetadataContract;
-use Folklore\Mediatheque\Metadata\ValuesCollection;
+use Folklore\Mediatheque\Contracts\Metadata\Value as MetadataValue;
 
 trait HasMetadatas
 {
@@ -20,36 +21,44 @@ trait HasMetadatas
         return $query;
     }
 
-    public function metadata($name)
+    public function getMetadatas(): Collection
     {
-        if ($this->relationLoaded('metadatas')) {
-            return $this->metadatas->{$name};
-        }
-        return $this->metadatas()
-            ->where('name', $name)
-            ->first();
+        return $this->metadatas->mapWithKeys(function ($metadata) {
+            return [
+                $metadata->getName() => $metadata
+            ];
+        });
     }
 
-    public function setMetadata(ValuesCollection $values)
+    public function getMetadata(string $name): MetadataContract
+    {
+        return $this->getMetadatas()->get($name);
+    }
+
+    public function setMetadata(MetadataValue $value)
     {
         if (!$this->exists) {
             $this->save();
         }
-        $this->load('metadatas');
+
+        $name = $value->getName();
+        $metadata = $metadatas->get($name, app(MetadataContract::class));
+        $metadata->setValue($value);
+        $this->metadatas()->save($metadata);
+    }
+
+    public function setMetadatas(Collection $values)
+    {
+        if (!$this->exists) {
+            $this->save();
+        }
+        $metadatas = $this->getMetadatas();
         foreach ($values as $value) {
             $name = $value->getName();
-            $metadata = isset($this->metadatas->{$name})
-                ? $this->metadatas->{$name}
-                : app(MetadataContract::class);
-            $metadata->fillFromValue($value);
+            $metadata = $metadatas->get($name, app(MetadataContract::class));
+            $metadata->setValue($value);
             $this->metadatas()->save($metadata);
         }
         return $this;
-    }
-
-    protected function getMetadataAttribute()
-    {
-        $this->loadMissing('metadatas');
-        return $this->metadatas->toMetadataArray();
     }
 }

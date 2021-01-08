@@ -1,13 +1,17 @@
 <?php
 namespace Folklore\Mediatheque\Contracts\Support;
 
-use Folklore\Mediatheque\Metadata\ValuesCollection;
+use Illuminate\Support\Collection;
+use Folklore\Mediatheque\Contracts\Models\Metadata;
+use Folklore\Mediatheque\Contracts\Metadata\Value as MetadataValue;
 
 interface HasMetadatas
 {
-    public function metadatas();
+    public function getMetadatas(): Collection;
 
-    public function metadata($name);
+    public function getMetadata(string $name): ?Metadata;
 
-    public function setMetadata(ValuesCollection $values);
+    public function setMetadata(MetadataValue $value);
+
+    public function setMetadatas(Collection $values);
 }

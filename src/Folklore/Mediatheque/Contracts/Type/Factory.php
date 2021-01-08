@@ -2,15 +2,15 @@
 
 namespace Folklore\Mediatheque\Contracts\Type;
 
+use Illuminate\Support\Collection;
+
 interface Factory
 {
-    public function typeFromPath($path);
+    public function type(string $name): Type;
 
-    public function type($name);
+    public function hasType(string $name): bool;
 
-    public function hasType($name);
+    public function typeFromPath(string $path): ?Type;
 
-    public function types();
-
-    public function getTypes();
+    public function types(): Collection;
 }

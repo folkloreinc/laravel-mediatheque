@@ -1,9 +1,10 @@
 <?php
 namespace Folklore\Mediatheque;
 
+use Illuminate\Support\Collection;
 use Folklore\Mediatheque\Contracts\Type\Type as TypeContract;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactoryContract;
-use Folklore\Mediatheque\Contracts\Services\Mime as MimeService;
+use Folklore\Mediatheque\Support\Type;
 
 class TypeManager implements TypeFactoryContract
 {
@@ -22,11 +23,11 @@ class TypeManager implements TypeFactoryContract
     protected $customTypes = [];
 
     /**
-     * The array of created "types".
+     * The array of created "instances".
      *
      * @var array
      */
-    protected $types = [];
+    protected $instances = [];
 
     /**
      * Create a new manager instance.
@@ -47,16 +48,16 @@ class TypeManager implements TypeFactoryContract
      *
      * @throws \InvalidArgumentException
      */
-    public function type($name)
+    public function type(string $name): TypeContract
     {
         // If the given driver has not been created before, we will create the instances
         // here and cache it so we can return it next time very quickly. If there is
         // already a driver created by this name, we'll just return that instance.
-        if (!isset($this->types[$name])) {
-            $this->types[$name] = $this->createType($name);
+        if (!isset($this->instances[$name])) {
+            $this->instances[$name] = $this->createType($name);
         }
 
-        return $this->types[$name];
+        return $this->instances[$name];
     }
 
     /**
@@ -65,16 +66,11 @@ class TypeManager implements TypeFactoryContract
      * @param  string  $path
      * @return string
      */
-    public function typeFromPath($path)
+    public function typeFromPath(string $path): ?TypeContract
     {
-        $fileMime = app(MimeService::class)->getMime($path);
-        $types = $this->types();
-        foreach ($types as $type) {
-            if ($type->pathIsType($path, $fileMime)) {
-                return $type;
-            }
-        }
-        return null;
+        return $this->types()->first(function ($type) use ($path) {
+            return $type->pathIsType($path);
+        });
     }
 
     /**
@@ -85,20 +81,15 @@ class TypeManager implements TypeFactoryContract
      *
      * @throws \InvalidArgumentException
      */
-    public function types()
+    public function types(): Collection
     {
-        $types = array_merge(
-            array_keys($this->app['config']->get('mediatheque.types')),
-            array_keys($this->customTypes)
-        );
-        return array_reduce(
-            $types,
-            function ($map, $type) {
-                $map[$type] = $this->type($type);
-                return $map;
-            },
-            []
-        );
+        return collect(array_keys($this->app['config']->get('mediatheque.types')))
+            ->merge(array_keys($this->customTypes))
+            ->unique()
+            ->values()
+            ->map(function ($name) {
+                return $this->type($name);
+            });
     }
 
     /**
@@ -137,23 +128,17 @@ class TypeManager implements TypeFactoryContract
      *
      * @throws \InvalidArgumentException
      */
-    protected function createTypeInstance($name, $config)
+    protected function createTypeInstance($name, $config): TypeContract
     {
-        $type = null;
         if (is_string($config)) {
-            $type = $this->app->make($config);
-        } elseif (is_array($config)) {
-            $type = $this->app->make(TypeContract::class);
-            $type->setDefinition($config);
-        } elseif (is_object($config)) {
-            $type = $config;
+            return $this->app->make($config);
         }
 
-        if (!is_null($type)) {
-            $type->setName($name);
+        if ($config instanceof TypeContract) {
+            return $config;
         }
 
-        return $type;
+        return new Type($name, $config);
     }
 
     /**
@@ -189,9 +174,9 @@ class TypeManager implements TypeFactoryContract
      *
      * @return array
      */
-    public function getTypes()
+    public function getInstances()
     {
-        return $this->types;
+        return $this->instances;
     }
 
     /**
@@ -200,10 +185,9 @@ class TypeManager implements TypeFactoryContract
      * @param string $name
      * @return boolean
      */
-    public function hasType($name)
+    public function hasType(string $name): bool
     {
-        return !is_null(
-            $this->app['config']->get('mediatheque.types.' . $name)
-        ) || isset($this->customTypes[$name]);
+        return !is_null($this->app['config']->get('mediatheque.types.' . $name)) ||
+            isset($this->customTypes[$name]);
     }
 }

@@ -1,22 +1,17 @@
 <?php
 namespace Folklore\Mediatheque\Support\Traits;
 
+use Illuminate\Support\Collection;
+
 trait HasThumbnails
 {
-    public function getThumbnails()
+    public function getThumbnails(): Collection
     {
-        return $this->files->filter(function ($item) {
-            return $item->pivot && preg_match('/^thumbnail(?::\d*)?/', $item->pivot->handle) === 1;
-        })->values();
-    }
-
-    /**
-     *
-     * Accessors and mutators
-     *
-     */
-    protected function getThumbnailsAttribute()
-    {
-        return $this->getThumbnails();
+        return $this->getFiles()
+            ->filter(function ($item) {
+                $handle = $item->getHandle();
+                return isset($handle) && preg_match('/^thumbnail(?::\d*)?/', $handle) === 1;
+            })
+            ->values();
     }
 }

@@ -24,9 +24,12 @@ if (!function_exists('media')) {
         if (is_null($path)) {
             return app('mediatheque');
         }
-        return app('mediatheque')
-            ->typeFromPath($path)
-            ->newModel()
-            ->setOriginalFile($path);
+        $type = app('mediatheque')->typeFromPath($path);
+        if (is_null($type)) {
+            return null;
+        }
+        $model = $type->newModel();
+        $model->setOriginalFile($path);
+        return $model;
     }
 }

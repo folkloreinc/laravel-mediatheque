@@ -34,9 +34,10 @@ class MediaTest extends TestCase
         $media = media(public_path('test.mp4'));
         $media->load('files', 'metadatas');
         $this->assertEquals($media->type, 'video');
-        $this->assertArrayHasKey('duration', $media->metadata);
-        $this->assertArrayHasKey('width', $media->metadata);
-        $this->assertArrayHasKey('height', $media->metadata);
+        $metadatas = $media->getMetadatas()->toArray();
+        $this->assertArrayHasKey('duration', $metadatas);
+        $this->assertArrayHasKey('width', $metadatas);
+        $this->assertArrayHasKey('height', $metadatas);
     }
 
     /**
@@ -49,6 +50,7 @@ class MediaTest extends TestCase
         $media = media(public_path('test.wav'));
         $media->load('files', 'metadatas');
         $this->assertEquals($media->type, 'audio');
-        $this->assertArrayHasKey('duration', $media->metadata);
+        $metadatas = $media->getMetadatas()->toArray();
+        $this->assertArrayHasKey('duration', $metadatas);
     }
 }

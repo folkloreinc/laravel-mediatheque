@@ -2,19 +2,19 @@
 
 namespace Folklore\Mediatheque\Contracts\Pipeline;
 
+use Illuminate\Support\Collection;
+
 interface Pipeline
 {
-    public function setName($name);
+    public function name(): string;
 
-    public function getName();
+    public function autoStart(): bool;
 
-    public function setOptions($options);
+    public function unique(): bool;
 
-    public function getOptions();
+    public function shouldQueue(): bool;
 
-    public function addJob($name, $job);
+    public function fromFile(): ?string;
 
-    public function setJobs($jobs);
-
-    public function getJobs();
+    public function jobs(): Collection;
 }

@@ -4,116 +4,80 @@ namespace Folklore\Mediatheque\Support;
 
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesContract;
 
 class Pipeline extends Definition implements PipelineContract
 {
-    protected $defaultOptions = [
-        'autostart' => true,
-        'unique' => false,
-        'queue' => true,
-        'from_file' => 'original',
-        'namespace' => null,
-    ];
-
     protected $name;
 
-    protected $options;
+    protected $autoStart = true;
+
+    protected $unique = false;
+
+    protected $shouldQueue = true;
+
+    protected $fromFile = 'original';
 
     protected $jobs;
 
-    public static function fromJobs($jobs, $options = [])
+    public function __construct($name, $definition = [])
     {
-        $pipeline = new static($options);
-        $pipeline->setJobs($jobs);
-        return $pipeline;
+        $this->name = $name;
+
+        if (!is_null($definition)) {
+            $this->setDefinition($definition);
+        }
     }
 
-    public function setDefinition($definition)
+    public static function fromJobs($jobs, $definition = [])
     {
-        $this->name = data_get($definition, 'name');
-        $jobs = data_get($definition, 'jobs', []);
-        $options = Arr::except($definition, ['jobs', 'name']);
-        $this->setOptions($options);
-        $this->setJobs($jobs);
-        return $this;
+        return new static(
+            data_get($definition, 'name', Uuid::uuid1()),
+            array_merge(Arr::except($definition, ['name']), ['jobs' => $jobs])
+        );
     }
 
-    protected function options()
-    {
-        return [];
-    }
-
-    protected function jobs()
-    {
-        return [];
-    }
-
-    protected function name()
-    {
-        return Uuid::uuid1();
-    }
-
-    public function setName($name)
-    {
-        return $this->set('name', $name);
-    }
-
-    public function getName()
+    public function name(): string
     {
         return $this->get('name');
     }
 
-    public function setOptions($options)
+    public function autoStart(): bool
     {
-        return $this->set('options', array_merge($this->defaultOptions, $options));
+        return $this->get('autoStart');
     }
 
-    public function getOptions()
+    public function unique(): bool
     {
-        if (isset($this->options)) {
-            return $this->options;
-        }
-        return array_merge($this->defaultOptions, $this->options());
+        return $this->get('unique');
     }
 
-    public function setJobs($jobs)
+    public function shouldQueue(): bool
     {
-        return $this->set('jobs', $jobs);
+        return $this->get('shouldQueue');
     }
 
-    public function getJobs()
+    public function fromFile(): ?string
     {
-        return $this->get('jobs');
+        return $this->get('fromFile');
     }
 
-    public function addJob($name, $job)
+    public function jobs(): Collection
     {
-        if (!isset($this->jobs)) {
-            $this->jobs = [];
-        }
-        $this->jobs[$name] = $job;
-        return $this;
+        return collect($this->get('jobs'));
     }
 
     public function toArray()
     {
-        $options = $this->getOptions();
-        return array_merge($options, [
-            'name' => $this->getName(),
-            'jobs' => $this->getJobs(),
-        ]);
-    }
-
-    public function __get($name)
-    {
-        $options = $this->getOptions();
-        return data_get($options, $name);
-    }
-
-    public function __sleep()
-    {
-        return ['name', 'options', 'jobs'];
+        return [
+            'name' => $this->name(),
+            'auto_start' => $this->autoStart(),
+            'unique' => $this->unique(),
+            'should_queue' => $this->shouldQueue(),
+            'from_file' => $this->fromFile(),
+            'jobs' => $this->jobs()->toArray(),
+        ];
     }
 }

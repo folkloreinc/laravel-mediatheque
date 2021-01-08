@@ -25,7 +25,7 @@ class UploadController extends Controller
 
         $type = $this->getFileType($file);
         if ($type->canUpload()) {
-            $item = app($type->getModel());
+            $item = $type->newModel();
             return $this->updateItemFromRequest($item, $request);
         }
 

@@ -30,7 +30,7 @@ class RunPipelineTest extends TestCase
      */
     public function testVideo()
     {
-        mediatheque()->type('video')->setPipeline(null);
+        config()->set('mediatheque.types.video.pipeline', null);
 
         $pipeline = Pipeline::fromJobs([
             'h264' => \Folklore\Mediatheque\Jobs\Video\H264::class,
@@ -38,12 +38,7 @@ class RunPipelineTest extends TestCase
             'thumbnails' => \Folklore\Mediatheque\Jobs\Video\Thumbnails::class,
         ]);
 
-        $handles = [
-            'original',
-            'h264',
-            'webm',
-            'thumbnails'
-        ];
+        $handles = ['original', 'h264', 'webm', 'thumbnails'];
 
         $filePath = public_path('test.mp4');
         $model = app(Media::class);
@@ -52,7 +47,14 @@ class RunPipelineTest extends TestCase
         $pipelineModel = $pipelineModel->fresh();
         $model = $model->fresh();
         $model->load('files');
-        $this->assertEquals($handles, $model->files->pluck('handle')->toArray());
+        $this->assertEquals(
+            $handles,
+            $model->files
+                ->map(function ($file) {
+                    return $file->getHandle();
+                })
+                ->toArray()
+        );
 
         $this->assertTrue($pipelineModel->ended);
         $this->assertFalse($pipelineModel->started);
@@ -60,8 +62,8 @@ class RunPipelineTest extends TestCase
         $this->assertTrue($pipelineModel->allJobsEnded());
         $this->assertFalse($pipelineModel->hasFailedJobs());
         foreach ($handles as $handle) {
-            $file = $model->files->{$handle};
-            $this->assertTrue(file_exists(public_path('files/'.$file->path)));
+            $file = $model->getFile($handle);
+            $this->assertTrue(file_exists(public_path('files/' . $file->path)));
         }
     }
 
@@ -78,10 +80,7 @@ class RunPipelineTest extends TestCase
             'thumbnails' => \Folklore\Mediatheque\Jobs\Audio\Thumbnails::class,
         ]);
 
-        $handles = [
-            'original',
-            'thumbnails'
-        ];
+        $handles = ['original', 'thumbnails'];
 
         $filePath = public_path('test.wav');
         $model = app(Media::class);
@@ -91,15 +90,22 @@ class RunPipelineTest extends TestCase
         $model = $model->fresh();
         $model->load('files');
 
-        $this->assertEquals($handles, $model->files->pluck('handle')->toArray());
+        $this->assertEquals(
+            $handles,
+            $model->files
+                ->map(function ($file) {
+                    return $file->getHandle();
+                })
+                ->toArray()
+        );
         $this->assertTrue($pipelineModel->ended);
         $this->assertFalse($pipelineModel->started);
         $this->assertFalse($pipelineModel->failed);
         $this->assertTrue($pipelineModel->allJobsEnded());
         $this->assertFalse($pipelineModel->hasFailedJobs());
         foreach ($handles as $handle) {
-            $file = $model->files->{$handle};
-            $this->assertTrue(file_exists(public_path('files/'.$file->path)));
+            $file = $model->getFile($handle);
+            $this->assertTrue(file_exists(public_path('files/' . $file->path)));
         }
     }
 }

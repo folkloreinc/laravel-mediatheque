@@ -46,7 +46,6 @@ class PipelineRun extends Command
 
         $items = mediatheque()
             ->type($type)
-            ->model()
             ->newQuery()
             ->whereIn('id', $ids)
             ->get();

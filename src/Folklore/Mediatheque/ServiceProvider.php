@@ -99,7 +99,6 @@ class ServiceProvider extends BaseServiceProvider
         $this->registerSourceManager();
         $this->registerModels();
         $this->registerPipeline();
-        $this->registerType();
         $this->registerServices();
         $this->registerRouter();
         $this->registerMediatheque();
@@ -246,19 +245,6 @@ class ServiceProvider extends BaseServiceProvider
         $this->app->bind(
             \Folklore\Mediatheque\Contracts\Pipeline\Pipeline::class,
             \Folklore\Mediatheque\Support\Pipeline::class
-        );
-    }
-
-    /**
-     * Register the type class
-     *
-     * @return void
-     */
-    public function registerType()
-    {
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Type\Type::class,
-            \Folklore\Mediatheque\Support\Type::class
         );
     }
 

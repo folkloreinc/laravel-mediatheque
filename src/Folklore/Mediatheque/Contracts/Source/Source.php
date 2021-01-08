@@ -18,5 +18,5 @@ interface Source
 
     public function copyToLocalPath($path, $localPath);
 
-    public function getUrl($path);
+    public function getUrl($path): string;
 }

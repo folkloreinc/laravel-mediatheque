@@ -3,16 +3,16 @@
 namespace Folklore\Mediatheque\Metadata;
 
 use Illuminate\Support\Collection;
-use Folklore\Mediatheque\Contracts\Metadata\Values as ValuesContract;
+use Folklore\Mediatheque\Contracts\Metadata\Value as ValueContract;
 
-class Values extends Collection implements ValuesContract
+class Values extends Collection implements ValueContract
 {
     public function getName(): ?string
     {
         return null;
     }
 
-    public function getValue(): Collection
+    public function getValue()
     {
         return $this;
     }

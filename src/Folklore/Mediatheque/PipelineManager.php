@@ -3,6 +3,7 @@ namespace Folklore\Mediatheque;
 
 use Illuminate\Support\Str;
 use Illuminate\Support\Arr;
+use Folklore\Mediatheque\Support\Pipeline;
 use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\Pipeline\Factory as PipelineFactoryContract;
 use Closure;
@@ -101,21 +102,15 @@ class PipelineManager implements PipelineFactoryContract
      */
     protected function createPipelineInstance($name, $config)
     {
-        $pipeline = null;
         if (is_string($config)) {
-            $pipeline = $this->app->make($config);
-        } elseif (is_array($config)) {
-            $pipeline = $this->app->make(PipelineContract::class);
-            $pipeline->setDefinition($config);
-        } elseif (is_object($config)) {
-            $pipeline = $config;
+            return $this->app->make($config);
         }
 
-        if (!is_null($pipeline)) {
-            $pipeline->setName($name);
+        if ($config instanceof PipelineContract) {
+            return $config;
         }
 
-        return $pipeline;
+        return new Pipeline($name, $config);
     }
 
     /**

@@ -1,6 +1,8 @@
 <?php
 namespace Folklore\Mediatheque\Support\Traits;
 
+use Illuminate\Support\Collection;
+use Folklore\Mediatheque\Contracts\Pipeline\Factory as PipelineFactory;
 use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
 
 trait HasPipelines
@@ -18,7 +20,12 @@ trait HasPipelines
         return $this->morphMany($modelClass, $morphName);
     }
 
-    public function hasRunningPipeline($name): bool
+    public function getPipelines(): Collection
+    {
+        return $this->pipelines;
+    }
+
+    public function hasRunningPipeline(string $name): bool
     {
         return $this->pipelines()
             ->where('name', $name)
@@ -26,20 +33,20 @@ trait HasPipelines
             ->exists();
     }
 
-    public function runPipeline($pipeline): ?PipelineContract
+    public function runPipeline($definition): ?PipelineContract
     {
-        if (is_string($pipeline)) {
-            $pipeline = app('mediatheque')->pipeline($pipeline);
+        if (is_string($definition)) {
+            $definition = resolve(PipelineFactory::class)->pipeline($definition);
         }
 
-        $name = $pipeline->getName();
-        if ($pipeline->unique && $this->hasRunningPipeline($name)) {
+        $name = $definition->name();
+        if ($definition->unique() && $this->hasRunningPipeline($name)) {
             return null;
         }
 
-        $pipelineModel = app(PipelineContract::class);
-        $pipelineModel->definition = $pipeline;
-        $this->pipelines()->save($pipelineModel);
-        return $pipelineModel;
+        $model = app(PipelineContract::class);
+        $model->setDefinition($definition);
+        $this->pipelines()->save($model);
+        return $model;
     }
 }

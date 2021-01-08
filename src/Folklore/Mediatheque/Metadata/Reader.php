@@ -17,9 +17,4 @@ abstract class Reader implements ReaderContract
     {
         return $this->name;
     }
-
-    public function hasMultipleValues(): bool
-    {
-        return false;
-    }
 }

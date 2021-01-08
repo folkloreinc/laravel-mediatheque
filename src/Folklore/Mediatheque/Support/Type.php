@@ -2,13 +2,22 @@
 
 namespace Folklore\Mediatheque\Support;
 
+use Illuminate\Database\Eloquent\Builder as QueryBuilder;
+use Illuminate\Support\Collection;
+use Folklore\Mediatheque\Contracts\Metadata\Factory as MetadataFactory;
 use Folklore\Mediatheque\Contracts\Type\Type as TypeContract;
+use Folklore\Mediatheque\Contracts\Pipeline\Factory as PipelineFactory;
+use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineContract;
+use Folklore\Mediatheque\Contracts\Models\Media as MediaModelContract;
+use Folklore\Mediatheque\Contracts\Services\Mime as MimeService;
 
 class Type extends Definition implements TypeContract
 {
+    protected static $mimeService;
+
     protected $name;
 
-    protected $model;
+    protected $model = \Folklore\Mediatheque\Contracts\Models\Media::class;
 
     protected $pipeline;
 
@@ -18,100 +27,73 @@ class Type extends Definition implements TypeContract
 
     protected $canUpload = true;
 
-    protected function model()
+    public function __construct($name, $definition = [])
     {
-        return \Folklore\Mediatheque\Contracts\Models\Media::class;
+        $this->name = $name;
+
+        if (!is_null($definition)) {
+            $this->setDefinition($definition);
+        }
     }
 
-    protected function pipeline()
-    {
-        return null;
-    }
-
-    protected function mimes()
-    {
-        return [];
-    }
-
-    protected function metadatas()
-    {
-        return [];
-    }
-
-    public function newModel()
-    {
-        $model = resolve($this->getModel());
-        $model->setType($this->getName());
-        return $model;
-    }
-
-    public function newQuery()
-    {
-        $model = resolve($this->getModel());
-        return $model->newQuery()->where($model->getTypeName(), $this->getName());
-    }
-
-    public function getName()
+    public function name(): string
     {
         return $this->get('name');
     }
 
-    public function setName($name)
-    {
-        return $this->set('name', $name);
-    }
-
-    public function getModel()
+    public function model(): string
     {
         return $this->get('model');
     }
 
-    public function setModel($model)
+    public function newModel(): MediaModelContract
     {
-        return $this->set('model', $model);
+        $model = resolve($this->model());
+        $model->setType($this->name());
+        return $model;
     }
 
-    public function getMetadatas()
+    public function newQuery(): QueryBuilder
     {
-        return $this->get('metadatas');
+        $model = $this->newModel();
+        return $model->newQuery()->where($model->getTypeName(), $this->name());
     }
 
-    public function setMetadatas($metadatas)
+    public function mimes(): array
     {
-        return $this->set('metadatas', $metadatas);
+        $mimes = $this->get('mimes');
+        return isset($mimes) ? $mimes : [];
     }
 
-    public function getPipeline()
+    public function metadatas(): Collection
     {
-        return $this->get('pipeline');
+        $metadatas = $this->get('metadatas');
+        $metadataFactory = resolve(MetadataFactory::class);
+        return collect(isset($metadatas) ? $metadatas : [])->map(function ($metadata) use (
+            $metadataFactory
+        ) {
+            return $metadataFactory->metadata($metadata);
+        });
     }
 
-    public function setPipeline($pipeline)
+    public function pipeline(): ?PipelineContract
     {
-        return $this->set('pipeline', $pipeline);
+        $pipeline = $this->get('pipeline');
+        return !is_null($pipeline) ? resolve(PipelineFactory::class)->pipeline($pipeline) : null;
     }
 
-    public function getMimes()
-    {
-        return $this->get('mimes');
-    }
-
-    public function setMimes($mimes)
-    {
-        return $this->set('mimes', $mimes);
-    }
-
-    public function canUpload()
+    public function canUpload(): bool
     {
         return $this->get('canUpload');
     }
 
-    public function pathIsType($path, $fileMime = null)
+    public function pathIsType(string $path): bool
     {
-        $mimes = $this->getMimes();
-        foreach ($mimes as $mime => $extension) {
+        $fileMime = self::getMimeFromPath($path);
+        $mimes = array_keys($this->mimes());
+        foreach ($mimes as $mime) {
             $pattern = str_replace('\*', '[^\/]+', preg_quote($mime, '/'));
-            if (preg_match('/^'.$pattern.'$/', $fileMime)) {
+            if (preg_match('/^' . $pattern . '$/', $fileMime) === 1) {
                 return true;
             }
         }
@@ -121,17 +103,30 @@ class Type extends Definition implements TypeContract
     public function toArray()
     {
         return [
-            'name' => $this->getName(),
-            'model' => $this->getModel(),
-            'pipeline' => $this->getPipeline(),
-            'mimes' => $this->getMimes(),
-            'metadatas' => $this->getMetadatas(),
+            'name' => $this->name(),
+            'model' => $this->get('model'),
+            'pipeline' => $this->get('pipeline'),
+            'mimes' => $this->mimes(),
+            'metadatas' => $this->metadatas()->toArray(),
             'upload' => $this->canUpload(),
         ];
     }
 
     public function __toString()
     {
-        return $this->getName();
+        return $this->name();
+    }
+
+    protected static function getMimeFromPath(string $path)
+    {
+        return self::getMimeService()->getMime($path);
+    }
+
+    protected static function getMimeService()
+    {
+        if (!isset(static::$mimeService)) {
+            static::$mimeService = resolve(MimeService::class);
+        }
+        return static::$mimeService;
     }
 }

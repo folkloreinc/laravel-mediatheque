@@ -42,8 +42,8 @@ class RunPipeline implements ShouldQueue
 
         $this->model->load('files');
 
-        $definition = $this->pipeline->definition;
-        $jobs = $definition->getJobs();
+        $definition = $this->pipeline->getDefinition();
+        $jobs = $definition->jobs();
         foreach ($jobs as $name => $job) {
             // Ensure job definition is an array and merge handle
             $job = array_merge(
@@ -52,23 +52,19 @@ class RunPipeline implements ShouldQueue
             );
 
             if (!isset($job['from_file']) || is_null($job['from_file'])) {
-                $job['from_file'] = $definition->from_file;
+                $job['from_file'] = $definition->fromFile();
             }
 
-            if (!isset($job['queue']) || is_null($job['queue'])) {
-                $job['queue'] = $definition->queue;
+            if (!isset($job['should_queue']) || is_null($job['should_queue'])) {
+                $job['should_queue'] = $definition->shouldQueue();
             }
 
-            $jobModel = $this->pipeline->jobs()
-                ->where('name', $name)
-                ->first();
+            $jobModel = $this->pipeline->getJob($name);
             if (!$jobModel) {
                 // Create the pipeline job model
                 $jobModel = app(PipelineJob::class);
-                $jobModel->name = $name;
-                $jobModel->pipeline_id = $this->pipeline->id;
-                $jobModel->definition = $job;
-                $jobModel->save();
+                $jobModel->setDefinition($job);
+                $this->pipeline->addJob($jobModel);
             }
 
             // Run the job
@@ -84,7 +80,7 @@ class RunPipeline implements ShouldQueue
      * @param  Exception  $exception
      * @return void
      */
-    public function failed(Exception $exception = null)
+    public function failed($exception = null)
     {
         $this->pipeline->markFailed($exception);
     }

@@ -3,6 +3,7 @@
 namespace Folklore\Mediatheque\Models;
 
 use Carbon\Carbon;
+use Illuminate\Support\Arr;
 use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
 use Folklore\Mediatheque\Jobs\RunPipelineJob;
@@ -26,10 +27,11 @@ class PipelineJob extends Model implements PipelineJobContract
     ];
 
     protected $casts = [
-        'definition' => 'array',
+        'definition' => 'json',
         'started' => 'boolean',
         'ended' => 'boolean',
-        'failed' => 'boolean'
+        'failed' => 'boolean',
+        'failed_exception' => 'string'
     ];
 
     public function pipeline()
@@ -38,39 +40,55 @@ class PipelineJob extends Model implements PipelineJobContract
         return $this->belongsTo($pipelineClass);
     }
 
-    public function run()
+    public function setDefinition(array $definition): void
+    {
+        $this->name = data_get($definition, 'name');
+        $this->definition = Arr::except($definition, ['name']);
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getDefinition(): array
+    {
+        return $this->definition;
+    }
+
+    public function run(): void
     {
         if ($this->started) {
             return;
         }
 
-        $definition = $this->definition;
+        $definition = $this->getDefinition();
         $pipeline = $this->pipeline;
-        $pipelineDefinition = $pipeline->definition;
-        $model = app($pipeline->pipelinable_type)->find($pipeline->pipelinable_id);
-        $shouldQueue = data_get($definition, 'queue', $pipelineDefinition->queue);
-        $fromFile = data_get($definition, 'from_file', $pipelineDefinition->from_file);
+        $pipelineDefinition = $pipeline->getDefinition();
+        $media = $pipeline->getMedia();
+        $shouldQueue = data_get($definition, 'should_queue', $pipelineDefinition->shouldQueue());
+        $fromFile = data_get($definition, 'from_file', $pipelineDefinition->fromFile());
 
-        $file = $model->files->{$fromFile};
+        $file = $media->getFile($fromFile);
         if (!$file) {
             return;
         }
 
         if ($shouldQueue) {
-            RunPipelineJob::dispatch($this, $model);
+            RunPipelineJob::dispatch($this, $media);
         } else {
-            RunPipelineJob::dispatchNow($this, $model);
+            RunPipelineJob::dispatchNow($this, $media);
         }
     }
 
-    public function markStarted()
+    public function markStarted(): void
     {
         $this->started = true;
         $this->started_at = Carbon::now();
         $this->save();
     }
 
-    public function markEnded()
+    public function markEnded(): void
     {
         $this->started = false;
         $this->ended = true;
@@ -78,7 +96,7 @@ class PipelineJob extends Model implements PipelineJobContract
         $this->save();
     }
 
-    public function markFailed(Exception $e = null)
+    public function markFailed(Exception $e = null): void
     {
         $this->started = false;
         $this->failed = true;
@@ -89,21 +107,21 @@ class PipelineJob extends Model implements PipelineJobContract
         $this->save();
     }
 
-    public function canRun($model = null)
+    public function canRun($model = null): bool
     {
         if (is_null($model)) {
-            $model = $this->pipeline->getModel();
+            $model = $this->pipeline->getMedia();
         }
         $fromFile = $this->definition['from_file'];
         return (
             !$this->started &&
             !$this->ended &&
             !$this->failed &&
-            $model->files->{$fromFile}
+            $model->hasFile($fromFile)
         );
     }
 
-    public function isWaitingForFile($name)
+    public function isWaitingForFile($name): bool
     {
         return (
             !$this->started &&
@@ -111,10 +129,5 @@ class PipelineJob extends Model implements PipelineJobContract
             !$this->failed &&
             data_get($this->definition, 'from_file') === $name
         );
-    }
-
-    public function setFailedExceptionAttribute($e)
-    {
-        $this->attributes['failed_exception'] = (string) $e;
     }
 }

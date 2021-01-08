@@ -8,7 +8,5 @@ interface Reader
 
     public function getName(): string;
 
-    public function hasMultipleValues(): bool;
-
     public function getValue($path): ?Value;
 }

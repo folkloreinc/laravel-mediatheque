@@ -89,7 +89,7 @@ class FilesystemSource implements Source
         return $this->filesystem->put($localPath, $contents);
     }
 
-    public function getUrl($path)
+    public function getUrl($path): string
     {
         $disk = $this->getDisk();
         $realPath = $this->getFullPath($path);

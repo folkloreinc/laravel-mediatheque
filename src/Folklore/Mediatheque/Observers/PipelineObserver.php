@@ -14,7 +14,7 @@ class PipelineObserver
      */
     public function created(PipelineContract $model)
     {
-        if ($model->definition->autostart) {
+        if ($model->getDefinition()->autoStart()) {
             $model->start();
         }
     }
