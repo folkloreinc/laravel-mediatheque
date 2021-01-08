@@ -82,6 +82,7 @@ class RunPipeline implements ShouldQueue
      */
     public function failed($exception = null)
     {
+        dd($exception);
         $this->pipeline->markFailed($exception);
     }
 }

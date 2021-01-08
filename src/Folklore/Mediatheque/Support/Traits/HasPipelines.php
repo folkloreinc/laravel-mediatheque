@@ -25,11 +25,22 @@ trait HasPipelines
         return $this->pipelines;
     }
 
-    public function hasRunningPipeline(string $name): bool
+    public function getStartedPipelines(): Collection
+    {
+        return $this->pipelines()
+            ->with('jobs')
+            ->where('started', true)
+            ->where('ended', false)
+            ->where('failed', false)
+            ->get();
+    }
+
+    public function hasPendingPipeline(string $name): bool
     {
         return $this->pipelines()
             ->where('name', $name)
             ->where('ended', false)
+            ->where('failed', false)
             ->exists();
     }
 
@@ -40,7 +51,7 @@ trait HasPipelines
         }
 
         $name = $definition->name();
-        if ($definition->unique() && $this->hasRunningPipeline($name)) {
+        if ($definition->unique() && $this->hasPendingPipeline($name)) {
             return null;
         }
 

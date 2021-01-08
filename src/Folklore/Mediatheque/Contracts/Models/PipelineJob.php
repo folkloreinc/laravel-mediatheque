@@ -2,8 +2,6 @@
 
 namespace Folklore\Mediatheque\Contracts\Models;
 
-use Exception;
-
 interface PipelineJob
 {
     public function getName(): string;
@@ -18,7 +16,7 @@ interface PipelineJob
 
     public function markEnded(): void;
 
-    public function markFailed(Exception $e = null): void;
+    public function markFailed($e = null): void;
 
     public function canRun($model = null): bool;
 

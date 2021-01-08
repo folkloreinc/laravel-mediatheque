@@ -5,13 +5,13 @@ use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesInterface;
 
 trait HasUrl
 {
-    public function getUrl(): string
+    public function getUrl(): ?string
     {
         if ($this instanceof HasFilesInterface) {
             $originalFile = $this->getOriginalFile();
             return $originalFile ? $originalFile->getUrl() : null;
         }
         $source = $this->getSource();
-        return $source->getUrl($this->path);
+        return !is_null($this->path) ? $source->getUrl($this->path) : null;
     }
 }

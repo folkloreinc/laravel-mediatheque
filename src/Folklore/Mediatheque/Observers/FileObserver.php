@@ -30,19 +30,11 @@ class FileObserver
     {
         $model = $event->model;
         $file = $event->file;
-        $modelFile = $model->getFiles()->first(function ($item) use ($file) {
-            return $item->id === $file->id;
-        });
-        $handle = $modelFile ? $modelFile->pivot->handle : null;
+        $handle = $file ? $file->getHandle() : null;
         if ($model instanceof HasPipelinesInterface && !is_null($handle)) {
-            $pipelines = $model->pipelines()
-                ->with('jobs')
-                ->where('started', true)
-                ->where('ended', false)
-                ->where('failed', false)
-                ->get();
+            $pipelines = $model->getStartedPipelines();
             foreach ($pipelines as $pipeline) {
-                foreach ($pipeline->jobs as $job) {
+                foreach ($pipeline->getJobs() as $job) {
                     if ($job->isWaitingForFile($handle)) {
                         $job->run();
                     }

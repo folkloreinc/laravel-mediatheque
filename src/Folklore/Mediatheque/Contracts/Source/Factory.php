@@ -4,9 +4,7 @@ namespace Folklore\Mediatheque\Contracts\Source;
 
 interface Factory
 {
-    public function source($name);
+    public function source($name): Source;
 
-    public function hasSource($name);
-
-    public function getSources();
+    public function hasSource($name): bool;
 }

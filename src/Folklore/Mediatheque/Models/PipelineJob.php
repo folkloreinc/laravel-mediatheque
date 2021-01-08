@@ -7,7 +7,6 @@ use Illuminate\Support\Arr;
 use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
 use Folklore\Mediatheque\Jobs\RunPipelineJob;
-use Exception;
 
 class PipelineJob extends Model implements PipelineJobContract
 {
@@ -96,7 +95,7 @@ class PipelineJob extends Model implements PipelineJobContract
         $this->save();
     }
 
-    public function markFailed(Exception $e = null): void
+    public function markFailed($e = null): void
     {
         $this->started = false;
         $this->failed = true;

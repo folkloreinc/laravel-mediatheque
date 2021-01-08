@@ -8,7 +8,9 @@ interface HasPipelines extends HasFiles
 {
     public function getPipelines(): Collection;
 
-    public function hasRunningPipeline(string $name): bool;
+    public function getStartedPipelines(): Collection;
+
+    public function hasPendingPipeline(string $name): bool;
 
     public function runPipeline($pipeline): ?PipelineContract;
 }

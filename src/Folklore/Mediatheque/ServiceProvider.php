@@ -66,17 +66,26 @@ class ServiceProvider extends BaseServiceProvider
 
     public function bootEvents()
     {
-        // File attach and detach event
-        $fileObserver = $this->app['config']->get('mediatheque.observers.file');
-        $fileAttachedEvent = $this->app['config']->get('mediatheque.events.file_attached', null);
-        if (!is_null($fileAttachedEvent)) {
-            $this->app['events']->listen($fileAttachedEvent, $fileObserver . '@attached');
-        }
+        \Folklore\Mediatheque\Models\Media::observe(
+            \Folklore\Mediatheque\Observers\MediaObserver::class
+        );
 
-        $fileDetachedEvent = $this->app['config']->get('mediatheque.events.file_detached', null);
-        if (!is_null($fileDetachedEvent)) {
-            $this->app['events']->listen($fileDetachedEvent, $fileObserver . '@detached');
-        }
+        \Folklore\Mediatheque\Models\Pipeline::observe(
+            \Folklore\Mediatheque\Observers\PipelineObserver::class
+        );
+
+        \Folklore\Mediatheque\Models\File::observe(
+            \Folklore\Mediatheque\Observers\FileObserver::class
+        );
+
+        $this->app['events']->listen(
+            \Folklore\Mediatheque\Events\FileAttached::class,
+            \Folklore\Mediatheque\Observers\FileObserver::class . '@attached'
+        );
+        $this->app['events']->listen(
+            \Folklore\Mediatheque\Events\FileDetached::class,
+            \Folklore\Mediatheque\Observers\FileObserver::class . '@detached'
+        );
     }
 
     public function bootRouter()

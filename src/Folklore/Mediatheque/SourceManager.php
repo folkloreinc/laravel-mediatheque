@@ -5,6 +5,7 @@ use Folklore\Mediatheque\Sources\LocalSource;
 use Folklore\Mediatheque\Sources\FilesystemSource;
 use Folklore\Mediatheque\Exception\InvalidSourceException;
 use Folklore\Mediatheque\Contracts\Source\Factory as SourceFactoryContract;
+use Folklore\Mediatheque\Contracts\Source\Source as SourceContract;
 use Illuminate\Filesystem\Filesystem;
 
 class SourceManager implements SourceFactoryContract
@@ -31,11 +32,11 @@ class SourceManager implements SourceFactoryContract
     protected $customCreators = [];
 
     /**
-     * The array of created "sources".
+     * The array of created "instances".
      *
      * @var array
      */
-    protected $sources = [];
+    protected $instances = [];
 
     /**
      * Create a new manager instance.
@@ -66,7 +67,7 @@ class SourceManager implements SourceFactoryContract
      */
     protected function createFilesystemDriver($config)
     {
-        return new FilesystemSource($config, $this->files);
+        return new FilesystemSource($config, $this->files, $this->app['filesystem'], $this->app['cache.store']);
     }
 
     /**
@@ -77,7 +78,7 @@ class SourceManager implements SourceFactoryContract
      *
      * @throws \InvalidArgumentException
      */
-    public function source($name = null)
+    public function source($name = null): SourceContract
     {
         $name = $name ?: $this->getDefaultSource();
 
@@ -93,11 +94,11 @@ class SourceManager implements SourceFactoryContract
         // If the given driver has not been created before, we will create the instances
         // here and cache it so we can return it next time very quickly. If there is
         // already a driver created by this name, we'll just return that instance.
-        if (!isset($this->sources[$name])) {
-            $this->sources[$name] = $this->createSource($name);
+        if (!isset($this->instances[$name])) {
+            $this->instances[$name] = $this->createSource($name);
         }
 
-        return $this->sources[$name];
+        return $this->instances[$name];
     }
 
     /**
@@ -194,9 +195,9 @@ class SourceManager implements SourceFactoryContract
      *
      * @return array
      */
-    public function getSources()
+    public function getInstances()
     {
-        return $this->sources;
+        return $this->instances;
     }
 
     /**
@@ -205,7 +206,7 @@ class SourceManager implements SourceFactoryContract
      * @param string $name The source name
      * @return boolean
      */
-    public function hasSource($name)
+    public function hasSource($name): bool
     {
         return isset($this->app['config']['mediatheque.sources.' . $name]);
     }

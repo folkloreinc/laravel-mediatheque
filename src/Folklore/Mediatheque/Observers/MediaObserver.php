@@ -9,9 +9,8 @@ class MediaObserver
 {
     public function created(Model $model)
     {
-        $this->handleEvent('created', $model);
-
-        if ($model instanceof HasPipelinesInterface && $type = $model->getType()) {
+        $type = $model->getType();
+        if (!is_null($type)) {
             $pipeline = $type->pipeline();
             if (!is_null($pipeline)) {
                 $model->runPipeline($pipeline);
@@ -19,32 +18,11 @@ class MediaObserver
         }
     }
 
-    public function updated(Model $model)
-    {
-        $this->handleEvent('updated', $model);
-    }
-
-    public function saved(Model $model)
-    {
-        $this->handleEvent('saved', $model);
-    }
-
     public function deleting(Model $model)
     {
-        $this->handleEvent('deleting', $model);
-    }
-
-    public function restored(Model $model)
-    {
-        $this->handleEvent('restored', $model);
-    }
-
-    protected function handleEvent($name, $model)
-    {
-        $className = config('mediatheque.events.'.$name, null);
-        if (!is_null($className)) {
-            $event = new $className($model);
-            event($event);
-        }
+        $model->load('files');
+        $model->getFiles()->forEach(function ($file) {
+            $file->delete();
+        });
     }
 }

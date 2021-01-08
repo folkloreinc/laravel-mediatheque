@@ -3,7 +3,7 @@
 namespace Folklore\Mediatheque\Events;
 
 use Illuminate\Queue\SerializesModels;
-use Folklore\Mediatheque\Models\Model;
+use Folklore\Mediatheque\Models\Media;
 
 class MediaSaved
 {
@@ -16,7 +16,7 @@ class MediaSaved
      *
      * @return void
      */
-    public function __construct(Model $model)
+    public function __construct(Media $model)
     {
         $this->model = $model;
     }

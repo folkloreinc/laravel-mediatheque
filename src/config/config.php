@@ -220,39 +220,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Events
-    |--------------------------------------------------------------------------
-    |
-    | The events class dispatched by the package
-    |
-    */
-    'events' => [
-        'created' => \Folklore\Mediatheque\Events\MediaCreated::class,
-        'updated' => \Folklore\Mediatheque\Events\MediaUpdated::class,
-        'deleting' => \Folklore\Mediatheque\Events\MediaDeleting::class,
-        'saved' => \Folklore\Mediatheque\Events\MediaSaved::class,
-        'restored' => \Folklore\Mediatheque\Events\MediaRestored::class,
-        'file_attached' => \Folklore\Mediatheque\Events\FileAttached::class,
-        'file_detached' => \Folklore\Mediatheque\Events\FileDetached::class,
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Observers
-    |--------------------------------------------------------------------------
-    |
-    | The events observers used by the package
-    |
-    */
-    'observers' => [
-        'media' => \Folklore\Mediatheque\Observers\MediaObserver::class,
-        'has_files' => \Folklore\Mediatheque\Observers\HasFilesObserver::class,
-        'file' => \Folklore\Mediatheque\Observers\FileObserver::class,
-        'pipeline' => \Folklore\Mediatheque\Observers\PipelineObserver::class,
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Debug
     |--------------------------------------------------------------------------
     |

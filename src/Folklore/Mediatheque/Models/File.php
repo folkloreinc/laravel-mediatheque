@@ -16,6 +16,7 @@ use Folklore\Mediatheque\Contracts\Support\HasUrl as HasUrlInterface;
 use Folklore\Mediatheque\Support\Traits\HasUrl;
 use Folklore\Mediatheque\Support\Traits\HasMetadatas;
 use Folklore\Mediatheque\Models\Collections\FilesCollection;
+use Folklore\Mediatheque\Observers\FileObserver;
 
 use Symfony\Component\HttpFoundation\File\File as HttpFile;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
@@ -39,20 +40,10 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
         'size' => 'int',
     ];
 
-    public static function boot()
+    public function getHandle(): ?string
     {
-        parent::boot();
-
-        $observer = config('mediatheque.observers.file', null);
-        if (!is_null($observer)) {
-            static::observe($observer);
-        }
-    }
-
-    public function getHandle(): string
-    {
-        $handle = data_get($this->attributes, 'handle');
-        if ($handle === null) {
+        $handle = $this->handle;
+        if (is_null($handle)) {
             $handle = $this->pivot && $this->pivot->handle ? $this->pivot->handle : null;
         }
         return $handle;

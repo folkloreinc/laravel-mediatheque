@@ -11,6 +11,11 @@ use Folklore\Mediatheque\Support\Traits\HasMetadatas;
 use Folklore\Mediatheque\Support\Traits\HasUrl;
 use Folklore\Mediatheque\Support\Traits\HasPipelines;
 use Folklore\Mediatheque\Support\Traits\HasThumbnails;
+use Folklore\Mediatheque\Events\MediaCreated;
+use Folklore\Mediatheque\Events\MediaUpdated;
+use Folklore\Mediatheque\Events\MediaSaved;
+use Folklore\Mediatheque\Events\MediaDeleted;
+use Folklore\Mediatheque\Events\MediaRestored;
 
 class Media extends Model implements MediaContract
 {
@@ -21,19 +26,17 @@ class Media extends Model implements MediaContract
     protected $fillable = ['type', 'name'];
 
     /**
-     * The "booting" method of the model.
+     * The event map for the model.
      *
-     * @return void
+     * @var array
      */
-    public static function boot()
-    {
-        parent::boot();
-
-        $observer = config('mediatheque.observers.media', null);
-        if (!is_null($observer)) {
-            static::observe($observer);
-        }
-    }
+    protected $dispatchesEvents = [
+        'created' => MediaCreated::class,
+        'updated' => MediaUpdated::class,
+        'saved' => MediaSaved::class,
+        'deleted' => MediaDeleted::class,
+        'restored' => MediaRestored::class,
+    ];
 
     /**
      * Get the type column name

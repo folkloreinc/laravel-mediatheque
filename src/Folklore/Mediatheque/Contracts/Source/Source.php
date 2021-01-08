@@ -4,19 +4,19 @@ namespace Folklore\Mediatheque\Contracts\Source;
 
 interface Source
 {
-    public function exists($path);
+    public function exists(string $path): bool;
 
-    public function putFromContents($path, $contents);
+    public function putFromContents(string $path, $contents);
 
-    public function putFromLocalPath($path, $localPath);
+    public function putFromLocalPath(string $path, string $localPath);
 
-    public function delete($path);
+    public function delete(string $path);
 
-    public function move($source, $destination);
+    public function move(string $source, string $destination);
 
-    public function copy($source, $destination);
+    public function copy(string $source, string $destination);
 
-    public function copyToLocalPath($path, $localPath);
+    public function copyToLocalPath(string $path, string $localPath);
 
-    public function getUrl($path): string;
+    public function getUrl(string $path): string;
 }

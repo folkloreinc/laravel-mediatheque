@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque\Models;
 
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineDefinitionContract;
 use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
@@ -11,7 +12,6 @@ use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
 use Folklore\Mediatheque\Support\Pipeline as PipelineDefinition;
 use Folklore\Mediatheque\Jobs\RunPipeline;
 use Folklore\Mediatheque\Observers\PipelineObserver;
-use Exception;
 
 class Pipeline extends Model implements PipelineContract
 {
@@ -31,17 +31,6 @@ class Pipeline extends Model implements PipelineContract
         'ended' => 'boolean',
         'failed' => 'boolean',
     ];
-
-    /**
-     * The "booting" method of the model.
-     *
-     * @return void
-     */
-    public static function boot()
-    {
-        parent::boot();
-        static::observe(PipelineObserver::class);
-    }
 
     public function jobs()
     {
@@ -64,6 +53,11 @@ class Pipeline extends Model implements PipelineContract
     public function getDefinition(): PipelineDefinitionContract
     {
         return new PipelineDefinition($this->name, $this->definition);
+    }
+
+    public function getJobs(): Collection
+    {
+        return $this->jobs;
     }
 
     public function getJob(string $name): ?PipelineJobContract
@@ -136,7 +130,7 @@ class Pipeline extends Model implements PipelineContract
         $this->save();
     }
 
-    public function markFailed(Exception $e = null): void
+    public function markFailed($e = null): void
     {
         $this->started = false;
         $this->failed = true;

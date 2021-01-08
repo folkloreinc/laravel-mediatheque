@@ -2,8 +2,8 @@
 
 namespace Folklore\Mediatheque\Contracts\Models;
 
+use Illuminate\Support\Collection;
 use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineDefinition;
-use Exception;
 
 interface Pipeline
 {
@@ -12,6 +12,8 @@ interface Pipeline
     public function setDefinition(PipelineDefinition $definition): void;
 
     public function getDefinition(): PipelineDefinition;
+
+    public function getJobs(): Collection;
 
     public function getJob(string $name): ?PipelineJob;
 
@@ -29,5 +31,5 @@ interface Pipeline
 
     public function markEnded(): void;
 
-    public function markFailed(Exception $e = null): void;
+    public function markFailed($e = null): void;
 }

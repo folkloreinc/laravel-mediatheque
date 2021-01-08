@@ -5,20 +5,14 @@ use Illuminate\Support\Collection;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 use Folklore\Mediatheque\Contracts\Services\Metadata as MetadataService;
+use Folklore\Mediatheque\Events\FileAttached;
+use Folklore\Mediatheque\Events\FileDetached;
 
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 trait HasFiles
 {
-    public static function bootHasFiles()
-    {
-        $observer = config('mediatheque.observers.has_files', null);
-        if (!is_null($observer)) {
-            static::observe($observer);
-        }
-    }
-
     /**
      *
      * Relationships
@@ -120,9 +114,7 @@ trait HasFiles
         if ($currentFile) {
             $this->removeFile($currentFile);
         }
-        if (!is_null($file)) {
-            $this->addFile($file, $handle);
-        }
+        $this->addFile($file, $handle);
     }
 
     /**
@@ -130,20 +122,26 @@ trait HasFiles
      * @param  string|\Folklore\Mediatheque\Contracts\Model\File $handle The handle or tthe file to remove
      * @return $this
      */
-    public function removeFile(string $handle): void
+    public function removeFile($handle): void
     {
-        $table = app(FileContract::class)->getTable() . '_pivot';
+        $table = $this->files()
+            ->getRelated()
+            ->getTable();
+        $pivotTable = $this->files()->getTable();
         $file =
             $handle instanceof FileContract
                 ? $handle
                 : $this->files()
-                    ->where($table . '.handle', $handle)
+                    ->where(function ($query) use ($table, $pivotTable) {
+                        $query
+                            ->where($table . '.handle', $handle)
+                            ->orWhere($pivotTable . '.handle', $handle);
+                    })
                     ->first();
         if ($file) {
             $this->files()->detach($file);
             $this->load('files');
-            $eventClass = config('mediatheque.events.file_detached');
-            event(new $eventClass($this, $file));
+            event(new FileDetached($this, $file));
         }
     }
 
@@ -159,7 +157,6 @@ trait HasFiles
             'handle' => !is_null($handle) ? $handle : $file->getHandle(),
         ]);
         $this->load('files');
-        $eventClass = config('mediatheque.events.file_attached');
-        event(new $eventClass($this, $file));
+        event(new FileAttached($this, $file));
     }
 }

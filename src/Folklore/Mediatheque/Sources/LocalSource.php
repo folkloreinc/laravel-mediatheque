@@ -15,19 +15,19 @@ class LocalSource implements Source
         $this->filesystem = $filesystem;
     }
 
-    public function getFullPath($path)
+    public function getFullPath(string $path)
     {
         $dir = isset($this->config['path']) ? $this->config['path'] : '';
         return rtrim($dir, '/').'/'.ltrim($path, '/');
     }
 
-    public function exists($path)
+    public function exists(string $path): bool
     {
         $realPath = $this->getFullPath($path);
         return $this->filesystem->exists($realPath);
     }
 
-    protected function ensureDirectory($path, $mode = 0775)
+    protected function ensureDirectory(string $path, $mode = 0775)
     {
         $dirname = dirname($path);
         if ($this->filesystem->isDirectory($dirname)) {
@@ -36,7 +36,7 @@ class LocalSource implements Source
         return $this->filesystem->makeDirectory($dirname, $mode, true);
     }
 
-    public function putFromContents($path, $contents)
+    public function putFromContents(string $path, $contents)
     {
         if ($this->exists($path)) {
             $this->delete($path);
@@ -47,7 +47,7 @@ class LocalSource implements Source
         return $this->filesystem->put($realPath, $contents);
     }
 
-    public function putFromLocalPath($path, $localPath)
+    public function putFromLocalPath(string $path, string $localPath)
     {
         if ($this->exists($path)) {
             $this->delete($path);
@@ -58,7 +58,7 @@ class LocalSource implements Source
         return $this->filesystem->copy($localPath, $realPath);
     }
 
-    public function delete($path)
+    public function delete(string $path)
     {
         if (!$this->exists($path)) {
             return;
@@ -68,7 +68,7 @@ class LocalSource implements Source
         return $this->filesystem->delete($realPath);
     }
 
-    public function move($source, $destination)
+    public function move(string $source, string $destination)
     {
         if ($this->exists($destination)) {
             $this->delete($destination);
@@ -80,7 +80,7 @@ class LocalSource implements Source
         return $this->filesystem->move($sourceRealPath, $destinationRealPath);
     }
 
-    public function copy($source, $destination)
+    public function copy(string $source, string $destination)
     {
         if ($this->exists($destination)) {
             $this->delete($destination);
@@ -92,13 +92,13 @@ class LocalSource implements Source
         return $this->filesystem->copy($sourceRealPath, $destinationRealPath);
     }
 
-    public function copyToLocalPath($path, $localPath)
+    public function copyToLocalPath(string $path, string $localPath)
     {
         $realPath = $this->getFullPath($path);
         return $this->filesystem->copy($realPath, $localPath);
     }
 
-    public function getUrl($path): string
+    public function getUrl(string $path): string
     {
         $publicPath = data_get($this->config, 'url', '/');
         return rtrim($publicPath, '/').'/'.ltrim($path, '/');
