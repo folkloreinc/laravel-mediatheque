@@ -93,6 +93,11 @@ class ServiceProvider extends BaseServiceProvider
         $this->app['router']->macro('mediatheque', function ($opts = []) {
             return $this->app['mediatheque.router']->mediatheque($opts);
         });
+
+        $routesPath = base_path('routes/mediatheque.php');
+        if ($this->app['files']->exists($routesPath)) {
+            $this->app['router']->group($routesPath);
+        }
     }
 
     /**
@@ -107,7 +112,6 @@ class ServiceProvider extends BaseServiceProvider
         $this->registerMetadataManager();
         $this->registerSourceManager();
         $this->registerModels();
-        $this->registerPipeline();
         $this->registerServices();
         $this->registerRouter();
         $this->registerMediatheque();
@@ -245,19 +249,6 @@ class ServiceProvider extends BaseServiceProvider
     }
 
     /**
-     * Register the pipeline class
-     *
-     * @return void
-     */
-    public function registerPipeline()
-    {
-        $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Pipeline\Pipeline::class,
-            \Folklore\Mediatheque\Support\Pipeline::class
-        );
-    }
-
-    /**
      * Register services
      *
      * @return void
@@ -325,11 +316,6 @@ class ServiceProvider extends BaseServiceProvider
                 $this->app->alias($key, $alias);
             }
         }
-    }
-
-    protected function getRouter()
-    {
-        return $this->app->bound('router') ? $this->app['router'] : $this->app;
     }
 
     /**

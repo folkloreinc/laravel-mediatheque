@@ -9,5 +9,5 @@ interface FontFamilyName
      * @param  string $path The path of a file
      * @return string The font family name
      */
-    public function getFontFamilyName($path);
+    public function getFontFamilyName(string $path): ?string;
 }

@@ -22,7 +22,7 @@ class Imagick implements
      * @param  string  $path
      * @return int
      */
-    public function getPagesCount($path)
+    public function getPagesCount($path): ?int
     {
         if (!class_exists(BaseImagick::class)) {
             return 0;
@@ -37,7 +37,7 @@ class Imagick implements
             } else {
                 Log::error($e);
             }
-            $pages = 0;
+            return null;
         }
 
         return $pages;
@@ -49,7 +49,7 @@ class Imagick implements
      * @param  string  $path
      * @return array
      */
-    public function getDimension($path)
+    public function getDimension($path): ?array
     {
         if (!class_exists(BaseImagick::class)) {
             return null;
@@ -76,7 +76,7 @@ class Imagick implements
      * @param  array $options The options
      * @return string The path of the thumbnail
      */
-    public function getThumbnail($source, $destination, $options = [])
+    public function getThumbnail(string $source, string $destination, array $options = []): ?string
     {
         $resolution = data_get($options, 'resolution', 150);
         $format = data_get($options, 'format', 'jpeg');

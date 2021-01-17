@@ -6,6 +6,7 @@ use Folklore\Mediatheque\Contracts\Services\FontFamilyName;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
+use Exception;
 
 class OtfInfo implements FontFamilyName
 {
@@ -15,7 +16,7 @@ class OtfInfo implements FontFamilyName
      * @param  string  $path
      * @return string
      */
-    public function getFontFamilyName($path)
+    public function getFontFamilyName(string $path): ?tring
     {
         try {
             $process = new Process([
@@ -31,11 +32,7 @@ class OtfInfo implements FontFamilyName
             }
 
             return trim($process->getOutput());
-        } catch (ProcessFailedException $e) {
-            $errorOutput = $process->getErrorOutput();
-            if (preg_match('/(not an OpenType font|OTF file corrupted)/', $errorOutput)) {
-                return null;
-            }
+        } catch (Exception $e) {
             if (config('mediatheque.debug')) {
                 throw $e;
             } else {

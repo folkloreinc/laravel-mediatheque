@@ -58,7 +58,7 @@ class ShellJob extends PipelineJob
         throw new ProcessFailedException($process);
     }
 
-    protected function getOutputFromProcess($process)
+    protected function getResponseFromProcess($process)
     {
         return $process->getOutput();
     }
@@ -70,6 +70,6 @@ class ShellJob extends PipelineJob
         if (!$process->isSuccessful()) {
             $this->throwProcessException($process);
         }
-        return $this->getOutputFromProcess($process);
+        return $this->getResponseFromProcess($process);
     }
 }

@@ -108,7 +108,7 @@ class Type extends Definition implements TypeContract
             'pipeline' => $this->get('pipeline'),
             'mimes' => $this->mimes(),
             'metadatas' => $this->metadatas()->toArray(),
-            'upload' => $this->canUpload(),
+            'can_upload' => $this->canUpload(),
         ];
     }
 

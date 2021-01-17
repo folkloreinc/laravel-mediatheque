@@ -23,15 +23,4 @@ trait HasMedias
                         ->orderBy('order', 'asc');
         return $query;
     }
-
-    /*
-     *
-     * Sync methods
-     *
-     */
-    public function syncAudios($items = array())
-    {
-        $model = get_class(app(MediaContract::class));
-        return $this->syncMorph($model, 'morphable', 'medias', $items);
-    }
 }

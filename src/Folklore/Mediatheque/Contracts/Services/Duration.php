@@ -9,5 +9,5 @@ interface Duration
      * @param  string $path The path of a file
      * @return float The duration in seconds
      */
-    public function getDuration($path);
+    public function getDuration(string $path): ?float;
 }

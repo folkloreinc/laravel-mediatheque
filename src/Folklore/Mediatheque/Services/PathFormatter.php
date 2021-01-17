@@ -13,7 +13,7 @@ class PathFormatter implements PathFormatterContract
      * @param  string  $path
      * @return string
      */
-    public function formatPath($format, ...$params)
+    public function formatPath(string $format, ...$params): string
     {
         $replaces = array_reduce(
             $params,

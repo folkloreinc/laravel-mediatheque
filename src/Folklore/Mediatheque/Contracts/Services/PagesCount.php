@@ -9,5 +9,5 @@ interface PagesCount
      * @param  string $path The path of a file
      * @return integer The number of pages
      */
-    public function getPagesCount($path);
+    public function getPagesCount(string $path): ?int;
 }

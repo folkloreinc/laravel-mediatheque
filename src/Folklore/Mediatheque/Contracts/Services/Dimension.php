@@ -9,5 +9,5 @@ interface Dimension
      * @param  string $path The path of a file
      * @return array The dimension
      */
-    public function getDimension($path);
+    public function getDimension(string $path): ?array;
 }

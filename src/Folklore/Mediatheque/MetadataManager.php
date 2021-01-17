@@ -46,7 +46,7 @@ class MetadataManager implements MetadataFactory
      *
      * @throws \InvalidArgumentException
      */
-    public function metadata($name): MetadataReader
+    public function metadata(string $name): MetadataReader
     {
         // If the given driver has not been created before, we will create the instances
         // here and cache it so we can return it next time very quickly. If there is
@@ -149,7 +149,7 @@ class MetadataManager implements MetadataFactory
      * @param string $name
      * @return boolean
      */
-    public function hasMetadata($name): bool
+    public function hasMetadata(string $name): bool
     {
         return !is_null(
             $this->app['config']->get('mediatheque.metadatas.' . $name)

@@ -10,5 +10,5 @@ interface PathFormatter
      * @param  array $params The associative array to use as replacement value
      * @return string
      */
-    public function formatPath($format, ...$params);
+    public function formatPath(string $format, ...$params): string;
 }

@@ -3,6 +3,9 @@
 namespace Folklore\Mediatheque\Services;
 
 use Folklore\Mediatheque\Contracts\Services\AudioThumbnail;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\Process\Process;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use Exception;
 
 class AudioWaveForm implements AudioThumbnail
@@ -14,7 +17,7 @@ class AudioWaveForm implements AudioThumbnail
      * @param  array $options The options
      * @return string The path of the thumbnail
      */
-    public function getThumbnail($source, $destination, $options = [])
+    public function getThumbnail(string $source, string $destination, array $options = []): ?string
     {
         $zoom = data_get($options, 'zoom', 600);
         $width = data_get($options, 'width', 1200);
@@ -25,38 +28,56 @@ class AudioWaveForm implements AudioThumbnail
         $axisColor = data_get($options, 'axis_label_color', null);
         $axisLabel = data_get($options, 'axis_label', false);
 
-        $command = [];
-        $command[] = config('mediatheque.services.audiowaveform.bin');
-        $command[] = '-i '.escapeshellarg($source);
-        $command[] = '-o '.escapeshellarg($destination);
+        $command = [
+            config('mediatheque.services.audiowaveform.bin'),
+            '-i',
+            $source,
+            '-o',
+            $destination,
+        ];
         if (!empty($zoom)) {
-            $command[] = '-z '.$zoom;
+            $command[] = '-z';
+            $command[] = $zoom;
         }
         if (!empty($width)) {
-            $command[] = '-w '.$width;
+            $command[] = '-w';
+            $command[] = $width;
         }
         if (!empty($height)) {
-            $command[] = '-h '.$height;
+            $command[] = '-h';
+            $command[] = $height;
         }
-        $command[] = '--background-color '.$backgroundColor;
-        $command[] = '--waveform-color '.$color;
+        $command[] = '--background-color';
+        $command[] = $backgroundColor;
+        $command[] = '--waveform-color';
+        $command[] = $color;
         if (!empty($borderColor)) {
-            $command[] = '--border-color '.$borderColor;
+            $command[] = '--border-color';
+            $command[] = $borderColor;
         }
         if (!empty($axisColor)) {
-            $command[] = '--axis-label-color '.$axisColor;
+            $command[] = '--axis-label-color';
+            $command[] = $axisColor;
         }
         $command[] = $axisLabel ? '--with-axis-labels':'--no-axis-labels';
-        $command[] = '2>&1';
 
-        $output = [];
-        $return = 0;
-        exec(implode(' ', $command), $output, $return);
+        try {
+            $process = new Process($command);
 
-        if ($return !== 0) {
-            throw new Exception('audiowaveform failed return code :'.$return.' '.implode(PHP_EOL, $output));
+            $process->run();
+
+            if (!$process->isSuccessful()) {
+                throw new ProcessFailedException($process);
+            }
+
+            return $destination;
+        } catch (Exception $e) {
+            if (config('mediatheque.debug')) {
+                throw $e;
+            } else {
+                Log::error($e);
+            }
+            return null;
         }
-
-        return $destination;
     }
 }

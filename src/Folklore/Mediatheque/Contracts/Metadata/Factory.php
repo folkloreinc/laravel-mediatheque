@@ -6,7 +6,7 @@ use Illuminate\Support\Collection;
 
 interface Factory
 {
-    public function metadata($name): Reader;
+    public function metadata(string $name): Reader;
 
-    public function hasMetadata($name): bool;
+    public function hasMetadata(string $name): bool;
 }

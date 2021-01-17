@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque\Contracts\Services;
 
 use Illuminate\Support\Collection;
 use Imagine\Image\ImageInterface;
+use Folklore\Mediatheque\Contracts\Type\Type;
 
 interface Metadata
 {
@@ -11,7 +12,7 @@ interface Metadata
      * Get the metadata of a file
      *
      * @param  string  $path
-     * @return array
+     * @return Collection
      */
-    public function getMetadata($path, $type = null): Collection;
+    public function getMetadata(string $path, ?Type $type = null): Collection;
 }

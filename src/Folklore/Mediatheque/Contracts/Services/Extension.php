@@ -10,5 +10,5 @@ interface Extension
      * @param  string  $path
      * @return string
      */
-    public function getExtension($path, $filename = null);
+    public function getExtension(string $path, ?string $filename = null): ?string;
 }

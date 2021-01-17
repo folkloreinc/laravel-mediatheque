@@ -8,5 +8,5 @@ interface Reader
 
     public function getName(): string;
 
-    public function getValue($path): ?Value;
+    public function getValue(string $path): ?Value;
 }

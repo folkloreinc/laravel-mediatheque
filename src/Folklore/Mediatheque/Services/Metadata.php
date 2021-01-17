@@ -5,6 +5,7 @@ namespace Folklore\Mediatheque\Services;
 use Illuminate\Support\Collection;
 use Symfony\Component\Mime\MimeTypeGuesserInterface;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
+use Folklore\Mediatheque\Contracts\Type\Type as Type;
 use Folklore\Mediatheque\Contracts\Services\Metadata as MetadataService;
 use Folklore\Mediatheque\Contracts\Services\Mime as MimeService;
 use Folklore\Mediatheque\Contracts\Services\Extension as ExtensionService;
@@ -43,11 +44,9 @@ class Metadata implements
      * @param  string  $path
      * @return \Folklore\Mediatheque\Metadata\ValuesCollection
      */
-    public function getMetadata($path, $type = null): Collection
+    public function getMetadata(string $path, ?Type $type = null): Collection
     {
-        if (is_null($type)) {
-            $type = app(TypeFactory::class)->typeFromPath($path);
-        }
+        $type = is_null($type) ? app(TypeFactory::class)->typeFromPath($path) : $type;
         if (is_null($type)) {
             return collect([]);
         }
@@ -68,7 +67,7 @@ class Metadata implements
      * @param  string  $path
      * @return string
      */
-    public function getMime($path)
+    public function getMime(string $path): ?string
     {
         try {
             $mime = $this->mimeTypes->guessMimeType($path);
@@ -100,7 +99,7 @@ class Metadata implements
      * @param  string  $path
      * @return string
      */
-    public function getExtension($path, $filename = null)
+    public function getExtension(string $path, ?string $filename = null): ?string
     {
         $mime = app(MimeService::class)->getMime($path);
         $types = array_values(config('mediatheque.types'));
@@ -122,7 +121,7 @@ class Metadata implements
      * @param  array $options The options
      * @return string The path of the thumbnail
      */
-    public function getThumbnail($source, $destination, $options = [])
+    public function getThumbnail(string $source, string $destination, array $options = []): ?string
     {
         $mime = $this->getMime($source);
         if (is_null($mime)) {
@@ -143,7 +142,7 @@ class Metadata implements
      * @param  string $path The path of a file
      * @return array The dimension
      */
-    public function getDimension($path)
+    public function getDimension(string $path): ?array
     {
         $mime = $this->getMime($path);
         if (is_null($mime)) {
@@ -162,7 +161,7 @@ class Metadata implements
      * @param  string $path The path of a file
      * @return float The duration in seconds
      */
-    public function getDuration($path)
+    public function getDuration(string $path): ?float
     {
         $mime = $this->getMime($path);
         if (is_null($mime)) {

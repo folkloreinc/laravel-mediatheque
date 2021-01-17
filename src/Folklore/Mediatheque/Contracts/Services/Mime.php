@@ -8,7 +8,7 @@ interface Mime
      * Get the mime of a file
      *
      * @param  string  $path
-     * @return float
+     * @return string
      */
-    public function getMime($path);
+    public function getMime(string $path): ?string;
 }

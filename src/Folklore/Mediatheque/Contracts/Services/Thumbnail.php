@@ -11,5 +11,5 @@ interface Thumbnail
      * @param  array $options The options
      * @return string The path of the thumbnail
      */
-    public function getThumbnail($source, $destination, $options = []);
+    public function getThumbnail(string $source, string $destination, array $options = []): ?string;
 }
