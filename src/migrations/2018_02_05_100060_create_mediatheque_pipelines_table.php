@@ -22,7 +22,7 @@ class CreateMediathequePipelinesTable extends Migration
             $table->boolean('ended')->default(false);
             $table->boolean('failed')->default(false);
             $table->text('failed_exception')->nullable();
-            $table->float('progress', 1, 8)->default(0);
+            $table->float('progress', 8, 1)->default(0);
             $table->dateTime('started_at')->nullable();
             $table->dateTime('ended_at')->nullable();
             $table->timestamps();
