@@ -3,6 +3,7 @@ namespace Folklore\Mediatheque;
 
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Database\Eloquent\Model;
 use Folklore\Mediatheque\Jobs\Handler;
 use InvalidArgumentException;
@@ -96,7 +97,7 @@ class ServiceProvider extends BaseServiceProvider
 
         $routesPath = base_path('routes/mediatheque.php');
         if ($this->app['files']->exists($routesPath)) {
-            $this->app['router']->group($routesPath);
+            Route::group($routesPath);
         }
     }
 
