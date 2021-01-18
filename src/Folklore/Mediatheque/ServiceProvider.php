@@ -97,7 +97,7 @@ class ServiceProvider extends BaseServiceProvider
 
         $routesPath = base_path('routes/mediatheque.php');
         if ($this->app['files']->exists($routesPath)) {
-            Route::group($routesPath);
+            Route::group([], $routesPath);
         }
     }
 
