@@ -9,7 +9,6 @@ use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineDefinitionContra
 use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
 use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
-use Folklore\Mediatheque\Support\Pipeline as PipelineDefinition;
 use Folklore\Mediatheque\Jobs\RunPipeline;
 use Folklore\Mediatheque\Observers\PipelineObserver;
 
@@ -26,7 +25,6 @@ class Pipeline extends Model implements PipelineContract
     protected $dates = ['started_at', 'ended_at', 'created_at', 'updated_at'];
 
     protected $casts = [
-        'definition' => 'json',
         'started' => 'boolean',
         'ended' => 'boolean',
         'failed' => 'boolean',
@@ -50,9 +48,19 @@ class Pipeline extends Model implements PipelineContract
         return $this->name;
     }
 
+    public function getDefinitionAttribute($value)
+    {
+        return unserialize($value);
+    }
+
+    public function setDefinitionAttribute($value)
+    {
+        $this->attributes['definition'] = serialize($value);
+    }
+
     public function getDefinition(): PipelineDefinitionContract
     {
-        return new PipelineDefinition($this->name, $this->definition);
+        return $this->definition;
     }
 
     public function getJobs(): Collection

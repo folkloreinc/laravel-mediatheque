@@ -8,7 +8,7 @@ use Folklore\Mediatheque\Contracts\Services\Metadata as MetadataService;
 use Folklore\Mediatheque\Events\FileAttached;
 use Folklore\Mediatheque\Events\FileDetached;
 
-use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\HttpFoundation\File\File as HttpFile;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 trait HasFiles
@@ -54,7 +54,7 @@ trait HasFiles
     public function setOriginalFile($file, array $extraData = []): void
     {
         if (is_string($file)) {
-            $file = new File($file);
+            $file = new HttpFile($file);
         }
 
         // Gather data about the media

@@ -80,4 +80,9 @@ class Pipeline extends Definition implements PipelineContract
             'jobs' => $this->jobs()->toArray(),
         ];
     }
+
+    public function __sleep()
+    {
+        return ['name', 'autoStart', 'unique', 'shouldQueue', 'fromFile', 'jobs'];
+    }
 }
