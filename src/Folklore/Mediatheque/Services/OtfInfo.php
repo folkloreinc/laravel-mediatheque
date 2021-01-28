@@ -16,7 +16,7 @@ class OtfInfo implements FontFamilyName
      * @param  string  $path
      * @return string
      */
-    public function getFontFamilyName(string $path): ?tring
+    public function getFontFamilyName(string $path): ?string
     {
         try {
             $process = new Process([
