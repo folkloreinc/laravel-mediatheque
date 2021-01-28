@@ -35,7 +35,7 @@ class WebFonts extends ShellJob
         return [$path];
     }
 
-    protected function getOutputFromProcess($process)
+    protected function getResponseFromProcess($process)
     {
         $path = $this->getLocalFilePath($this->file);
         $files = [];
