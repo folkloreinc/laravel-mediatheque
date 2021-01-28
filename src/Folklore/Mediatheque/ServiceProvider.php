@@ -67,18 +67,6 @@ class ServiceProvider extends BaseServiceProvider
 
     public function bootEvents()
     {
-        \Folklore\Mediatheque\Models\Media::observe(
-            \Folklore\Mediatheque\Observers\MediaObserver::class
-        );
-
-        \Folklore\Mediatheque\Models\Pipeline::observe(
-            \Folklore\Mediatheque\Observers\PipelineObserver::class
-        );
-
-        \Folklore\Mediatheque\Models\File::observe(
-            \Folklore\Mediatheque\Observers\FileObserver::class
-        );
-
         $this->app['events']->listen(
             \Folklore\Mediatheque\Events\FileAttached::class,
             \Folklore\Mediatheque\Observers\FileObserver::class . '@attached'

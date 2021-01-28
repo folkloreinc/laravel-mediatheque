@@ -40,6 +40,16 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
         'size' => 'int',
     ];
 
+    /**
+     * The "booted" method of the model.
+     *
+     * @return void
+     */
+    protected static function booted()
+    {
+        self::observe(FileObserver::class);
+    }
+
     public function getHandle(): ?string
     {
         $handle = $this->handle;

@@ -30,6 +30,16 @@ class Pipeline extends Model implements PipelineContract
         'failed' => 'boolean',
     ];
 
+    /**
+     * The "booted" method of the model.
+     *
+     * @return void
+     */
+    protected static function booted()
+    {
+        self::observe(PipelineObserver::class);
+    }
+
     public function jobs()
     {
         $model = app(PipelineJobContract::class);

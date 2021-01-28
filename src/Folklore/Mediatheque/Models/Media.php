@@ -16,6 +16,7 @@ use Folklore\Mediatheque\Events\MediaUpdated;
 use Folklore\Mediatheque\Events\MediaSaved;
 use Folklore\Mediatheque\Events\MediaDeleted;
 use Folklore\Mediatheque\Events\MediaRestored;
+use Folklore\Mediatheque\Observers\MediaObserver;
 
 class Media extends Model implements MediaContract
 {
@@ -37,6 +38,16 @@ class Media extends Model implements MediaContract
         'deleted' => MediaDeleted::class,
         'restored' => MediaRestored::class,
     ];
+
+    /**
+     * The "booted" method of the model.
+     *
+     * @return void
+     */
+    protected static function booted()
+    {
+        self::observe(MediaObserver::class);
+    }
 
     /**
      * Get the type column name
