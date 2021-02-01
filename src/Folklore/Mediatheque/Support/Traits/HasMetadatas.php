@@ -25,7 +25,7 @@ trait HasMetadatas
     {
         return $this->metadatas->mapWithKeys(function ($metadata) {
             return [
-                $metadata->getName() => $metadata
+                $metadata->getName() => $metadata,
             ];
         });
     }
@@ -53,12 +53,15 @@ trait HasMetadatas
             $this->save();
         }
         $metadatas = $this->getMetadatas();
-        foreach ($values as $value) {
-            $name = $value->getName();
-            $metadata = $metadatas->get($name, app(MetadataContract::class));
-            $metadata->setValue($value);
-            $this->metadatas()->save($metadata);
-        }
+        $metadatasValues = $values
+            ->map(function ($value) use ($metadatas) {
+                $name = $value->getName();
+                $metadata = $metadatas->get($name, app(MetadataContract::class));
+                $metadata->setValue($value);
+                return $metadata;
+            })
+            ->values();
+        $this->metadatas()->saveMany($metadatasValues);
         return $this;
     }
 }

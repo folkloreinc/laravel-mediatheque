@@ -89,6 +89,7 @@ trait HasFiles
         $this->setMetadatas($metadata);
         $this->setFile('original', $originalFile);
         $this->save();
+        $this->refresh();
     }
 
     /**
