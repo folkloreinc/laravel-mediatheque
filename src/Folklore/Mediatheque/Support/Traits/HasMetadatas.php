@@ -41,6 +41,7 @@ trait HasMetadatas
             $this->save();
         }
 
+        $metadatas = $this->getMetadatas();
         $name = $value->getName();
         $metadata = $metadatas->get($name, app(MetadataContract::class));
         $metadata->setValue($value);
