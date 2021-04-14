@@ -1,5 +1,8 @@
 <?php
 
+namespace Folklore\Mediatheque\Tests\Feature;
+
+use Folklore\Mediatheque\Tests\TestCase;
 use Folklore\Mediatheque\Support\Pipeline;
 use Folklore\Mediatheque\Contracts\Models\Media;
 use Illuminate\Support\Facades\Storage;

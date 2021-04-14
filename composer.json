@@ -43,15 +43,17 @@
         "ext-gd": "*"
     },
     "autoload": {
-        "classmap": [
-            "tests/"
-        ],
         "psr-0": {
             "Folklore\\Mediatheque": "src/"
         },
         "files": [
             "src/Folklore/Mediatheque/helpers.php"
         ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Folklore\\Mediatheque\\Tests\\": "tests/"
+        }
     },
     "extra": {
         "laravel": {

@@ -1,19 +1,19 @@
 language: php
 
 cache:
-  directories:
-    - $HOME/.cache/pip
-    - $HOME/.composer/cache/files
-    - ${TRAVIS_BUILD_DIR}/travis/extension-cache
+    directories:
+        - $HOME/.cache/pip
+        - $HOME/.composer/cache/files
+        - ${TRAVIS_BUILD_DIR}/travis/extension-cache
 
 addons:
-  apt:
-    sources:
-      - sourceline: "ppa:mc3man/trusty-media"
-      - sourceline: "ppa:chris-needham/ppa"
-    packages:
-      - ffmpeg
-      - audiowaveform
+    apt:
+        sources:
+            - sourceline: 'ppa:mc3man/trusty-media'
+            - sourceline: 'ppa:chris-needham/ppa'
+        packages:
+            - ffmpeg
+            - audiowaveform
 
 php:
     - 7.2.5
@@ -21,11 +21,17 @@ php:
 
 env:
     global:
-      - FFMPEG_BIN=/usr/bin/ffmpeg
-      - FFPROBE_BIN=/usr/bin/ffprobe
-      - AUDIOWAVEFORM_BIN=/usr/bin/audiowaveform
+        - FFMPEG_BIN=/usr/bin/ffmpeg
+        - FFPROBE_BIN=/usr/bin/ffprobe
+        - AUDIOWAVEFORM_BIN=/usr/bin/audiowaveform
     matrix:
-      - ILLUMINATE_VERSION=^7.0 COVERAGE=true
+        - ILLUMINATE_VERSION=^7.0
+        - ILLUMINATE_VERSION=^8.0 COVERAGE=true
+
+jobs:
+    exclude:
+        - php: 7.2.5
+          env: ILLUMINATE_VERSION=^8.0 COVERAGE=true
 
 before_install:
     - cp ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/xdebug.ini ~/xdebug.ini

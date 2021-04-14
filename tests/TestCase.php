@@ -1,5 +1,7 @@
 <?php
 
+namespace Folklore\Mediatheque\Tests;
+
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 
