@@ -52,14 +52,20 @@ class Imagick implements
     public function getDimension($path): ?array
     {
         if (!class_exists(BaseImagick::class)) {
-            return null;
+            return $this->getDimensionFallback($path);
         }
+
         try {
             $image = new BaseImagick($path);
             $dimension = $image->getImageGeometry();
             $image->destroy();
             return $dimension;
         } catch (Exception $e) {
+            $size = $this->getDimensionFallback($path);
+            if (!is_null($size)) {
+                return $size;
+            }
+
             if (config('mediatheque.debug')) {
                 throw $e;
             } else {
@@ -67,6 +73,32 @@ class Imagick implements
             }
             return null;
         }
+    }
+
+    /**
+     * Get dimension with fallback method
+     *
+     * @param  string  $path
+     * @return array
+     */
+    protected function getDimensionFallback($path): ?array
+    {
+        try {
+            $size = @getimagesize($path);
+            if (is_array($size)) {
+                return [
+                    'width' => $size[0],
+                    'height' => $size[1]
+                ];
+            }
+        } catch (Exception $e) {
+            if (config('mediatheque.debug')) {
+                throw $e;
+            } else {
+                Log::error($e);
+            }
+        }
+        return null;
     }
 
     /**
