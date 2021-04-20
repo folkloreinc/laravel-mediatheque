@@ -220,6 +220,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Routes
+    |--------------------------------------------------------------------------
+    |
+    */
+    'routes' => [
+        // Path to the routes file that will be automatically loaded. Set to null
+        // to prevent auto-loading of routes.
+        'map' => base_path('routes/mediatheque.php'),
+
+        'prefix' => 'mediatheque',
+
+        'middleware' => [],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Debug
     |--------------------------------------------------------------------------
     |

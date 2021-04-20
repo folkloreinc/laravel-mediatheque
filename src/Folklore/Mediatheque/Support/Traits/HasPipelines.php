@@ -7,6 +7,8 @@ use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
 
 trait HasPipelines
 {
+    protected $typePipelineDisabled = false;
+
     /*
      *
      * Relationships
@@ -59,5 +61,22 @@ trait HasPipelines
         $model->setDefinition($definition);
         $this->pipelines()->save($model);
         return $model;
+    }
+
+    public function typePipelineDisabled()
+    {
+        return $this->typePipelineDisabled;
+    }
+
+    public function withTypePipeline()
+    {
+        $this->typePipelineDisabled = false;
+        return $this;
+    }
+
+    public function withoutTypePipeline()
+    {
+        $this->typePipelineDisabled = true;
+        return $this;
     }
 }

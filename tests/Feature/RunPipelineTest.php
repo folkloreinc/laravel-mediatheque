@@ -33,8 +33,6 @@ class RunPipelineTest extends TestCase
      */
     public function testVideo()
     {
-        config()->set('mediatheque.types.video.pipeline', null);
-
         $pipeline = Pipeline::fromJobs([
             'h264' => \Folklore\Mediatheque\Jobs\Video\H264::class,
             'webm' => \Folklore\Mediatheque\Jobs\Video\WebM::class,
@@ -45,6 +43,7 @@ class RunPipelineTest extends TestCase
 
         $filePath = public_path('test.mp4');
         $model = app(Media::class);
+        $model->withoutTypePipeline();
         $model->setOriginalFile($filePath);
         $pipelineModel = $model->runPipeline($pipeline);
         $pipelineModel = $pipelineModel->fresh();
@@ -77,8 +76,6 @@ class RunPipelineTest extends TestCase
      */
     public function testAudio()
     {
-        config()->set('mediatheque.types.audio.pipeline', null);
-
         $pipeline = Pipeline::fromJobs([
             'thumbnails' => \Folklore\Mediatheque\Jobs\Audio\Thumbnails::class,
         ]);
@@ -87,6 +84,7 @@ class RunPipelineTest extends TestCase
 
         $filePath = public_path('test.wav');
         $model = app(Media::class);
+        $model->withoutTypePipeline();
         $model->setOriginalFile($filePath);
         $pipelineModel = $model->runPipeline($pipeline);
         $pipelineModel = $pipelineModel->fresh();

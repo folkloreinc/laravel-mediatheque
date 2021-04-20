@@ -12,7 +12,7 @@ class MediaObserver
         $type = $model->getType();
         if (!is_null($type)) {
             $pipeline = $type->pipeline();
-            if (!is_null($pipeline)) {
+            if (!is_null($pipeline) && !$model->typePipelineDisabled()) {
                 $model->runPipeline($pipeline);
             }
         }

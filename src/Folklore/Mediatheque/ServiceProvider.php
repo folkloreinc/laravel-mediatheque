@@ -34,7 +34,7 @@ class ServiceProvider extends BaseServiceProvider
         // Config file path
         $configPath = __DIR__ . '/../../config/config.php';
         $migrationsPath = __DIR__ . '/../../migrations';
-        $routesPath = __DIR__ . '/../../routes';
+        $routesPath = __DIR__ . '/../../routes.php';
 
         // Merge files
         $this->mergeConfigFrom($configPath, 'mediatheque');
@@ -59,7 +59,7 @@ class ServiceProvider extends BaseServiceProvider
 
         $this->publishes(
             [
-                $routesPath => base_path('routes'),
+                $routesPath => base_path('routes/mediatheque.php'),
             ],
             'routes'
         );
@@ -79,13 +79,15 @@ class ServiceProvider extends BaseServiceProvider
 
     public function bootRouter()
     {
-        $this->app['router']->macro('mediatheque', function ($opts = []) {
-            return $this->app['mediatheque.router']->mediatheque($opts);
+        $app = $this->app;
+
+        $this->app['router']->macro('mediatheque', function ($opts = []) use ($app) {
+            return $app['mediatheque.router']->mediatheque($opts);
         });
 
-        $routesPath = base_path('routes/mediatheque.php');
-        if ($this->app['files']->exists($routesPath)) {
-            Route::group([], $routesPath);
+        $map = $this->app['config']->get('mediatheque.routes.map');
+        if (!is_null($map)) {
+            $this->loadRoutesFrom(file_exists($map) ? $map : __DIR__ . '/../../routes.php');
         }
     }
 
@@ -188,7 +190,21 @@ class ServiceProvider extends BaseServiceProvider
     public function registerRouter()
     {
         $this->app->singleton('mediatheque.router', function ($app) {
-            return new Router($app['router'], $app['mediatheque']);
+            $config = $app['config'];
+            $router = new Router($app['router'], $app['mediatheque']);
+            $router->setPrefix($config->get('mediatheque.routes.prefix'));
+            $router->setNamePrefix(
+                $config->get(
+                    'mediatheque.routes.name_prefix',
+                    preg_replace(
+                        '#/#',
+                        '.',
+                        $config->get('mediatheque.routes.prefix', 'mediatheque')
+                    ) . '.'
+                )
+            );
+            $router->setMiddleware($config->get('mediatheque.routes.middleware'));
+            return $router;
         });
     }
 
