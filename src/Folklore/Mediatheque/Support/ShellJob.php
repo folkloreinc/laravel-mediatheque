@@ -44,6 +44,7 @@ class ShellJob extends PipelineJob
         $arguments = array_merge([$this->bin()], $this->arguments());
         $path = $this->getLocalFilePath($this->file);
         $process = new Process($arguments);
+        $process->setTimeout(config('mediatheque.process_timeout', 300));
         $process->setWorkingDirectory(dirname($path));
         return $process;
     }
