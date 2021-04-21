@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Table Prefix
@@ -27,14 +26,15 @@ return [
         'public' => [
             'driver' => 'local',
             'path' => public_path('files'),
-            'url' => env('APP_URL').'/files'
+            'url' => env('APP_URL') . '/files',
         ],
 
         'cloud' => [
             'driver' => 'filesystem',
             'disk' => 'public',
             'path' => '/',
-            'cache' => false
+            'visibility' => \Illuminate\Contracts\Filesystem\Filesystem::VISIBILITY_PUBLIC,
+            'cache' => false,
         ],
     ],
 
@@ -70,9 +70,7 @@ return [
                 'audio/x-wav' => 'wav',
                 'audio/mpeg' => 'mp3',
             ],
-            'metadatas' => [
-                'duration'
-            ]
+            'metadatas' => ['duration'],
         ],
 
         'document' => [
@@ -81,11 +79,9 @@ return [
             'mimes' => [
                 'application/pdf' => 'pdf',
                 'application/octet-stream' => '*',
-                'text/plain' => '*'
+                'text/plain' => '*',
             ],
-            'metadatas' => [
-                'pages_count'
-            ]
+            'metadatas' => ['pages_count'],
         ],
 
         'font' => [
@@ -101,11 +97,9 @@ return [
                 'application/x-font-woff' => 'woff',
                 'application/font-woff' => 'woff',
                 'application/font-woff2' => 'woff2',
-                'font/woff2' => 'woff2'
+                'font/woff2' => 'woff2',
             ],
-            'metadatas' => [
-                'font_family_name'
-            ]
+            'metadatas' => ['font_family_name'],
         ],
 
         'image' => [
@@ -119,9 +113,7 @@ return [
                 'image/svg+xml' => 'svg',
                 'image/xml' => 'svg',
             ],
-            'metadatas' => [
-                'dimension'
-            ]
+            'metadatas' => ['dimension'],
         ],
 
         'video' => [
@@ -132,12 +124,9 @@ return [
                 'video/quicktime' => 'mov',
                 'video/mpeg' => 'mp4',
                 'video/mpeg-4' => 'mp4',
-                'video/x-m4v' => 'mp4'
+                'video/x-m4v' => 'mp4',
             ],
-            'metadatas' => [
-                'dimension',
-                'duration'
-            ]
+            'metadatas' => ['dimension', 'duration'],
         ],
     ],
 
@@ -163,7 +152,6 @@ return [
     |
     */
     'pipelines' => [
-
         'video' => [
             'should_queue' => true,
             'jobs' => [
@@ -174,7 +162,7 @@ return [
                     'count' => 5,
                     'in_middle' => true,
                 ],
-            ]
+            ],
         ],
 
         'audio' => [
@@ -191,7 +179,7 @@ return [
                     'border_color' => null,
                     'axis_label_color' => null,
                 ],
-            ]
+            ],
         ],
 
         'document' => [
@@ -206,16 +194,15 @@ return [
                     'format' => 'jpeg',
                     'font' => storage_path('mediatheque/fonts/arial.ttf'),
                 ],
-            ]
+            ],
         ],
 
         'font' => [
             'should_queue' => true,
             'jobs' => [
                 'webfonts' => \Folklore\Mediatheque\Jobs\Font\WebFonts::class,
-            ]
-        ]
-
+            ],
+        ],
     ],
 
     /*
@@ -265,25 +252,24 @@ return [
     */
     'services' => [
         'ffmpeg' => [
-            'ffmpeg.binaries'  => env('FFMPEG_BIN', '/usr/local/bin/ffmpeg'),
-            'ffprobe.binaries' => env('FFPROBE_BIN', '/usr/local/bin/ffprobe')
+            'ffmpeg.binaries' => env('FFMPEG_BIN', '/usr/local/bin/ffmpeg'),
+            'ffprobe.binaries' => env('FFPROBE_BIN', '/usr/local/bin/ffprobe'),
         ],
 
         'audiowaveform' => [
-            'bin'  => env('AUDIOWAVEFORM_BIN', '/usr/local/bin/audiowaveform')
+            'bin' => env('AUDIOWAVEFORM_BIN', '/usr/local/bin/audiowaveform'),
         ],
 
         'imagick' => [
-            'convert'  => env('IMAGICK_CONVERT_BIN', '/usr/local/bin/convert')
+            'convert' => env('IMAGICK_CONVERT_BIN', '/usr/local/bin/convert'),
         ],
 
         'otfinfo' => [
-            'bin' => env('OTFINFO_BIN', '/usr/local/bin/otfinfo')
+            'bin' => env('OTFINFO_BIN', '/usr/local/bin/otfinfo'),
         ],
 
         'convertFonts' => [
-            'bin' => env('CONVERTFONTS_BIN', '/usr/local/bin/convertFonts.sh')
-        ]
-    ]
-
+            'bin' => env('CONVERTFONTS_BIN', '/usr/local/bin/convertFonts.sh'),
+        ],
+    ],
 ];

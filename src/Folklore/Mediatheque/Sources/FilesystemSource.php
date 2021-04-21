@@ -5,6 +5,7 @@ namespace Folklore\Mediatheque\Sources;
 use Folklore\Mediatheque\Contracts\Source\Source;
 use League\Flysystem\Adapter\Local;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Arr;
 use Illuminate\Contracts\Filesystem\Filesystem as FilesystemContract;
 use Illuminate\Contracts\Filesystem\Factory as FilesystemFactory;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
@@ -37,7 +38,8 @@ class FilesystemSource implements Source
     {
         $disk = $this->getDisk();
         $realPath = $this->getFullPath($path);
-        return $disk->put($realPath, $contents);
+        $options = Arr::only($this->config, ['visibility']);
+        return $disk->put($realPath, $contents, $options);
     }
 
     public function putFromLocalPath(string $path, string $localPath)
@@ -51,7 +53,8 @@ class FilesystemSource implements Source
         $directory = dirname($realPath);
         $filename = basename($realPath);
         $localFile = new File($localPath);
-        return $disk->putFileAs($directory, $localFile, $filename);
+        $options = Arr::only($this->config, ['visibility']);
+        return $disk->putFileAs($directory, $localFile, $filename, $options);
     }
 
     public function delete(string $path)
@@ -94,8 +97,8 @@ class FilesystemSource implements Source
     {
         $disk = $this->getDisk();
         $realPath = $this->getFullPath($path);
-        $contents = $disk->get($realPath);
-        return $this->filesystem->put($localPath, $contents);
+        $stream = $disk->readStream($realPath);
+        return $this->filesystem->put($localPath, $stream);
     }
 
     public function getUrl(string $path): string
