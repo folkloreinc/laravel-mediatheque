@@ -7,7 +7,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesInterface;
+use Folklore\Mediatheque\Contracts\Support\HasPipelines as HasPipelinesInterface;
 use Folklore\Mediatheque\Contracts\Models\Pipeline;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob;
 use Carbon\Carbon;
@@ -25,7 +25,7 @@ class RunPipeline implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(Pipeline $pipeline, HasFilesInterface $model)
+    public function __construct(Pipeline $pipeline, HasPipelinesInterface $model)
     {
         $this->pipeline = $pipeline;
         $this->model = $model;
@@ -82,7 +82,6 @@ class RunPipeline implements ShouldQueue
      */
     public function failed($exception = null)
     {
-        dd($exception);
         $this->pipeline->markFailed($exception);
     }
 }

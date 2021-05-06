@@ -64,19 +64,19 @@ class PipelineJob extends Model implements PipelineJobContract
         $definition = $this->getDefinition();
         $pipeline = $this->pipeline;
         $pipelineDefinition = $pipeline->getDefinition();
-        $media = $pipeline->getMedia();
+        $model = $pipeline->getModelToProcess();
         $shouldQueue = data_get($definition, 'should_queue', $pipelineDefinition->shouldQueue());
         $fromFile = data_get($definition, 'from_file', $pipelineDefinition->fromFile());
 
-        $file = $media->getFile($fromFile);
+        $file = $model->getFile($fromFile);
         if (!$file) {
             return;
         }
 
         if ($shouldQueue) {
-            RunPipelineJob::dispatch($this, $media);
+            RunPipelineJob::dispatch($this, $model);
         } else {
-            RunPipelineJob::dispatchNow($this, $media);
+            RunPipelineJob::dispatchNow($this, $model);
         }
     }
 
@@ -109,7 +109,7 @@ class PipelineJob extends Model implements PipelineJobContract
     public function canRun($model = null): bool
     {
         if (is_null($model)) {
-            $model = $this->pipeline->getMedia();
+            $model = $this->pipeline->getModelToProcess();
         }
         $fromFile = $this->definition['from_file'];
         return (

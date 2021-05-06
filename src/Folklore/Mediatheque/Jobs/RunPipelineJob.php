@@ -9,7 +9,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Arr;
 use Folklore\Mediatheque\Support\Pipeline;
-use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesInterface;
+use Folklore\Mediatheque\Contracts\Support\HasPipelines as HasPipelinesInterface;
 use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineModel;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobModel;
 use Illuminate\Support\Facades\Log;
@@ -29,7 +29,7 @@ class RunPipelineJob implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(PipelineJobModel $job, HasFilesInterface $model)
+    public function __construct(PipelineJobModel $job, HasPipelinesInterface $model)
     {
         $this->pipelineJob = $job;
         $this->pipeline = $job->pipeline;
@@ -78,6 +78,7 @@ class RunPipelineJob implements ShouldQueue
 
         $this->model->load('files');
         $this->pipeline->load('jobs');
+        $this->model->touch();
 
         // Check if there is jobs waiting for the files created by this job and run it
         if (isset($newFile)) {

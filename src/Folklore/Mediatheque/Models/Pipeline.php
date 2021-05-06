@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineDefinitionContract;
 use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
-use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
+use Folklore\Mediatheque\Contracts\Support\HasPipelines as HasPipelinesContract;
 use Folklore\Mediatheque\Jobs\RunPipeline;
 use Folklore\Mediatheque\Observers\PipelineObserver;
 
@@ -90,7 +90,7 @@ class Pipeline extends Model implements PipelineContract
         $this->jobs()->save($job);
     }
 
-    public function getMedia(): MediaContract
+    public function getModelToProcess(): HasPipelinesContract
     {
         $model = app($this->pipelinable_type)->find($this->pipelinable_id);
         return $model;
@@ -125,11 +125,11 @@ class Pipeline extends Model implements PipelineContract
         $this->save();
 
         $shouldQueue = $this->getDefinition()->shouldQueue();
-        $media = $this->getMedia();
+        $model = $this->getModelToProcess();
         if ($shouldQueue) {
-            RunPipeline::dispatch($this, $media);
+            RunPipeline::dispatch($this, $model);
         } else {
-            RunPipeline::dispatchNow($this, $media);
+            RunPipeline::dispatchNow($this, $model);
         }
     }
 

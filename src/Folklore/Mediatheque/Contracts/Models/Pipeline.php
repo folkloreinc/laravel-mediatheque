@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque\Contracts\Models;
 
 use Illuminate\Support\Collection;
 use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineDefinition;
+use Folklore\Mediatheque\Contracts\Support\HasPipelines;
 
 interface Pipeline
 {
@@ -19,7 +20,7 @@ interface Pipeline
 
     public function addJob(PipelineJob $job): void;
 
-    public function getMedia(): Media;
+    public function getModelToProcess(): HasPipelines;
 
     public function allJobsEnded(): bool;
 
