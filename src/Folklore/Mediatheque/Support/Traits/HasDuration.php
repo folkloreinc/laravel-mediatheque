@@ -3,7 +3,7 @@
 use Folklore\Mediatheque\Contracts\DurationGetter;
 use FFMpeg\Coordinate\TimeCode;
 
-trait hasDuration
+trait HasDuration
 {
     /**
      * Timeable
