@@ -56,4 +56,18 @@ class MediaTest extends TestCase
         $metadatas = $media->getMetadatas()->toArray();
         $this->assertArrayHasKey('duration', $metadatas);
     }
+
+    /**
+     * Test image pipeline
+     *
+     * @test
+     */
+    public function testImage()
+    {
+        $media = media(public_path('image.jpg'));
+        $media->load('files', 'metadatas');
+        $this->assertEquals($media->type, 'image');
+        $metadatas = $media->getMetadatas()->toArray();
+        $this->assertArrayHasKey('colors', $metadatas);
+    }
 }

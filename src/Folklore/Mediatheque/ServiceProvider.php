@@ -284,6 +284,10 @@ class ServiceProvider extends BaseServiceProvider
             'mediatheque.services.path_formatter',
             \Folklore\Mediatheque\Services\PathFormatter::class
         );
+        $this->app->singleton(
+            'mediatheque.services.color_extractor',
+            \Folklore\Mediatheque\Services\ColorExtractor::class
+        );
 
         $services = [
             'mediatheque.services.otfinfo' => [
@@ -314,6 +318,10 @@ class ServiceProvider extends BaseServiceProvider
             ],
             'mediatheque.services.path_formatter' => [
                 \Folklore\Mediatheque\Contracts\Services\PathFormatter::class,
+            ],
+            'mediatheque.services.color_extractor' => [
+                \Folklore\Mediatheque\Contracts\Services\Color::class,
+                \Folklore\Mediatheque\Contracts\Services\Palette::class,
             ],
         ];
         foreach ($services as $key => $aliases) {

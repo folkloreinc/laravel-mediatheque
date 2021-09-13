@@ -140,6 +140,7 @@ return [
         'dimension' => \Folklore\Mediatheque\Metadata\Dimension::class,
         'pages_count' => \Folklore\Mediatheque\Metadata\PagesCount::class,
         'font_family_name' => \Folklore\Mediatheque\Metadata\FontFamilyName::class,
+        'colors' => \Folklore\Mediatheque\Metadata\Colors::class,
     ],
 
     /*

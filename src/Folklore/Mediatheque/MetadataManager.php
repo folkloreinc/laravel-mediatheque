@@ -3,6 +3,7 @@ namespace Folklore\Mediatheque;
 
 use Folklore\Mediatheque\Contracts\Metadata\Factory as MetadataFactory;
 use Folklore\Mediatheque\Contracts\Metadata\Reader as MetadataReader;
+use Illuminate\Support\Arr;
 
 class MetadataManager implements MetadataFactory
 {
@@ -100,7 +101,15 @@ class MetadataManager implements MetadataFactory
      */
     protected function createReaderInstance($name, $config)
     {
-        $reader = is_string($config) ? $this->app->make($config) : $config;
+        if (is_string($config)) {
+            $reader = $this->app->make($config);
+        } elseif (is_array($config)) {
+            $reader = $this->app->makeWith($config['driver'], [
+                'config' => Arr::except($config, ['driver'])
+            ]);
+        } else {
+            $reader = $config;
+        }
         $reader->setName($name);
         return $reader;
     }
