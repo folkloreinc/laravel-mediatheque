@@ -4,10 +4,10 @@ namespace Folklore\Mediatheque\Services;
 
 use Folklore\Mediatheque\Contracts\Services\Color as ColorService;
 use Folklore\Mediatheque\Contracts\Services\Palette as PaletteService;
-
 use League\ColorExtractor\Color;
 use League\ColorExtractor\ColorExtractor as BaseColorExtractor;
 use League\ColorExtractor\Palette;
+use Exception;
 
 class ColorExtractor implements ColorService, PaletteService
 {
@@ -19,8 +19,12 @@ class ColorExtractor implements ColorService, PaletteService
      */
     public function getColors(string $path, int $count = 1): ?array
     {
-        $palette = Palette::fromFilename($path);
-        return $this->getHex($palette->getMostUsedColors($count));
+        try {
+            $palette = Palette::fromFilename($path);
+            return $this->getHex($palette->getMostUsedColors($count));
+        } catch (Exception $e) {
+            return null;
+        }
     }
 
     /**
@@ -31,9 +35,13 @@ class ColorExtractor implements ColorService, PaletteService
      */
     public function getPalette(string $path, int $count = 1): ?array
     {
-        $palette = Palette::fromFilename($path);
-        $extractor = new BaseColorExtractor($palette);
-        return $this->getHex($extractor->extract($count));
+        try {
+            $palette = Palette::fromFilename($path);
+            $extractor = new BaseColorExtractor($palette);
+            return $this->getHex($extractor->extract($count));
+        } catch (Exception $e) {
+            return null;
+        }
     }
 
     protected function getHex($colors)
