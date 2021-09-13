@@ -28,10 +28,6 @@ class Colors extends Reader
         if (is_null($colors)) {
             return null;
         }
-        $values = [];
-        foreach ($colors as $key => $value) {
-            $values[] = new Value($key, $value, 'string');
-        }
-        return new Values($values);
+        return new Value($this->getName(), $colors, 'json');
     }
 }
