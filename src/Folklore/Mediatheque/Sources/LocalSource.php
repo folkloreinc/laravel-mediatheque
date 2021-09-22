@@ -27,12 +27,13 @@ class LocalSource implements Source
         return $this->filesystem->exists($realPath);
     }
 
-    protected function ensureDirectory(string $path, $mode = 0775)
+    protected function ensureDirectory(string $path)
     {
         $dirname = dirname($path);
         if ($this->filesystem->isDirectory($dirname)) {
             return true;
         }
+        $mode = data_get($this->config, 'mode', 0775);
         return $this->filesystem->makeDirectory($dirname, $mode, true);
     }
 
