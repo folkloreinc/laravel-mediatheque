@@ -70,6 +70,51 @@ class RunPipelineTest extends TestCase
     }
 
     /**
+     * Test video pipeline
+     *
+     * @test
+     */
+    public function testVideoResize()
+    {
+        $pipeline = Pipeline::fromJobs([
+            'h264' => [
+                'job' => \Folklore\Mediatheque\Jobs\Video\H264::class,
+                'max_width' => 100,
+                'max_height' => 100,
+            ]
+        ]);
+
+        $handles = ['original', 'h264'];
+
+        $filePath = public_path('test.mp4');
+        $model = app(Media::class);
+        $model->withoutTypePipeline();
+        $model->setOriginalFile($filePath);
+        $pipelineModel = $model->runPipeline($pipeline);
+        $pipelineModel = $pipelineModel->fresh();
+        $model = $model->fresh();
+        $model->load('files');
+        $this->assertEquals(
+            $handles,
+            $model->files
+                ->map(function ($file) {
+                    return $file->getHandle();
+                })
+                ->toArray()
+        );
+
+        $this->assertTrue($pipelineModel->ended);
+        $this->assertFalse($pipelineModel->started);
+        $this->assertFalse($pipelineModel->failed);
+        $this->assertTrue($pipelineModel->allJobsEnded());
+        $this->assertFalse($pipelineModel->hasFailedJobs());
+        foreach ($handles as $handle) {
+            $file = $model->getFile($handle);
+            $this->assertTrue(file_exists(public_path('files/' . $file->path)));
+        }
+    }
+
+    /**
      * Test audio pipeline
      *
      * @test

@@ -68,6 +68,7 @@ class MediaTest extends TestCase
         $media->load('files', 'metadatas');
         $this->assertEquals($media->type, 'image');
         $metadatas = $media->getMetadatas()->toArray();
-        $this->assertArrayHasKey('colors', $metadatas);
+        $this->assertArrayHasKey('width', $metadatas);
+        $this->assertArrayHasKey('height', $metadatas);
     }
 }

@@ -5,6 +5,8 @@ namespace Folklore\Mediatheque\Support;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesContract;
 use FFMpeg\FFMpeg as BaseFFMpeg;
+use FFMpeg\Filters\Video\ResizeFilter;
+use FFMpeg\Coordinate\Dimension;
 
 class FFMpegJob extends PipelineJob
 {
@@ -18,19 +20,12 @@ class FFMpegJob extends PipelineJob
         'resize' => null,
         'path_format' => '{dirname}/{filename}-{name}.{extension}',
         'extension' => 'mp4',
-        'parameters' => []
+        'parameters' => [],
     ];
 
-    public function __construct(
-        FileContract $file,
-        $options = [],
-        HasFilesContract $model = null
-    ) {
-        $this->options = array_merge(
-            $this->defaultFFmpegOptions,
-            $this->defaultOptions,
-            $options
-        );
+    public function __construct(FileContract $file, $options = [], HasFilesContract $model = null)
+    {
+        $this->options = array_merge($this->defaultFFmpegOptions, $this->defaultOptions, $options);
         $this->file = $file;
         $this->model = $model;
     }
@@ -44,6 +39,9 @@ class FFMpegJob extends PipelineJob
 
         $ffmpeg = BaseFFMpeg::create(config('mediatheque.services.ffmpeg'));
         $media = $ffmpeg->open($path);
+
+        $this->applyFilters($media);
+
         $media->save($format, $destinationPath);
 
         return $this->makeFileFromPath($destinationPath);
@@ -77,6 +75,44 @@ class FFMpegJob extends PipelineJob
         return $format;
     }
 
+    protected function applyFilters($media)
+    {
+        $filters = $media->filters();
+        $width = data_get($this->options, 'width', null);
+        $height = data_get($this->options, 'height', null);
+        if (!is_null($width) && !is_null($maxHeight)) {
+            $filters->resize(new Dimension($width, $height), ResizeFilter::RESIZEMODE_FIT);
+        } elseif (!is_null($height)) {
+            $filters->resize(
+                new Dimension($height, $height),
+                ResizeFilter::RESIZEMODE_SCALE_HEIGHT
+            );
+        } elseif (!is_null($width)) {
+            $filters->resize(new Dimension($width, $width), ResizeFilter::RESIZEMODE_SCALE_WIDTH);
+        }
+
+        $maxWidth = data_get($this->options, 'max_width', null);
+        $maxHeight = data_get($this->options, 'max_height', null);
+        if (!is_null($maxWidth) && !is_null($maxHeight)) {
+            $filters->resize(new Dimension($maxWidth, $maxHeight), ResizeFilter::RESIZEMODE_INSET);
+        } elseif (!is_null($maxHeight)) {
+            $filters->resize(
+                new Dimension($maxHeight, $maxHeight),
+                ResizeFilter::RESIZEMODE_SCALE_HEIGHT
+            );
+        } elseif (!is_null($maxWidth)) {
+            $filters->resize(
+                new Dimension($maxWidth, $maxWidth),
+                ResizeFilter::RESIZEMODE_SCALE_WIDTH
+            );
+        }
+
+        $rotation = data_get($this->options, 'rotation', null);
+        if (!is_null($rotation)) {
+            $filters->rotate($rotation);
+        }
+    }
+
     protected function getAdditionalParameters()
     {
         $parameters = data_get($this->options, 'parameters', null);
@@ -91,10 +127,7 @@ class FFMpegJob extends PipelineJob
         if (!is_null($resize)) {
             $parameters[] = '-vf';
             $parameters[] =
-                'scale=' .
-                data_get($resize, 0, '-1') .
-                ':' .
-                data_get($resize, 1, '-1');
+                'scale=' . data_get($resize, 0, '-1') . ':' . data_get($resize, 1, '-1');
         }
 
         return $parameters;
