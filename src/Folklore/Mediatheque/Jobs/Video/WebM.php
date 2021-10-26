@@ -11,6 +11,18 @@ class WebM extends FFMpegJob
 
     protected $defaultOptions = [
         'quality' => 20,
-        'extension' => 'webm'
+        'extension' => 'webm',
     ];
+
+    protected function getAdditionalParameters()
+    {
+        $parameters = parent::getAdditionalParameters();
+
+        if ($this->file->mime === 'image/gif') {
+            $parameters[] = '-auto-alt-ref';
+            $parameters[] = '0';
+        }
+
+        return $parameters;
+    }
 }

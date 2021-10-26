@@ -70,6 +70,51 @@ class RunPipelineTest extends TestCase
     }
 
     /**
+     * Test animated gif pipeline
+     *
+     * @test
+     */
+    public function testAnimatedGif()
+    {
+        $this->app['mediatheque.types']->type('video')->set('animatedImage', true);
+
+        $pipeline = Pipeline::fromJobs([
+            'h264' => \Folklore\Mediatheque\Jobs\Video\H264::class,
+            'webm' => \Folklore\Mediatheque\Jobs\Video\WebM::class,
+            'thumbnails' => \Folklore\Mediatheque\Jobs\Video\Thumbnails::class,
+        ]);
+
+        $handles = ['original', 'h264', 'webm', 'thumbnails'];
+
+        $filePath = public_path('animated.gif');
+        $model = app(Media::class);
+        $model->withoutTypePipeline();
+        $model->setOriginalFile($filePath);
+        $pipelineModel = $model->runPipeline($pipeline);
+        $pipelineModel = $pipelineModel->fresh();
+        $model = $model->fresh();
+        $model->load('files');
+        $this->assertEquals(
+            $handles,
+            $model->files
+                ->map(function ($file) {
+                    return $file->getHandle();
+                })
+                ->toArray()
+        );
+
+        $this->assertTrue($pipelineModel->ended);
+        $this->assertFalse($pipelineModel->started);
+        $this->assertFalse($pipelineModel->failed);
+        $this->assertTrue($pipelineModel->allJobsEnded());
+        $this->assertFalse($pipelineModel->hasFailedJobs());
+        foreach ($handles as $handle) {
+            $file = $model->getFile($handle);
+            $this->assertTrue(file_exists(public_path('files/' . $file->path)));
+        }
+    }
+
+    /**
      * Test video pipeline
      *
      * @test

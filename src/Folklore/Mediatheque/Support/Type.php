@@ -13,8 +13,6 @@ use Folklore\Mediatheque\Contracts\Services\Mime as MimeService;
 
 class Type extends Definition implements TypeContract
 {
-    protected static $mimeService;
-
     protected $name;
 
     protected $model = \Folklore\Mediatheque\Contracts\Models\Media::class;
@@ -26,6 +24,8 @@ class Type extends Definition implements TypeContract
     protected $metadatas;
 
     protected $canUpload = true;
+
+    protected $pathIsType = null;
 
     public function __construct($name, $definition = [])
     {
@@ -89,7 +89,16 @@ class Type extends Definition implements TypeContract
 
     public function pathIsType(string $path): bool
     {
-        $fileMime = self::getMimeFromPath($path);
+        $pathIsType = $this->get('pathIsType');
+        if (!is_null($pathIsType)) {
+            return $pathIsType($path);
+        }
+        return $this->pathIsMime($path);
+    }
+
+    protected function pathIsMime(string $path): bool
+    {
+        $fileMime = resolve(MimeService::class)->getMime($path);
         $mimes = array_keys($this->mimes());
         foreach ($mimes as $mime) {
             $pattern = str_replace('\*', '[^\/]+', preg_quote($mime, '/'));
@@ -115,18 +124,5 @@ class Type extends Definition implements TypeContract
     public function __toString()
     {
         return $this->name();
-    }
-
-    protected static function getMimeFromPath(string $path)
-    {
-        return self::getMimeService()->getMime($path);
-    }
-
-    protected static function getMimeService()
-    {
-        if (!isset(static::$mimeService)) {
-            static::$mimeService = resolve(MimeService::class);
-        }
-        return static::$mimeService;
     }
 }

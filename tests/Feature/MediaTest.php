@@ -44,6 +44,24 @@ class MediaTest extends TestCase
     }
 
     /**
+     * Test video pipeline
+     *
+     * @test
+     */
+    public function testAnimatedGif()
+    {
+        $this->app['mediatheque.types']->type('video')->set('animatedImage', true);
+
+        $media = media(public_path('animated.gif'));
+        $media->load('files', 'metadatas');
+        $this->assertEquals($media->type, 'video');
+        $metadatas = $media->getMetadatas()->toArray();
+        $this->assertArrayHasKey('duration', $metadatas);
+        $this->assertArrayHasKey('width', $metadatas);
+        $this->assertArrayHasKey('height', $metadatas);
+    }
+
+    /**
      * Test audio pipeline
      *
      * @test

@@ -1,6 +1,7 @@
 <?php
 namespace Folklore\Mediatheque;
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Folklore\Mediatheque\Contracts\Type\Type as TypeContract;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactoryContract;
@@ -136,6 +137,12 @@ class TypeManager implements TypeFactoryContract
 
         if ($config instanceof TypeContract) {
             return $config;
+        }
+
+        if (is_array($config) && isset($config['type'])) {
+            $type = $config['type'];
+            $definition = Arr::except($config, ['type']);
+            return $this->app->makeWith($type, ['name' => $name, 'config' => $definition, 'definition' => $definition]);
         }
 
         return new Type($name, $config);

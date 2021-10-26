@@ -21,7 +21,7 @@ abstract class Definition implements JsonSerializable, Arrayable, Jsonable
         foreach ($definition as $key => $value) {
             $propertyName = Str::camel($key);
             if ($this->hasProperty($propertyName)) {
-                $this->set($key, $value);
+                $this->set($propertyName, $value);
             }
         }
         return $this;

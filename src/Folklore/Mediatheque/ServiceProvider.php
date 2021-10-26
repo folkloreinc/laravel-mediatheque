@@ -288,8 +288,29 @@ class ServiceProvider extends BaseServiceProvider
             'mediatheque.services.color_extractor',
             \Folklore\Mediatheque\Services\ColorExtractor::class
         );
+        $this->app->singleton(
+            'mediatheque.services.gif',
+            \Folklore\Mediatheque\Services\Gif::class
+        );
+        $this->app->singleton(
+            'mediatheque.services.webp',
+            \Folklore\Mediatheque\Services\Webp::class
+        );
+        $this->app->singleton(
+            'mediatheque.services.animated_image',
+            \Folklore\Mediatheque\Services\AnimatedImage::class
+        );
 
         $services = [
+            'mediatheque.services.animated_image' => [
+                \Folklore\Mediatheque\Contracts\Services\AnimatedImage::class,
+            ],
+            'mediatheque.services.gif' => [
+                \Folklore\Mediatheque\Contracts\Services\Gif::class,
+            ],
+            'mediatheque.services.webp' => [
+                \Folklore\Mediatheque\Contracts\Services\Webp::class,
+            ],
             'mediatheque.services.otfinfo' => [
                 \Folklore\Mediatheque\Contracts\Services\FontFamilyName::class,
             ],

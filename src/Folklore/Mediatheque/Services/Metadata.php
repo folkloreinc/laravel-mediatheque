@@ -20,6 +20,7 @@ use Folklore\Mediatheque\Contracts\Services\VideoDimension;
 use Folklore\Mediatheque\Contracts\Services\Duration as DurationService;
 use Folklore\Mediatheque\Contracts\Services\AudioDuration;
 use Folklore\Mediatheque\Contracts\Services\VideoDuration;
+use Folklore\Mediatheque\Contracts\Services\AnimatedImage as AnimatedImageService;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
@@ -170,6 +171,8 @@ class Metadata implements
         if (preg_match('/^audio\//', $mime)) {
             return app(AudioDuration::class)->getDuration($path);
         } elseif (preg_match('/^video\//', $mime)) {
+            return app(VideoDuration::class)->getDuration($path);
+        } elseif (preg_match('/^image\//', $mime) && resolve(AnimatedImageService::class)->isAnimated($path)) {
             return app(VideoDuration::class)->getDuration($path);
         }
         return null;

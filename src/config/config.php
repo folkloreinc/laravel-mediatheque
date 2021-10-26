@@ -102,6 +102,21 @@ return [
             'metadatas' => ['font_family_name'],
         ],
 
+        'video' => [
+            'type' => \Folklore\Mediatheque\Types\Video::class,
+            'pipeline' => 'video',
+            'can_upload' => true,
+            'animated_image' => false, // Detect animated GIF and WebP as video
+            'mimes' => [
+                'video/*' => '*',
+                'video/quicktime' => 'mov',
+                'video/mpeg' => 'mp4',
+                'video/mpeg-4' => 'mp4',
+                'video/x-m4v' => 'mp4',
+            ],
+            'metadatas' => ['dimension', 'duration'],
+        ],
+
         'image' => [
             'pipeline' => 'image',
             'can_upload' => true,
@@ -114,19 +129,6 @@ return [
                 'image/xml' => 'svg',
             ],
             'metadatas' => ['dimension'],
-        ],
-
-        'video' => [
-            'pipeline' => 'video',
-            'can_upload' => true,
-            'mimes' => [
-                'video/*' => '*',
-                'video/quicktime' => 'mov',
-                'video/mpeg' => 'mp4',
-                'video/mpeg-4' => 'mp4',
-                'video/x-m4v' => 'mp4',
-            ],
-            'metadatas' => ['dimension', 'duration'],
         ],
     ],
 
