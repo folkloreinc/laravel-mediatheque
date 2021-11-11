@@ -4,8 +4,9 @@ namespace Folklore\Mediatheque\Models;
 
 use Folklore\Mediatheque\Models\Collections\MetadatasCollection;
 use Folklore\Mediatheque\Contracts\Metadata\Value;
+use Folklore\Mediatheque\Contracts\Models\Metadata as MetadataContract;
 
-class Metadata extends Model
+class Metadata extends Model implements MetadataContract
 {
     protected $table = 'metadatas';
 

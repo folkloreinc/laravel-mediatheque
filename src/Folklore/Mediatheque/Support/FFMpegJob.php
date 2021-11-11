@@ -7,6 +7,7 @@ use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesContract;
 use FFMpeg\FFMpeg as BaseFFMpeg;
 use FFMpeg\Filters\Video\ResizeFilter;
 use FFMpeg\Coordinate\Dimension;
+use FFMpeg\Exception\RuntimeException;
 
 class FFMpegJob extends PipelineJob
 {
@@ -80,7 +81,7 @@ class FFMpegJob extends PipelineJob
         $filters = $media->filters();
         $width = data_get($this->options, 'width', null);
         $height = data_get($this->options, 'height', null);
-        if (!is_null($width) && !is_null($maxHeight)) {
+        if (!is_null($width) && !is_null($height)) {
             $filters->resize(new Dimension($width, $height), ResizeFilter::RESIZEMODE_FIT);
         } elseif (!is_null($height)) {
             $filters->resize(
@@ -93,14 +94,16 @@ class FFMpegJob extends PipelineJob
 
         $maxWidth = data_get($this->options, 'max_width', null);
         $maxHeight = data_get($this->options, 'max_height', null);
-        if (!is_null($maxWidth) && !is_null($maxHeight)) {
+        $upscale = data_get($this->options, 'upscale', false);
+        $needsResize = $upscale || $this->mediaNeedsResize($media, $maxWidth, $maxHeight);
+        if ($needsResize && !is_null($maxWidth) && !is_null($maxHeight)) {
             $filters->resize(new Dimension($maxWidth, $maxHeight), ResizeFilter::RESIZEMODE_INSET);
-        } elseif (!is_null($maxHeight)) {
+        } elseif ($needsResize && !is_null($maxHeight)) {
             $filters->resize(
                 new Dimension($maxHeight, $maxHeight),
                 ResizeFilter::RESIZEMODE_SCALE_HEIGHT
             );
-        } elseif (!is_null($maxWidth)) {
+        } elseif ($needsResize && !is_null($maxWidth)) {
             $filters->resize(
                 new Dimension($maxWidth, $maxWidth),
                 ResizeFilter::RESIZEMODE_SCALE_WIDTH
@@ -111,6 +114,34 @@ class FFMpegJob extends PipelineJob
         if (!is_null($rotation)) {
             $filters->rotate($rotation);
         }
+    }
+
+    protected function mediaNeedsResize($media, $maxWidth, $maxHeight): bool
+    {
+        if (is_null($maxWidth) && is_null($maxHeight)) {
+            return false;
+        }
+        $dimensions = $this->getMediaDimensions($media);
+        if (is_null($dimensions)) {
+            return false;
+        }
+        return (is_null($maxWidth) || $dimensions->getWidth() > $maxWidth) &&
+            (is_null($maxHeight) || $dimensions->getHeight() > $maxHeight);
+    }
+
+    protected function getMediaDimensions($media)
+    {
+        $dimensions = null;
+        foreach ($media->getStreams() as $stream) {
+            if ($stream->isVideo()) {
+                try {
+                    $dimensions = $stream->getDimensions();
+                    break;
+                } catch (RuntimeException $e) {
+                }
+            }
+        }
+        return $dimensions;
     }
 
     protected function getAdditionalParameters()

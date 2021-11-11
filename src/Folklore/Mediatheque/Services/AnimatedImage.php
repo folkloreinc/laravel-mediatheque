@@ -28,6 +28,7 @@ class AnimatedImage implements AnimatedImageService
         switch ($mime) {
             case 'image/webp':
                 return resolve(WebpService::class)->isAnimated($path);
+            case 'image/x-gif':
             case 'image/gif':
                 return resolve(GifService::class)->isAnimated($path);
         }
@@ -46,6 +47,7 @@ class AnimatedImage implements AnimatedImageService
         switch ($mime) {
             case 'image/webp':
                 return resolve(WebpService::class)->framesCount($path);
+            case 'image/x-gif':
             case 'image/gif':
                 return resolve(GifService::class)->framesCount($path);
         }
