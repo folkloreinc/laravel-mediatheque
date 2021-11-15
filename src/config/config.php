@@ -70,7 +70,7 @@ return [
                 'audio/x-wav' => 'wav',
                 'audio/mpeg' => 'mp3',
             ],
-            'metadatas' => ['duration'],
+        'metadatas' => ['duration', /*'waveform'*/],
         ],
 
         'document' => [
@@ -139,6 +139,7 @@ return [
     */
     'metadatas' => [
         'duration' => \Folklore\Mediatheque\Metadata\Duration::class,
+        'waveform' => \Folklore\Mediatheque\Metadata\Waveform::class,
         'dimension' => \Folklore\Mediatheque\Metadata\Dimension::class,
         'pages_count' => \Folklore\Mediatheque\Metadata\PagesCount::class,
         'font_family_name' => \Folklore\Mediatheque\Metadata\FontFamilyName::class,

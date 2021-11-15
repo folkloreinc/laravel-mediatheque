@@ -1,6 +1,6 @@
 <?php
 
-namespace Folklore\Mediatheque\Tests\Feature;
+namespace Folklore\Mediatheque\Tests\Unit;
 
 use Folklore\Mediatheque\Tests\TestCase;
 use Folklore\Mediatheque\SourceManager;
