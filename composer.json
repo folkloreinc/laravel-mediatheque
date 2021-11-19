@@ -27,7 +27,8 @@
         "symfony/http-foundation": "^5.0",
         "symfony/process": "^5.0",
         "ramsey/uuid": "^3.7|^4.0",
-        "symfony/mime": "^5.2"
+        "symfony/mime": "^5.2",
+        "contao/imagine-svg": "^1.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",

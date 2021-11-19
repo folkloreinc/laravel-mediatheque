@@ -1,6 +1,6 @@
 <?php
 
-namespace Folklore\Mediatheque\Tests\Unit;
+namespace Folklore\Mediatheque\Tests\Unit\Metadata;
 
 use Folklore\Mediatheque\Tests\TestCase;
 use Folklore\Mediatheque\Metadata\Waveform;

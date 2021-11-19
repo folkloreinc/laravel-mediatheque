@@ -15,6 +15,7 @@ use Folklore\Mediatheque\Contracts\Services\DocumentThumbnail;
 use Folklore\Mediatheque\Contracts\Services\ImageThumbnail;
 use Folklore\Mediatheque\Contracts\Services\VideoThumbnail;
 use Folklore\Mediatheque\Contracts\Services\Dimension as DimensionService;
+use Folklore\Mediatheque\Contracts\Services\Svg;
 use Folklore\Mediatheque\Contracts\Services\ImageDimension;
 use Folklore\Mediatheque\Contracts\Services\VideoDimension;
 use Folklore\Mediatheque\Contracts\Services\Duration as DurationService;
@@ -149,7 +150,9 @@ class Metadata implements
         if (is_null($mime)) {
             return null;
         }
-        if (preg_match('/^image\//', $mime)) {
+        if (preg_match('/^image\/svg\+xml/', $mime) === 1) {
+            return app(Svg::class)->getDimension($path);
+        } else if (preg_match('/^image\//', $mime)) {
             return app(ImageDimension::class)->getDimension($path);
         } elseif (preg_match('/^video\//', $mime)) {
             return app(VideoDimension::class)->getDimension($path);

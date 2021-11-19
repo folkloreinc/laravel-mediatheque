@@ -300,6 +300,10 @@ class ServiceProvider extends BaseServiceProvider
             'mediatheque.services.animated_image',
             \Folklore\Mediatheque\Services\AnimatedImage::class
         );
+        $this->app->singleton(
+            'mediatheque.services.svg',
+            \Folklore\Mediatheque\Services\ImagineSvg::class
+        );
 
         $services = [
             'mediatheque.services.animated_image' => [
@@ -310,6 +314,9 @@ class ServiceProvider extends BaseServiceProvider
             ],
             'mediatheque.services.webp' => [
                 \Folklore\Mediatheque\Contracts\Services\Webp::class,
+            ],
+            'mediatheque.services.svg' => [
+                \Folklore\Mediatheque\Contracts\Services\Svg::class,
             ],
             'mediatheque.services.otfinfo' => [
                 \Folklore\Mediatheque\Contracts\Services\FontFamilyName::class,
