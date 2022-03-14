@@ -31,5 +31,10 @@
         <env name="APP_KEY" value="AckfSECXIvnK5r28GVIWUAxmbBSjTsmF"/>
         <env name="QUEUE_DRIVER" value="sync"/>
         <env name="MEDIATHEQUE_DEBUG" value="false"/>
+        <env name="FFPROBE_BIN" value="/opt/homebrew/bin/ffprobe"/>
+        <env name="FFMPEG_BIN" value="/opt/homebrew/bin/ffmpeg"/>
+        <env name="AUDIOWAVEFORM_BIN" value="/opt/homebrew/bin/audiowaveform" />
+        <env name="IMAGICK_CONVERT_BIN" value="/opt/homebrew/bin/convert" />
+        <env name="OTFINFO_BIN" value="/opt/homebrew/bin/otfinfo" />
     </php>
 </phpunit>
