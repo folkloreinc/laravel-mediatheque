@@ -1,40 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit backupGlobals="false"
-         backupStaticAttributes="false"
-         bootstrap="vendor/autoload.php"
-         colors="true"
-         convertErrorsToExceptions="true"
-         convertNoticesToExceptions="true"
-         convertWarningsToExceptions="true"
-         processIsolation="false"
-         stopOnFailure="false"
->
-    <testsuites>
-        <testsuite name="Folklore\Mediatheque Feature Test Suite">
-            <directory>./tests/Feature</directory>
-            <exclude>./tests/TestCase.php</exclude>
-        </testsuite>
-        <testsuite name="Folklore\Mediatheque Unit Test Suite">
-            <directory>./tests/Unit</directory>
-            <exclude>./tests/TestCase.php</exclude>
-        </testsuite>
-    </testsuites>
-    <filter>
-        <whitelist processUncoveredFilesFromWhitelist="true">
-            <directory suffix=".php">./src/Folklore/Mediatheque</directory>
-        </whitelist>
-    </filter>
-    <logging>
-        <log type="coverage-clover" target="coverage/clover.xml"/>
-    </logging>
-    <php>
-        <env name="APP_KEY" value="AckfSECXIvnK5r28GVIWUAxmbBSjTsmF"/>
-        <env name="QUEUE_DRIVER" value="sync"/>
-        <env name="MEDIATHEQUE_DEBUG" value="false"/>
-        <env name="FFPROBE_BIN" value="/opt/homebrew/bin/ffprobe"/>
-        <env name="FFMPEG_BIN" value="/opt/homebrew/bin/ffmpeg"/>
-        <env name="AUDIOWAVEFORM_BIN" value="/opt/homebrew/bin/audiowaveform" />
-        <env name="IMAGICK_CONVERT_BIN" value="/opt/homebrew/bin/convert" />
-        <env name="OTFINFO_BIN" value="/opt/homebrew/bin/otfinfo" />
-    </php>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" backupGlobals="false" backupStaticAttributes="false" bootstrap="vendor/autoload.php" colors="true" convertErrorsToExceptions="true" convertNoticesToExceptions="true" convertWarningsToExceptions="true" processIsolation="false" stopOnFailure="false" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd">
+  <coverage processUncoveredFiles="true">
+    <include>
+      <directory suffix=".php">./src/Folklore/Mediatheque</directory>
+    </include>
+    <report>
+      <clover outputFile="coverage/clover.xml"/>
+    </report>
+  </coverage>
+  <testsuites>
+    <testsuite name="Folklore\Mediatheque Feature Test Suite">
+      <directory>./tests/Feature</directory>
+      <exclude>./tests/TestCase.php</exclude>
+    </testsuite>
+    <testsuite name="Folklore\Mediatheque Unit Test Suite">
+      <directory>./tests/Unit</directory>
+      <exclude>./tests/TestCase.php</exclude>
+    </testsuite>
+  </testsuites>
+  <logging/>
+  <php>
+    <env name="APP_KEY" value="AckfSECXIvnK5r28GVIWUAxmbBSjTsmF"/>
+    <env name="QUEUE_DRIVER" value="sync"/>
+    <env name="MEDIATHEQUE_DEBUG" value="false"/>
+    <env name="FFPROBE_BIN" value="/opt/homebrew/bin/ffprobe"/>
+    <env name="FFMPEG_BIN" value="/opt/homebrew/bin/ffmpeg"/>
+    <env name="AUDIOWAVEFORM_BIN" value="/opt/homebrew/bin/audiowaveform"/>
+    <env name="IMAGICK_CONVERT_BIN" value="/opt/homebrew/bin/convert"/>
+    <env name="OTFINFO_BIN" value="/opt/homebrew/bin/otfinfo"/>
+  </php>
 </phpunit>
