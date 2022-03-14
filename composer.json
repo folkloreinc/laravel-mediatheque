@@ -25,7 +25,7 @@
         "guzzlehttp/guzzle": "^6.3.1|^7.0.1",
         "php-ffmpeg/php-ffmpeg": "^0.17.0",
         "symfony/http-foundation": "^5.0|^6.0",
-        "symfony/process": "^5.0",
+        "symfony/process": "^5.0|^6.0",
         "ramsey/uuid": "^3.7|^4.0",
         "symfony/mime": "^5.2",
         "contao/imagine-svg": "^1.0"
