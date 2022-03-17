@@ -30,7 +30,7 @@ trait HasMetadatas
         });
     }
 
-    public function getMetadata(string $name): MetadataContract
+    public function getMetadata(string $name): ?MetadataContract
     {
         return $this->getMetadatas()->get($name);
     }
