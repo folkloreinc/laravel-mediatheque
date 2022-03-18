@@ -99,7 +99,7 @@ trait HasFiles
     public function getOriginalFile(): ?FileContract
     {
         $this->loadMissing('files');
-        return $this->files->get('original');
+        return $this->getFiles()->get('original');
     }
 
     /**
