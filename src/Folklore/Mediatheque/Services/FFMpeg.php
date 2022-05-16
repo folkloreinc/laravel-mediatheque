@@ -54,10 +54,6 @@ class FFMpeg implements VideoThumbnail, VideoDimension, VideoDuration, AudioDura
     {
         $path = $source;
         $time = data_get($options, 'time', 0);
-        if (preg_match('/^(.*)\[([0-9\.]+)\]$/', $source, $matches)) {
-            $path = $matches[1];
-            $time = (float) $matches[2];
-        }
         $ffmpeg = BaseFFMpeg::create(config('mediatheque.services.ffmpeg'));
         $video = $ffmpeg->open($path);
         $video->frame(TimeCode::fromSeconds($time))->save($destination);

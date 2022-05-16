@@ -10,11 +10,7 @@ use Imagick as BaseImagick;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
-class Imagick implements
-    PagesCount,
-    ImageDimension,
-    ImageThumbnail,
-    DocumentThumbnail
+class Imagick implements PagesCount, ImageDimension, ImageThumbnail, DocumentThumbnail
 {
     /**
      * Get pages count of a file
@@ -88,7 +84,7 @@ class Imagick implements
             if (is_array($size)) {
                 return [
                     'width' => $size[0],
-                    'height' => $size[1]
+                    'height' => $size[1],
                 ];
             }
         } catch (Exception $e) {
@@ -115,10 +111,11 @@ class Imagick implements
         $quality = data_get($options, 'quality', 100);
         $backgroundColor = data_get($options, 'background', 'white');
         $font = data_get($options, 'font');
+        $page = data_get($options, 'page');
 
         $image = new BaseImagick();
         $image->setResolution($resolution, $resolution);
-        $image->readImage($source);
+        $image->readImage(isset($page) ? $source . '[' . $page . ']' : $source);
         $image->setImageFormat($format);
         $image->setImageCompressionQuality($quality);
         if (!empty($backgroundColor)) {
