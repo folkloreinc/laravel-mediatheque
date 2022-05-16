@@ -12,7 +12,7 @@ interface Pipeline
 
     public function unique(): bool;
 
-    public function shouldQueue(): bool;
+    public function queue();
 
     public function fromFile(): ?string;
 

@@ -55,8 +55,8 @@ class RunPipeline implements ShouldQueue
                 $job['from_file'] = $definition->fromFile();
             }
 
-            if (!isset($job['should_queue']) || is_null($job['should_queue'])) {
-                $job['should_queue'] = $definition->shouldQueue();
+            if (!isset($job['queue']) || is_null($job['queue'])) {
+                $job['queue'] = $definition->queue();
             }
 
             $jobModel = $this->pipeline->getJob($name);

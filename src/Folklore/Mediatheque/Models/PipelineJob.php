@@ -18,19 +18,14 @@ class PipelineJob extends Model implements PipelineJobContract
         'failed' => false,
     ];
 
-    protected $dates = [
-        'started_at',
-        'ended_at',
-        'created_at',
-        'updated_at'
-    ];
+    protected $dates = ['started_at', 'ended_at', 'created_at', 'updated_at'];
 
     protected $casts = [
         'definition' => 'json',
         'started' => 'boolean',
         'ended' => 'boolean',
         'failed' => 'boolean',
-        'failed_exception' => 'string'
+        'failed_exception' => 'string',
     ];
 
     public function pipeline()
@@ -41,6 +36,11 @@ class PipelineJob extends Model implements PipelineJobContract
 
     public function setDefinition(array $definition): void
     {
+        // @NOTE backward compatibility
+        if (isset($definition['should_queue'])) {
+            $definition['queue'] = $definition['should_queue'];
+            unset($definition['should_queue']);
+        }
         $this->name = data_get($definition, 'name');
         $this->definition = Arr::except($definition, ['name']);
     }
@@ -65,7 +65,7 @@ class PipelineJob extends Model implements PipelineJobContract
         $pipeline = $this->pipeline;
         $pipelineDefinition = $pipeline->getDefinition();
         $model = $pipeline->getModelToProcess();
-        $shouldQueue = data_get($definition, 'should_queue', $pipelineDefinition->shouldQueue());
+        $queue = data_get($definition, 'queue', $pipelineDefinition->queue());
         $fromFile = data_get($definition, 'from_file', $pipelineDefinition->fromFile());
 
         $file = $model->getFile($fromFile);
@@ -73,8 +73,10 @@ class PipelineJob extends Model implements PipelineJobContract
             return;
         }
 
-        if ($shouldQueue) {
+        if ($queue === true) {
             RunPipelineJob::dispatch($this, $model);
+        } else if (is_string($queue)) {
+            RunPipelineJob::dispatch($this, $model)->onQueue($queue);
         } else {
             RunPipelineJob::dispatchNow($this, $model);
         }
@@ -112,21 +114,14 @@ class PipelineJob extends Model implements PipelineJobContract
             $model = $this->pipeline->getModelToProcess();
         }
         $fromFile = $this->definition['from_file'];
-        return (
-            !$this->started &&
-            !$this->ended &&
-            !$this->failed &&
-            $model->hasFile($fromFile)
-        );
+        return !$this->started && !$this->ended && !$this->failed && $model->hasFile($fromFile);
     }
 
     public function isWaitingForFile($name): bool
     {
-        return (
-            !$this->started &&
+        return !$this->started &&
             !$this->ended &&
             !$this->failed &&
-            data_get($this->definition, 'from_file') === $name
-        );
+            data_get($this->definition, 'from_file') === $name;
     }
 }

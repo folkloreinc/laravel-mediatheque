@@ -124,10 +124,12 @@ class Pipeline extends Model implements PipelineContract
         $this->started_at = Carbon::now();
         $this->save();
 
-        $shouldQueue = $this->getDefinition()->shouldQueue();
+        $queue = $this->getDefinition()->queue();
         $model = $this->getModelToProcess();
-        if ($shouldQueue) {
+        if ($queue === true) {
             RunPipeline::dispatch($this, $model);
+        } else if (is_string($queue)) {
+            RunPipeline::dispatch($this, $model)->onQueue($queue);
         } else {
             RunPipeline::dispatchNow($this, $model);
         }

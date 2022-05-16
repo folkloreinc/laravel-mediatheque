@@ -157,7 +157,7 @@ return [
     */
     'pipelines' => [
         'video' => [
-            'should_queue' => true,
+            'queue' => true,
             'jobs' => [
                 'h264' => \Folklore\Mediatheque\Jobs\Video\H264::class,
                 'webm' => \Folklore\Mediatheque\Jobs\Video\WebM::class,
@@ -170,7 +170,7 @@ return [
         ],
 
         'audio' => [
-            'should_queue' => true,
+            'queue' => true,
             'jobs' => [
                 'thumbnails' => [
                     'job' => \Folklore\Mediatheque\Jobs\Audio\Thumbnails::class,
@@ -187,7 +187,7 @@ return [
         ],
 
         'document' => [
-            'should_queue' => true,
+            'queue' => true,
             'jobs' => [
                 'thumbnails' => [
                     'job' => \Folklore\Mediatheque\Jobs\Document\Thumbnails::class,
@@ -202,7 +202,7 @@ return [
         ],
 
         'font' => [
-            'should_queue' => true,
+            'queue' => true,
             'jobs' => [
                 'webfonts' => \Folklore\Mediatheque\Jobs\Font\WebFonts::class,
             ],

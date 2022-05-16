@@ -16,7 +16,7 @@ class Pipeline extends Definition implements PipelineContract
 
     protected $unique = false;
 
-    protected $shouldQueue = true;
+    protected $queue = true;
 
     protected $fromFile = 'original';
 
@@ -39,6 +39,27 @@ class Pipeline extends Definition implements PipelineContract
         );
     }
 
+    public function setDefinition($definition)
+    {
+        // @NOTE backward compatibility
+        if (isset($definition['should_queue'])) {
+            $definition['queue'] = $definition['should_queue'];
+            unset($definition['should_queue']);
+        }
+        if (isset($definition['jobs'])) {
+            $definition['jobs'] = collect($definition['jobs'])
+                ->map(function ($job) {
+                    if (isset($job['should_queue'])) {
+                        $job['queue'] = $job['should_queue'];
+                        unset($job['should_queue']);
+                    }
+                    return $job;
+                })
+                ->toArray();
+        }
+        return parent::setDefinition($definition);
+    }
+
     public function name(): string
     {
         return $this->get('name');
@@ -54,9 +75,9 @@ class Pipeline extends Definition implements PipelineContract
         return $this->get('unique');
     }
 
-    public function shouldQueue(): bool
+    public function queue()
     {
-        return $this->get('shouldQueue');
+        return $this->get('queue');
     }
 
     public function fromFile(): ?string
@@ -75,7 +96,7 @@ class Pipeline extends Definition implements PipelineContract
             'name' => $this->name(),
             'auto_start' => $this->autoStart(),
             'unique' => $this->unique(),
-            'should_queue' => $this->shouldQueue(),
+            'queue' => $this->queue(),
             'from_file' => $this->fromFile(),
             'jobs' => $this->jobs()->toArray(),
         ];
@@ -83,6 +104,6 @@ class Pipeline extends Definition implements PipelineContract
 
     public function __sleep()
     {
-        return ['name', 'autoStart', 'unique', 'shouldQueue', 'fromFile', 'jobs'];
+        return ['name', 'autoStart', 'unique', 'queue', 'fromFile', 'jobs'];
     }
 }
