@@ -70,7 +70,7 @@ return [
                 'audio/x-wav' => 'wav',
                 'audio/mpeg' => 'mp3',
             ],
-        'metadatas' => ['duration', /*'waveform'*/],
+            'metadatas' => ['duration' /*'waveform'*/],
         ],
 
         'document' => [
@@ -245,7 +245,7 @@ return [
     | This setting sets the timeout for jobs.
     |
     */
-    'process_timeout' => 300,
+    'process_timeout' => 600,
 
     /*
     |--------------------------------------------------------------------------

@@ -12,19 +12,12 @@ class ShellJob extends PipelineJob
 {
     protected $defaultShellOptions = [
         'bin' => null,
-        'arguments' => []
+        'arguments' => [],
     ];
 
-    public function __construct(
-        FileContract $file,
-        $options = [],
-        HasFilesContract $model = null
-    ) {
-        $this->options = array_merge(
-            $this->defaultShellOptions,
-            $this->defaultOptions,
-            $options
-        );
+    public function __construct(FileContract $file, $options = [], HasFilesContract $model = null)
+    {
+        $this->options = array_merge($this->defaultShellOptions, $this->defaultOptions, $options);
         $this->file = $file;
         $this->model = $model;
     }
@@ -44,7 +37,7 @@ class ShellJob extends PipelineJob
         $arguments = array_merge([$this->bin()], $this->arguments());
         $path = $this->getLocalFilePath($this->file);
         $process = new Process($arguments);
-        $process->setTimeout(config('mediatheque.process_timeout', 300));
+        $process->setTimeout(config('mediatheque.process_timeout', 600));
         $process->setWorkingDirectory(dirname($path));
         return $process;
     }

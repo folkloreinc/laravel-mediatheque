@@ -10,7 +10,7 @@ class WebM extends FFMpegJob
     protected $format = WebMFormat::class;
 
     protected $defaultOptions = [
-        'quality' => 20,
+        'quality' => 26,
         'extension' => 'webm',
     ];
 

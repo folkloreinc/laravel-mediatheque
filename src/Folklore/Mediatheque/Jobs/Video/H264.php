@@ -12,19 +12,19 @@ class H264 extends FFMpegJob
     protected $defaultOptions = [
         'audio_codec' => 'aac',
         'passes' => 1,
-        'quality' => 20,
+        'quality' => 26,
         'extension' => 'mp4',
         'parameters' => [
             '-y',
             '-preset',
-            'slower',
+            'fast',
             '-pix_fmt',
             'yuv420p',
             '-profile:v',
             'baseline',
             '-movflags',
             '+faststart',
-        ]
+        ],
     ];
 
     protected function getAdditionalParameters()
