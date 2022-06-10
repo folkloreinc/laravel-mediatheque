@@ -340,6 +340,7 @@ class ServiceProvider extends BaseServiceProvider
                 \Folklore\Mediatheque\Contracts\Services\AudioDuration::class,
                 \Folklore\Mediatheque\Contracts\Services\VideoDuration::class,
                 \Folklore\Mediatheque\Contracts\Services\VideoThumbnail::class,
+                \Folklore\Mediatheque\Contracts\Services\AudioTracks::class,
             ],
             'mediatheque.services.audiowaveform' => [
                 \Folklore\Mediatheque\Contracts\Services\AudioThumbnail::class,

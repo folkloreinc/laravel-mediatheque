@@ -142,6 +142,7 @@ return [
         'waveform' => \Folklore\Mediatheque\Metadata\Waveform::class,
         'dimension' => \Folklore\Mediatheque\Metadata\Dimension::class,
         'pages_count' => \Folklore\Mediatheque\Metadata\PagesCount::class,
+        'audio_tracks_count' => \Folklore\Mediatheque\Metadata\AudioTracksCount::class,
         'font_family_name' => \Folklore\Mediatheque\Metadata\FontFamilyName::class,
         'colors' => \Folklore\Mediatheque\Metadata\Colors::class,
     ],

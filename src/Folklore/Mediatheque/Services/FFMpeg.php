@@ -6,6 +6,8 @@ use Folklore\Mediatheque\Contracts\Services\VideoThumbnail;
 use Folklore\Mediatheque\Contracts\Services\VideoDimension;
 use Folklore\Mediatheque\Contracts\Services\VideoDuration;
 use Folklore\Mediatheque\Contracts\Services\AudioDuration;
+use Folklore\Mediatheque\Contracts\Services\AudioTracks;
+use Illuminate\Support\Collection;
 
 use FFMpeg\FFProbe;
 use FFMpeg\FFMpeg as BaseFFMpeg;
@@ -13,7 +15,7 @@ use FFMpeg\Coordinate\TimeCode;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
-class FFMpeg implements VideoThumbnail, VideoDimension, VideoDuration, AudioDuration
+class FFMpeg implements VideoThumbnail, VideoDimension, VideoDuration, AudioDuration, AudioTracks
 {
     /**
      * Get duration of a file
@@ -82,6 +84,32 @@ class FFMpeg implements VideoThumbnail, VideoDimension, VideoDuration, AudioDura
                 'width' => $width,
                 'height' => $height,
             ];
+        } catch (Exception $e) {
+            if (config('mediatheque.debug')) {
+                throw $e;
+            } else {
+                Log::error($e);
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Get audio tracks
+     *
+     * @param  string  $path
+     * @return Collection|null
+     */
+    public function getAudioTracks(string $path): ?Collection
+    {
+        try {
+            $ffprobe = FFProbe::create(config('mediatheque.services.ffmpeg'));
+            return new Collection(
+                $ffprobe
+                    ->streams($path)
+                    ->audios()
+                    ->all()
+            );
         } catch (Exception $e) {
             if (config('mediatheque.debug')) {
                 throw $e;
