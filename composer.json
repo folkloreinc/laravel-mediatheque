@@ -38,7 +38,7 @@
         "phpunit/phpunit": "^8.5.8|^9.3.3",
         "doctrine/dbal": "^2.6",
         "php-coveralls/php-coveralls": "^2.4",
-        "league/color-extractor": "0.3.*"
+        "ksubileau/color-thief-php": "^2.0"
     },
     "suggests": {
         "ext-imagick": "*",
