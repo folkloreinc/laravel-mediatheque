@@ -25,8 +25,8 @@ return [
     'sources' => [
         'public' => [
             'driver' => 'local',
-            'path' => public_path('files'),
-            'url' => env('APP_URL') . '/files',
+            'path' => storage_path('app/public'),
+            'url' => env('APP_URL') . '/storage',
         ],
 
         'cloud' => [
