@@ -18,6 +18,9 @@ class WebM extends FFMpegJob
     {
         $parameters = parent::getAdditionalParameters();
 
+        $parameters[] = '-deadline';
+        $parameters[] = 'realtime';
+
         if ($this->file->mime === 'image/gif') {
             $parameters[] = '-auto-alt-ref';
             $parameters[] = '0';
