@@ -2,7 +2,7 @@
 
 namespace Folklore\Mediatheque\Jobs\Audio;
 
-use FFMpeg\Format\Video\Mp3 as Mp3Format;
+use FFMpeg\Format\Audio\Mp3 as Mp3Format;
 
 class Mp3 extends FFMpegJob
 {
