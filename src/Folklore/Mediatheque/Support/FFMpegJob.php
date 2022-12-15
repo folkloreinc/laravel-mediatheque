@@ -69,7 +69,7 @@ class FFMpegJob extends PipelineJob
         }
 
         $parameters = $this->getAdditionalParameters();
-        if (!is_null($parameters)) {
+        if (!is_null($parameters) && method_exists($format, 'setAdditionalParameters')) {
             $format->setAdditionalParameters($parameters);
         }
 

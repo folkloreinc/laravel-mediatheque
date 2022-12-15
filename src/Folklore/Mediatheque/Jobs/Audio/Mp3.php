@@ -30,10 +30,4 @@ class Mp3 extends FFMpegJob
 
         return $format;
     }
-
-    protected function getAdditionalParameters()
-    {
-        $parameters = parent::getAdditionalParameters();
-        return $parameters;
-    }
 }
