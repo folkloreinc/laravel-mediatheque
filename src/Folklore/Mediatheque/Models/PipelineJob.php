@@ -18,14 +18,16 @@ class PipelineJob extends Model implements PipelineJobContract
         'failed' => false,
     ];
 
-    protected $dates = ['started_at', 'ended_at', 'created_at', 'updated_at'];
-
     protected $casts = [
         'definition' => 'json',
         'started' => 'boolean',
         'ended' => 'boolean',
         'failed' => 'boolean',
         'failed_exception' => 'string',
+        'started_at' => 'datetime',
+        'ended_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
 
     public function pipeline()
