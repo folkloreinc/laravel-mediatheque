@@ -80,7 +80,7 @@ class PipelineJob extends Model implements PipelineJobContract
         } else if (is_string($queue)) {
             RunPipelineJob::dispatch($this, $model)->onQueue($queue);
         } else {
-            RunPipelineJob::dispatchNow($this, $model);
+            RunPipelineJob::dispatchSync($this, $model);
         }
     }
 

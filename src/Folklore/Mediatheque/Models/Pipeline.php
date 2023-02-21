@@ -133,7 +133,7 @@ class Pipeline extends Model implements PipelineContract
         } else if (is_string($queue)) {
             RunPipeline::dispatch($this, $model)->onQueue($queue);
         } else {
-            RunPipeline::dispatchNow($this, $model);
+            RunPipeline::dispatchSync($this, $model);
         }
     }
 
