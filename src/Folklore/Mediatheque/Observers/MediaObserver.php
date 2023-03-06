@@ -21,7 +21,7 @@ class MediaObserver
     public function deleting(Model $model)
     {
         $model->load('files');
-        $model->getFiles()->forEach(function ($file) {
+        $model->getFiles()->each(function ($file) {
             $file->delete();
         });
     }

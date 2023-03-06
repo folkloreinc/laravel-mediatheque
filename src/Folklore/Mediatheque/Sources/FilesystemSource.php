@@ -14,7 +14,13 @@ use finfo;
 
 class FilesystemSource implements Source
 {
+    protected $config;
+
     protected $filesystem;
+
+    protected $factory;
+
+    protected $cache;
 
     public function __construct(
         array $config,
@@ -63,6 +69,7 @@ class FilesystemSource implements Source
             return;
         }
 
+        $disk = $this->getDisk();
         $realPath = $this->getFullPath($path);
         return $disk->delete($realPath);
     }
