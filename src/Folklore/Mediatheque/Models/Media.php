@@ -24,7 +24,13 @@ class Media extends Model implements MediaContract
 
     protected $table = 'medias';
 
-    protected $fillable = ['type', 'name'];
+    protected $fillable = ['type', 'name', 'data'];
+
+    protected $casts = [
+        'data' => 'json',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 
     /**
      * The event map for the model.
