@@ -94,7 +94,7 @@ trait HasFiles
 
     /**
      * Get the original file
-     * @return \Folklore\Mediatheque\Contracts\Model\File
+     * @return \Folklore\Mediatheque\Contracts\Models\File
      */
     public function getOriginalFile(): ?FileContract
     {
@@ -105,7 +105,7 @@ trait HasFiles
     /**
      * Set the file for a specific handle
      * @param string $handle The handle
-     * @param \Folklore\Mediatheque\Contracts\Model\File $file The file to set
+     * @param \Folklore\Mediatheque\Contracts\Models\File $file The file to set
      * @return $this
      */
     public function setFile(string $handle, FileContract $file): void
@@ -120,7 +120,7 @@ trait HasFiles
 
     /**
      * Remove a file from the files relationship
-     * @param  string|\Folklore\Mediatheque\Contracts\Model\File $handle The handle or tthe file to remove
+     * @param  string|\Folklore\Mediatheque\Contracts\Models\File $handle The handle or tthe file to remove
      * @return $this
      */
     public function removeFile($handle): void
@@ -133,7 +133,7 @@ trait HasFiles
             $handle instanceof FileContract
                 ? $handle
                 : $this->files()
-                    ->where(function ($query) use ($table, $pivotTable) {
+                    ->where(function ($query) use ($table, $pivotTable, $handle) {
                         $query
                             ->where($table . '.handle', $handle)
                             ->orWhere($pivotTable . '.handle', $handle);
@@ -148,7 +148,7 @@ trait HasFiles
 
     /**
      * Add a file to the files relationship
-     * @param \Folklore\Mediatheque\Contracts\Model\File $file The file model
+     * @param \Folklore\Mediatheque\Contracts\Models\File $file The file model
      * @param string $handle The handle of the file
      * @return $this
      */

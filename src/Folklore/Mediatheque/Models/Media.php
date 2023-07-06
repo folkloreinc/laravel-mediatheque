@@ -89,7 +89,7 @@ class Media extends Model implements MediaContract
      */
     public function scopeType($query, $type)
     {
-        if ($value instanceof TypeContract) {
+        if ($type instanceof TypeContract) {
             return $query->where($this->getTypeName(), $type->name());
         }
         return is_array($type)
