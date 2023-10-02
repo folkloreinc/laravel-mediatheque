@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque\Services;
 
 use Folklore\Mediatheque\Contracts\Services\PathFormatter as PathFormatterContract;
 use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Support\Str;
 
 class PathFormatter implements PathFormatterContract
 {
@@ -40,8 +41,8 @@ class PathFormatter implements PathFormatterContract
 
         $path = array_reduce(
             $this->getReplaceMethods(),
-            function ($path, $method) {
-                return $this->{$method}($path);
+            function ($path, $method) use ($replaces) {
+                return $this->{$method}($path, $replaces);
             },
             $path
         );
@@ -57,12 +58,25 @@ class PathFormatter implements PathFormatterContract
         });
     }
 
-    protected function replaceDate($path)
+    protected function replaceDate($path, $replaces = null)
     {
         return preg_replace_callback(
             '/\{\s*date\(([^\)]+)\)\s*\}/',
             function ($matches) {
                 return date($matches[1]);
+            },
+            $path
+        );
+    }
+
+    protected function replaceSlug($path, $replaces = null)
+    {
+        return preg_replace_callback(
+            '/\{\s*slug\(([^\)]+)\)\s*\}/',
+            function ($matches) use ($replaces) {
+                $name = data_get($replaces, 'name');
+                $withoutExt = preg_replace('/\.\w+$/', '', $name);
+                return Str::slug($withoutExt);
             },
             $path
         );
