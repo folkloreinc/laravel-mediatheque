@@ -1,4 +1,6 @@
-<?php namespace Folklore\Mediatheque\Models;
+<?php
+
+namespace Folklore\Mediatheque\Models;
 
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Models\Collections\FilesCollection;
@@ -141,7 +143,7 @@ class File extends Model implements FileContract, HasUrlInterface
     {
         $destination = ltrim($format, '/');
         foreach ($replaces as $key => $value) {
-            if (preg_match_all('/\{\s*'.strtolower($key).'\s*\}/', $destination, $matches)) {
+            if (preg_match_all('/\{\s*' . strtolower($key) . '\s*\}/', $destination, $matches)) {
                 if (sizeof($matches)) {
                     for ($i = 0; $i < sizeof($matches[0]); $i++) {
                         $destination = str_replace($matches[0][$i], $value, $destination);
@@ -156,8 +158,34 @@ class File extends Model implements FileContract, HasUrlInterface
                 }
             }
         }
+        if (preg_match_all('/\{\s*slug\(([^\)]+)\)\s*\}/', $destination, $matches)) {
+            if (sizeof($matches)) {
+                for ($i = 0; $i < sizeof($matches[0]); $i++) {
+                    $value = data_get($replaces, $matches[1][$i]);
+                    $withoutExt = $matches[1][$i] === 'name' ? preg_replace('/\.\w+$/', '', $value) : $value;
+                    $finalValue = mb_strlen($withoutExt) > 50 ? mb_substr($withoutExt, 50) : $withoutExt;
+                    if (!is_null($finalValue)) {
+                        $destination = str_replace($matches[0][$i], $this->slugify($finalValue), $destination);
+                    }
+                }
+            }
+        }
 
         return $destination;
+    }
+
+    protected function slugify($text, string $divider = '-')
+    {
+        $text = preg_replace('~[^\pL\d]+~u', $divider, $text);
+        $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
+        $text = preg_replace('~[^-\w]+~', '', $text);
+        $text = trim($text, $divider);
+        $text = preg_replace('~-+~', $divider, $text);
+        $text = strtolower($text);
+        if (empty($text)) {
+            return 'no-filename';
+        }
+        return $text;
     }
 
     protected function getHandleAttribute()
@@ -176,7 +204,7 @@ class File extends Model implements FileContract, HasUrlInterface
             return null;
         }
         $i = floor(log($size, 1024));
-        return round($size / pow(1024, $i), [0,0,2,2,3][$i]).['B','kB','MB','GB','TB'][$i];
+        return round($size / pow(1024, $i), [0, 0, 2, 2, 3][$i]) . ['B', 'kB', 'MB', 'GB', 'TB'][$i];
     }
 
     /**
@@ -193,9 +221,9 @@ class File extends Model implements FileContract, HasUrlInterface
     public function scopeSearch($query, $text)
     {
         $query->where(function ($query) use ($text) {
-            $query->where('handle', 'LIKE', '%'.$text.'%');
-            $query->where('name', 'LIKE', '%'.$text.'%');
-            $query->where('path', 'LIKE', '%'.$text.'%');
+            $query->where('handle', 'LIKE', '%' . $text . '%');
+            $query->where('name', 'LIKE', '%' . $text . '%');
+            $query->where('path', 'LIKE', '%' . $text . '%');
         });
 
         return $query;
