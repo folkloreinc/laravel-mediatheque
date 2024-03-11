@@ -112,10 +112,23 @@ class Imagick implements PagesCount, ImageDimension, ImageThumbnail, DocumentThu
         $backgroundColor = data_get($options, 'background', 'white');
         $font = data_get($options, 'font');
         $page = data_get($options, 'page');
+        $colorNamespace = data_get($options, 'color_namespace');
+        $flatten = data_get($options, 'flatten', false);
+        $trim = data_get($options, 'trim', false);
+        $trimFuzz = data_get($options, 'trim_fuzz', 0);
 
         $image = new BaseImagick();
         $image->setResolution($resolution, $resolution);
+        if (!is_null($colorNamespace)) {
+            $image->setColorspace($colorNamespace); // ex. BaseImagick::COLORSPACE_SRGB
+        }
         $image->readImage(isset($page) ? $source . '[' . $page . ']' : $source);
+        if ($flatten) {
+            $image = $image->mergeImageLayers(BaseImagick::LAYERMETHOD_FLATTEN);
+        }
+        if ($trim) {
+            $image->trimImage($trimFuzz);
+        }
         $image->setImageFormat($format);
         $image->setImageCompressionQuality($quality);
         if (!empty($backgroundColor)) {
