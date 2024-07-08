@@ -21,7 +21,7 @@ class H264 extends FFMpegJob
             '-pix_fmt',
             'yuv420p',
             '-profile:v',
-            'baseline',
+            'main',
             '-movflags',
             '+faststart',
         ],
