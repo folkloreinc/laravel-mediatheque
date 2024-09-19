@@ -7,7 +7,7 @@ use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesContract;
 use Folklore\Mediatheque\Services\PathFormatter as PathFormatterService;
 use Streaming\FFMpeg as StreamingFFMpeg;
-use Streaming\Representation;
+use Illuminate\Support\Str;
 
 class HLS extends PipelineJob
 {
