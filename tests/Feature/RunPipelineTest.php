@@ -294,4 +294,42 @@ class RunPipelineTest extends TestCase
             $this->assertTrue(file_exists(public_path('files/' . $file->path)));
         }
     }
+
+    /**
+     * Test video pipeline
+     *
+     * @test
+     */
+    public function testHLS()
+    {
+        $pipeline = Pipeline::fromJobs([
+            'hls' => \Folklore\Mediatheque\Jobs\Video\HLS::class,
+        ]);
+
+        $filePath = public_path('test.mp4');
+        $model = app(Media::class);
+        $model->withoutTypePipeline();
+        $model->setOriginalFile($filePath);
+
+        $pipelineModel = $model->runPipeline($pipeline);
+        $pipelineModel = $pipelineModel->fresh();
+        $model = $model->fresh();
+        $model->load('files');
+
+        $expectedHandles = ['original', 'hls_index', 'hls_index_180p', 'hls_segment_180p_0000'];
+        $this->assertEquals(
+            $expectedHandles,
+            $model->files
+                ->map(function ($file) {
+                    return $file->getHandle();
+                })
+                ->toArray()
+        );
+
+        $this->assertTrue($pipelineModel->ended);
+        $this->assertFalse($pipelineModel->started);
+        $this->assertFalse($pipelineModel->failed);
+        $this->assertTrue($pipelineModel->allJobsEnded());
+        $this->assertFalse($pipelineModel->hasFailedJobs());
+    }
 }

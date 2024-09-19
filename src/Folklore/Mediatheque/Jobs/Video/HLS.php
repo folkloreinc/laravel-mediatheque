@@ -17,7 +17,7 @@ class HLS extends PipelineJob
 
     public function __construct(FileContract $file, $options = [], HasFilesContract $model = null)
     {
-        $this->options = array_merge($this->defaultOptions, $this->defaultOptions, $options);
+        $this->options = array_merge($this->defaultHlsOptions, $this->defaultOptions, $options);
         $this->file = $file;
         $this->model = $model;
     }
@@ -25,20 +25,37 @@ class HLS extends PipelineJob
     public function handle()
     {
         $path = $this->getLocalFilePath($this->file);
-        $destinationPath = $this->formatDestinationPath($path);
+        $indexPath = $this->formatDestinationPath($path);
 
         $ffmpeg = StreamingFFMpeg::create(config('mediatheque.services.ffmpeg'));
         $media = $ffmpeg->open($path);
 
         $segmentDuration = data_get($this->options, 'segment_duration');
-        $output = $media
+        $result = $media
             ->hls()
             ->setHlsTime($segmentDuration)
             ->x264()
             ->autoGenerateRepresentations([1080, 720, 480, 360]) // TODO configurable
-            ->save($destinationPath);
+            ->save($indexPath);
 
-        return $this->makeFileFromPath($destinationPath);
+        $basePath = dirname($indexPath);
+
+        $indexes = glob($basePath . '/*.m3u8');
+        $indexFiles = collect($indexes)
+            ->map(function ($indexFile) {
+                return $this->makeFileFromPath($indexFile);
+            })
+            ->all();
+
+        $segments = glob($basePath . '/*.ts');
+        $segmentFiles = collect($segments)
+            ->map(function ($segmentFile) {
+                return $this->makeFileFromPath($segmentFile);
+            })
+            ->all();
+
+        $files = array_merge($indexFiles, $segmentFiles);
+        return $files;
     }
 
     protected function formatDestinationPath($path, ...$replaces)

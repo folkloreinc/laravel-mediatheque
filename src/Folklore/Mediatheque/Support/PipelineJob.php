@@ -28,11 +28,8 @@ abstract class PipelineJob
 
     protected $localFilePath = null;
 
-    public function __construct(
-        FileContract $file,
-        $options = [],
-        HasFilesContract $model = null
-    ) {
+    public function __construct(FileContract $file, $options = [], HasFilesContract $model = null)
+    {
         $this->options = array_merge($this->defaultOptions, $options);
         $this->file = $file;
         $this->model = $model;
@@ -72,7 +69,7 @@ abstract class PipelineJob
         $destinationPath = app(PathFormatterService::class)->formatPath(
             $format,
             [
-                'name' => Str::slug(class_basename(get_class($this)))
+                'name' => Str::slug(class_basename(get_class($this))),
             ],
             $pathParts,
             $this->options,
@@ -81,10 +78,10 @@ abstract class PipelineJob
         return $destinationPath;
     }
 
-    protected function makeFileFromPath($path)
+    protected function makeFileFromPath($path, array $data = []): FileContract
     {
         $file = app(FileContract::class);
-        $file->setFile($path);
+        $file->setFile($path, $data);
         return $file;
     }
 }
