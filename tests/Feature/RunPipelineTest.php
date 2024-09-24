@@ -316,7 +316,7 @@ class RunPipelineTest extends TestCase
         $model = $model->fresh();
         $model->load('files');
 
-        $expectedHandles = ['original', 'hls_index', 'hls_index_180p', 'hls_segment_180p_0000'];
+        $expectedHandles = ['original', 'hls'];
         $this->assertEquals(
             $expectedHandles,
             $model->files

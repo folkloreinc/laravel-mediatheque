@@ -31,31 +31,14 @@ class HLS extends PipelineJob
         $media = $ffmpeg->open($path);
 
         $segmentDuration = data_get($this->options, 'segment_duration');
-        $result = $media
+        $media
             ->hls()
             ->setHlsTime($segmentDuration)
             ->x264()
             ->autoGenerateRepresentations([1080, 720, 480, 360]) // TODO configurable
             ->save($indexPath);
-
         $basePath = dirname($indexPath);
-
-        $indexes = glob($basePath . '/*.m3u8');
-        $indexFiles = collect($indexes)
-            ->map(function ($indexFile) {
-                return $this->makeFileFromPath($indexFile);
-            })
-            ->all();
-
-        $segments = glob($basePath . '/*.ts');
-        $segmentFiles = collect($segments)
-            ->map(function ($segmentFile) {
-                return $this->makeFileFromPath($segmentFile);
-            })
-            ->all();
-
-        $files = array_merge($indexFiles, $segmentFiles);
-        return $files;
+        return $this->makeFileFromPath($basePath);
     }
 
     protected function formatDestinationPath($path, ...$replaces)
