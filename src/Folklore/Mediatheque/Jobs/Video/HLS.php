@@ -39,10 +39,9 @@ class HLS extends PipelineJob
             ->save($indexPath);
 
         $file = app(FileContract::class);
-        $file->setFile($indexPath);
-        $file->mime = 'application/vnd.apple.mpegurl';
+        $file->setFile($indexPath, ['mime' => 'application/vnd.apple.mpegurl']);
         // TODO upload the rest of the files alongside the index file
-        $file->save();
+        dd($file);
         return $file;
     }
 
