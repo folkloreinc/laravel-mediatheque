@@ -37,8 +37,13 @@ class HLS extends PipelineJob
             ->x264()
             ->autoGenerateRepresentations([1080, 720, 480, 360]) // TODO configurable
             ->save($indexPath);
-        $basePath = dirname($indexPath);
-        return $this->makeFileFromPath($basePath);
+
+        $file = app(FileContract::class);
+        $file->setFile($indexPath);
+        $file->mime = 'application/vnd.apple.mpegurl';
+        // TODO upload the rest of the files alongside the index file
+        $file->save();
+        return $file;
     }
 
     protected function formatDestinationPath($path, ...$replaces)

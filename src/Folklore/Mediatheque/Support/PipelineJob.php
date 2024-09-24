@@ -78,10 +78,10 @@ abstract class PipelineJob
         return $destinationPath;
     }
 
-    protected function makeFileFromPath($path, array $data = []): FileContract
+    protected function makeFileFromPath($path): FileContract
     {
         $file = app(FileContract::class);
-        $file->setFile($path, $data);
+        $file->setFile($path);
         return $file;
     }
 }
