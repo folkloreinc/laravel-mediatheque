@@ -25,10 +25,12 @@ class HLS extends PipelineJob
     public function handle()
     {
         $path = $this->getLocalFilePath($this->file);
-        $indexPath = $this->formatDestinationPath($path);
 
         $ffmpeg = StreamingFFMpeg::create(config('mediatheque.services.ffmpeg'));
         $media = $ffmpeg->open($path);
+
+        $tempBasePath = sys_get_temp_dir() . '/mediatheque_pipeline_job_' . Str::random(8);
+        $tempIndexPath = $tempBasePath . '/index.m3u8';
 
         $segmentDuration = data_get($this->options, 'segment_duration');
         $media
@@ -36,30 +38,44 @@ class HLS extends PipelineJob
             ->setHlsTime($segmentDuration)
             ->x264()
             ->autoGenerateRepresentations([1080, 720, 480, 360]) // TODO configurable
-            ->save($indexPath);
+            ->save($tempIndexPath);
 
         $file = app(FileContract::class);
-        $file->setFile($indexPath, ['mime' => 'application/vnd.apple.mpegurl']);
-        // TODO upload the rest of the files alongside the index file
-        dd($file);
+        $file->save();
+
+        $destinationBasePath = $this->formatHlsBasePath(['id' => $file->id]);
+        $destinationIndexPath = $destinationBasePath . '/index.m3u8';
+
+        $file->setFile($tempIndexPath, [
+            'mime' => 'application/vnd.apple.mpegurl',
+            'path' => $destinationIndexPath,
+        ]);
+
+        // upload the rest of the files alongside the index file
+        $source = $file->getSource();
+        collect(glob($tempBasePath . '/*.{ts,m3u8}', GLOB_BRACE))
+            ->filter(function ($file) {
+                return basename($file) !== 'index.m3u8';
+            })
+            ->mapWithKeys(function ($file) use ($destinationBasePath) {
+                $fileDestinationPath = $destinationBasePath . '/' . basename($file);
+                return [
+                    $fileDestinationPath => $file,
+                ];
+            })
+            ->each(function ($localFile, $destination) use ($source) {
+                $source->putFromLocalPath($destination, $localFile);
+            });
+
         return $file;
     }
 
-    protected function formatDestinationPath($path, ...$replaces)
+    protected function formatHlsBasePath(...$replaces)
     {
-        $pathParts = pathinfo($path);
-        $format = data_get(
-            $this->options,
-            'hls_path_format',
-            '{dirname}/{filename}-{name}/index.m3u8'
-        );
+        $format = data_get($this->options, 'hls_path_format', 'hls/{date(Y-m-d)}/{id}-{date(his)}');
 
         $destinationPath = app(PathFormatterService::class)->formatPath(
             $format,
-            [
-                'name' => Str::slug(class_basename(get_class($this))),
-            ],
-            $pathParts,
             $this->options,
             ...$replaces
         );

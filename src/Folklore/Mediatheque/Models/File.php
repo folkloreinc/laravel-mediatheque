@@ -123,6 +123,7 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
     public function deleteFile(): void
     {
         $source = $this->getSource();
+        // TODO delete folder if the file is stored in the hls/ folder and its name is index.m3u8
         $source->delete($this->path);
     }
 

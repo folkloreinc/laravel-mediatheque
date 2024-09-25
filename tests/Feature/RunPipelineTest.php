@@ -326,6 +326,13 @@ class RunPipelineTest extends TestCase
                 ->toArray()
         );
 
+        $hlsFile = $model->getFile('hls');
+        $source = $hlsFile->getSource();
+        $basePath = dirname($hlsFile->path);
+        $this->assertTrue($source->exists($basePath . '/index.m3u8'));
+        $this->assertTrue($source->exists($basePath . '/index_180p.m3u8'));
+        $this->assertTrue($source->exists($basePath . '/index_180p_0000.ts'));
+
         $this->assertTrue($pipelineModel->ended);
         $this->assertFalse($pipelineModel->started);
         $this->assertFalse($pipelineModel->failed);
