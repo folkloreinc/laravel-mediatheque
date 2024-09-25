@@ -303,7 +303,27 @@ class RunPipelineTest extends TestCase
     public function testHLS()
     {
         $pipeline = Pipeline::fromJobs([
-            'hls' => \Folklore\Mediatheque\Jobs\Video\HLS::class,
+            'hls' => [
+                'job' => \Folklore\Mediatheque\Jobs\Video\HLS::class,
+                'segment_duration' => 1,
+                'representations' => [
+                    [
+                        'max_width' => 360,
+                        'max_height' => 360,
+                        'bitrate' => 800,
+                    ],
+                    [
+                        'max_width' => 720,
+                        'max_height' => 720,
+                        'bitrate' => 2000,
+                    ],
+                    [
+                        'max_width' => 1080,
+                        'max_height' => 1080,
+                        'bitrate' => 4000,
+                    ],
+                ],
+            ],
         ]);
 
         $filePath = public_path('test.mp4');
@@ -330,8 +350,12 @@ class RunPipelineTest extends TestCase
         $source = $hlsFile->getSource();
         $basePath = dirname($hlsFile->path);
         $this->assertTrue($source->exists($basePath . '/index.m3u8'));
-        $this->assertTrue($source->exists($basePath . '/index_180p.m3u8'));
-        $this->assertTrue($source->exists($basePath . '/index_180p_0000.ts'));
+        $this->assertTrue($source->exists($basePath . '/index_360p.m3u8'));
+        $this->assertTrue($source->exists($basePath . '/index_360p_0000.ts'));
+        $this->assertTrue($source->exists($basePath . '/index_720p.m3u8'));
+        $this->assertTrue($source->exists($basePath . '/index_720p_0000.ts'));
+        $this->assertTrue($source->exists($basePath . '/index_1080p.m3u8'));
+        $this->assertTrue($source->exists($basePath . '/index_1080p_0000.ts'));
 
         $this->assertTrue($pipelineModel->ended);
         $this->assertFalse($pipelineModel->started);

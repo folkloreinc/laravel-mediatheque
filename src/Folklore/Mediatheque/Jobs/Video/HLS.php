@@ -9,11 +9,31 @@ use Folklore\Mediatheque\Services\PathFormatter as PathFormatterService;
 use Illuminate\Support\Facades\File;
 use Streaming\FFMpeg as StreamingFFMpeg;
 use Illuminate\Support\Str;
+use RuntimeException;
+use Streaming\Representation;
 
 class HLS extends PipelineJob
 {
     protected $defaultHlsOptions = [
-        'segment_duration' => 10,
+        'segment_duration' => 5,
+        'default_audio_bitrate' => 128,
+        'representations' => [
+            [
+                'max_width' => 360,
+                'max_height' => 360,
+                'bitrate' => 800,
+            ],
+            [
+                'max_width' => 720,
+                'max_height' => 720,
+                'bitrate' => 2000,
+            ],
+            [
+                'max_width' => 1080,
+                'max_height' => 1080,
+                'bitrate' => 4000,
+            ],
+        ],
     ];
 
     public function __construct(FileContract $file, $options = [], HasFilesContract $model = null)
@@ -29,16 +49,58 @@ class HLS extends PipelineJob
 
         $ffmpeg = StreamingFFMpeg::create(config('mediatheque.services.ffmpeg'));
         $media = $ffmpeg->open($path);
+        $mediaDimensions = $this->getMediaDimensions($media);
 
         $tempBasePath = sys_get_temp_dir() . '/mediatheque_pipeline_job_' . Str::random(8);
         $tempIndexPath = $tempBasePath . '/index.m3u8';
 
         $segmentDuration = data_get($this->options, 'segment_duration');
+        $defaultAudioBitrate = data_get($this->options, 'default_audio_bitrate');
+        $representations = collect(data_get($this->options, 'representations'))
+            ->filter(function ($spec, $index) use ($mediaDimensions) {
+                // if media heigh is less than or equal to max height
+                // for the first spec, include it anyway so that we have at least one representation
+                if ($index === 0) {
+                    return true;
+                }
+
+                $mediaHeight = $mediaDimensions->getHeight();
+                $maxHeightForSpec = data_get($spec, 'max_height');
+                return $maxHeightForSpec >= $mediaHeight;
+            })
+            ->map(function ($spec) use ($mediaDimensions, $defaultAudioBitrate) {
+                $maxWidth = data_get($spec, 'max_width');
+                $maxHeight = data_get($spec, 'max_height');
+                $mediaWidth = $mediaDimensions->getWidth();
+                $mediaHeight = $mediaDimensions->getHeight();
+                $mediaAspectRatio = $mediaWidth / $mediaHeight;
+
+                if ($mediaWidth === $mediaHeight) {
+                    // square video
+                    $width = $maxWidth;
+                    $height = $maxHeight;
+                } elseif ($mediaWidth < $mediaHeight) {
+                    // portrait video
+                    $width = $maxWidth;
+                    $height = (int) floor($width / $mediaAspectRatio);
+                } else {
+                    // landscape video
+                    $height = $maxHeight;
+                    $width = (int) floor($height * $mediaAspectRatio);
+                }
+
+                return (new Representation())
+                    ->setResize($width, $height)
+                    ->setKiloBitrate(data_get($spec, 'bitrate'))
+                    ->setAudioKiloBitrate(data_get($spec, 'audio_bitrate', $defaultAudioBitrate));
+            })
+            ->toArray();
+
         $media
             ->hls()
             ->setHlsTime($segmentDuration)
             ->x264()
-            ->autoGenerateRepresentations([1080, 720, 480, 360]) // TODO configurable
+            ->addRepresentations($representations)
             ->save($tempIndexPath);
 
         $file = app(FileContract::class);
@@ -83,5 +145,20 @@ class HLS extends PipelineJob
             ...$replaces
         );
         return $destinationPath;
+    }
+
+    protected function getMediaDimensions($media)
+    {
+        $dimensions = null;
+        foreach ($media->getStreams() as $stream) {
+            if ($stream->isVideo()) {
+                try {
+                    $dimensions = $stream->getDimensions();
+                    break;
+                } catch (RuntimeException $e) {
+                }
+            }
+        }
+        return $dimensions;
     }
 }
