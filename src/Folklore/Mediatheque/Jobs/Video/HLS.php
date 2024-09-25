@@ -6,6 +6,7 @@ use Folklore\Mediatheque\Support\PipelineJob;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesContract;
 use Folklore\Mediatheque\Services\PathFormatter as PathFormatterService;
+use Illuminate\Support\Facades\File;
 use Streaming\FFMpeg as StreamingFFMpeg;
 use Illuminate\Support\Str;
 
@@ -66,6 +67,8 @@ class HLS extends PipelineJob
             ->each(function ($localFile, $destination) use ($source) {
                 $source->putFromLocalPath($destination, $localFile);
             });
+
+        File::deleteDirectory($tempBasePath);
 
         return $file;
     }
