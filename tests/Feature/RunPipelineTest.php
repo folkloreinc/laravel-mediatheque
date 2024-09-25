@@ -338,5 +338,8 @@ class RunPipelineTest extends TestCase
         $this->assertFalse($pipelineModel->failed);
         $this->assertTrue($pipelineModel->allJobsEnded());
         $this->assertFalse($pipelineModel->hasFailedJobs());
+
+        $hlsFile->delete();
+        $this->assertFalse($source->exists($basePath));
     }
 }

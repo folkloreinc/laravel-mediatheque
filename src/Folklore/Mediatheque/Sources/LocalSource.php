@@ -18,7 +18,7 @@ class LocalSource implements Source
     public function getFullPath(string $path)
     {
         $dir = isset($this->config['path']) ? $this->config['path'] : '';
-        return rtrim($dir, '/').'/'.ltrim($path, '/');
+        return rtrim($dir, '/') . '/' . ltrim($path, '/');
     }
 
     public function exists(string $path): bool
@@ -69,6 +69,16 @@ class LocalSource implements Source
         return $this->filesystem->delete($realPath);
     }
 
+    public function deleteDirectory(string $path)
+    {
+        if (!$this->exists($path)) {
+            return;
+        }
+
+        $realPath = $this->getFullPath($path);
+        return $this->filesystem->deleteDirectory($realPath);
+    }
+
     public function move(string $source, string $destination)
     {
         if ($this->exists($destination)) {
@@ -102,6 +112,6 @@ class LocalSource implements Source
     public function getUrl(string $path): string
     {
         $publicPath = data_get($this->config, 'url', '/');
-        return rtrim($publicPath, '/').'/'.ltrim($path, '/');
+        return rtrim($publicPath, '/') . '/' . ltrim($path, '/');
     }
 }
