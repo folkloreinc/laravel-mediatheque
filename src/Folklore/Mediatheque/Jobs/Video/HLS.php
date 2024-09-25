@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\File;
 use Streaming\FFMpeg as StreamingFFMpeg;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Streaming\Media;
 use Streaming\Representation;
 
 class HLS extends PipelineJob
@@ -58,15 +59,17 @@ class HLS extends PipelineJob
         $defaultAudioBitrate = data_get($this->options, 'default_audio_bitrate');
         $representations = collect(data_get($this->options, 'representations'))
             ->filter(function ($spec, $index) use ($mediaDimensions) {
-                // if media heigh is less than or equal to max height
+                // if media height is less than or equal to max height
                 // for the first spec, include it anyway so that we have at least one representation
                 if ($index === 0) {
                     return true;
                 }
 
+                $mediaWidth = $mediaDimensions->getWidth();
                 $mediaHeight = $mediaDimensions->getHeight();
+                $maxWidthForSpec = data_get($spec, 'max_width');
                 $maxHeightForSpec = data_get($spec, 'max_height');
-                return $maxHeightForSpec >= $mediaHeight;
+                return $mediaWidth >= $maxWidthForSpec || $mediaHeight >= $maxHeightForSpec;
             })
             ->map(function ($spec) use ($mediaDimensions, $defaultAudioBitrate) {
                 $maxWidth = data_get($spec, 'max_width');
