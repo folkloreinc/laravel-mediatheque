@@ -352,10 +352,89 @@ class RunPipelineTest extends TestCase
         $this->assertTrue($source->exists($basePath . '/index.m3u8'));
         $this->assertTrue($source->exists($basePath . '/index_360p.m3u8'));
         $this->assertTrue($source->exists($basePath . '/index_360p_0000.ts'));
-        // $this->assertTrue($source->exists($basePath . '/index_720p.m3u8'));
-        // $this->assertTrue($source->exists($basePath . '/index_720p_0000.ts'));
-        // $this->assertTrue($source->exists($basePath . '/index_1080p.m3u8'));
-        // $this->assertTrue($source->exists($basePath . '/index_1080p_0000.ts'));
+
+        $this->assertTrue($pipelineModel->ended);
+        $this->assertFalse($pipelineModel->started);
+        $this->assertFalse($pipelineModel->failed);
+        $this->assertTrue($pipelineModel->allJobsEnded());
+        $this->assertFalse($pipelineModel->hasFailedJobs());
+
+        $hlsFile->delete();
+        $this->assertFalse($source->exists($basePath));
+    }
+
+    /**
+     * Test video pipeline
+     *
+     * @test
+     */
+    public function testHLSVertical()
+    {
+        $pipeline = Pipeline::fromJobs([
+            'hls' => [
+                'job' => \Folklore\Mediatheque\Jobs\Video\HLS::class,
+                'segment_duration' => 1,
+                'representations' => [
+                    [
+                        'max_width' => 360,
+                        'max_height' => 360,
+                        'bitrate' => 800,
+                    ],
+                    [
+                        'max_width' => 720,
+                        'max_height' => 720,
+                        'bitrate' => 2000,
+                    ],
+                    [
+                        'max_width' => 1080,
+                        'max_height' => 1080,
+                        'bitrate' => 4000,
+                    ],
+                ],
+            ],
+        ]);
+
+        $filePath = public_path('test_vertical_hevc.mp4');
+        $model = app(Media::class);
+        $model->withoutTypePipeline();
+        $model->setOriginalFile($filePath);
+
+        $pipelineModel = $model->runPipeline($pipeline);
+        $pipelineModel = $pipelineModel->fresh();
+        $model = $model->fresh();
+        $model->load('files');
+
+        $expectedHandles = ['original', 'hls'];
+        $this->assertEquals(
+            $expectedHandles,
+            $model->files
+                ->map(function ($file) {
+                    return $file->getHandle();
+                })
+                ->toArray()
+        );
+
+        $hlsFile = $model->getFile('hls');
+        $source = $hlsFile->getSource();
+        $basePath = dirname($hlsFile->path);
+        $expectedSegments = [
+            'index.m3u8',
+            'index_640p.m3u8',
+            'index_640p_0000.ts',
+            'index_640p_0001.ts',
+            'index_640p_0002.ts',
+            'index_1280p.m3u8',
+            'index_1280p_0000.ts',
+            'index_1280p_0001.ts',
+            'index_1280p_0002.ts',
+            'index_1920p.m3u8',
+            'index_1920p_0000.ts',
+            'index_1920p_0001.ts',
+            'index_1920p_0002.ts',
+        ];
+        foreach ($expectedSegments as $segment) {
+            $this->assertTrue($source->exists($basePath . '/' . $segment));
+        }
 
         $this->assertTrue($pipelineModel->ended);
         $this->assertFalse($pipelineModel->started);
