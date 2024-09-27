@@ -12,6 +12,8 @@ interface Source
 
     public function delete(string $path);
 
+    public function deleteDirectory(string $path);
+
     public function move(string $source, string $destination);
 
     public function copy(string $source, string $destination);

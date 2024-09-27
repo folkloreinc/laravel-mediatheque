@@ -3,6 +3,7 @@
 namespace Folklore\Mediatheque\Models;
 
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 use Folklore\Mediatheque\Contracts\Source\Factory as SourceFactory;
@@ -123,7 +124,14 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
     public function deleteFile(): void
     {
         $source = $this->getSource();
-        $source->delete($this->path);
+        // if the file is an HLS index file, store in the hls/ folder, then
+        // delete the whole subfolder where the file resides
+        if (Str::startsWith($this->path, 'hls/') && basename($this->path) === 'index.m3u8') {
+            $basePath = dirname($this->path);
+            $source->deleteDirectory($basePath);
+        } else {
+            $source->delete($this->path);
+        }
     }
 
     public function moveFile(string $newPath): void

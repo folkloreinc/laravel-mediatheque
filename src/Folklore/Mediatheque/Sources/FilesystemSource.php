@@ -74,6 +74,17 @@ class FilesystemSource implements Source
         return $disk->delete($realPath);
     }
 
+    public function deleteDirectory(string $path)
+    {
+        if (!$this->exists($path)) {
+            return;
+        }
+
+        $disk = $this->getDisk();
+        $realPath = $this->getFullPath($path);
+        return $disk->deleteDirectory($realPath);
+    }
+
     public function move(string $source, string $destination)
     {
         if ($this->exists($destination)) {
