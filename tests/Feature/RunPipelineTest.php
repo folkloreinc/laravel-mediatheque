@@ -305,7 +305,6 @@ class RunPipelineTest extends TestCase
         $pipeline = Pipeline::fromJobs([
             'hls' => [
                 'job' => \Folklore\Mediatheque\Jobs\Video\HLS::class,
-                'segment_duration' => 1,
                 'representations' => [
                     [
                         'max_width' => 360,
@@ -373,7 +372,6 @@ class RunPipelineTest extends TestCase
         $pipeline = Pipeline::fromJobs([
             'hls' => [
                 'job' => \Folklore\Mediatheque\Jobs\Video\HLS::class,
-                'segment_duration' => 1,
                 'representations' => [
                     [
                         'max_width' => 360,
