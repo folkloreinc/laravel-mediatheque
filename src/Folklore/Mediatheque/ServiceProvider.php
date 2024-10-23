@@ -27,6 +27,11 @@ class ServiceProvider extends BaseServiceProvider
         $this->bootPublishes();
         $this->bootEvents();
         $this->bootRouter();
+
+        // Console
+        if ($this->app->runningInConsole()) {
+            $this->commands([\Folklore\Mediatheque\Console\Commands\PipelineRun::class]);
+        }
     }
 
     public function bootPublishes()
@@ -309,15 +314,9 @@ class ServiceProvider extends BaseServiceProvider
             'mediatheque.services.animated_image' => [
                 \Folklore\Mediatheque\Contracts\Services\AnimatedImage::class,
             ],
-            'mediatheque.services.gif' => [
-                \Folklore\Mediatheque\Contracts\Services\Gif::class,
-            ],
-            'mediatheque.services.webp' => [
-                \Folklore\Mediatheque\Contracts\Services\Webp::class,
-            ],
-            'mediatheque.services.svg' => [
-                \Folklore\Mediatheque\Contracts\Services\Svg::class,
-            ],
+            'mediatheque.services.gif' => [\Folklore\Mediatheque\Contracts\Services\Gif::class],
+            'mediatheque.services.webp' => [\Folklore\Mediatheque\Contracts\Services\Webp::class],
+            'mediatheque.services.svg' => [\Folklore\Mediatheque\Contracts\Services\Svg::class],
             'mediatheque.services.otfinfo' => [
                 \Folklore\Mediatheque\Contracts\Services\FontFamilyName::class,
             ],
