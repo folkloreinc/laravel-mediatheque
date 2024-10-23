@@ -11,7 +11,7 @@ class PipelineRun extends Command
      *
      * @var string
      */
-    protected $signature = 'mediatheque:pipeline:run {type} {name} {--id=*}';
+    protected $signature = 'mediatheque:run_pipeline {type} {name} {--id=*}';
 
     /**
      * The console command description.
@@ -41,7 +41,8 @@ class PipelineRun extends Command
         $name = $this->argument('name');
         $ids = $this->option('id');
         if (is_null($ids) || !sizeof($ids)) {
-            $this->line('<error>You must provide either --id= or </error>');
+            $this->line('<error>You must provide ids (--id=*)</error>');
+            return 0;
         }
 
         $items = mediatheque()
