@@ -162,6 +162,7 @@ return [
             'jobs' => [
                 'h264' => \Folklore\Mediatheque\Jobs\Video\H264::class,
                 'webm' => \Folklore\Mediatheque\Jobs\Video\WebM::class,
+                'hevc' => \Folklore\Mediatheque\Jobs\Video\HEVC::class,
                 'thumbnails' => [
                     'job' => \Folklore\Mediatheque\Jobs\Video\Thumbnails::class,
                     'count' => 5,

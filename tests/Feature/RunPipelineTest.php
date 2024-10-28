@@ -36,10 +36,11 @@ class RunPipelineTest extends TestCase
         $pipeline = Pipeline::fromJobs([
             'h264' => \Folklore\Mediatheque\Jobs\Video\H264::class,
             'webm' => \Folklore\Mediatheque\Jobs\Video\WebM::class,
+            'hevc' => \Folklore\Mediatheque\Jobs\Video\HEVC::class,
             'thumbnails' => \Folklore\Mediatheque\Jobs\Video\Thumbnails::class,
         ]);
 
-        $handles = ['original', 'h264', 'webm', 'thumbnails'];
+        $handles = ['original', 'h264', 'webm', 'hevc', 'thumbnails'];
 
         $filePath = public_path('test.mp4');
         $model = app(Media::class);
@@ -65,7 +66,8 @@ class RunPipelineTest extends TestCase
         $this->assertFalse($pipelineModel->hasFailedJobs());
         foreach ($handles as $handle) {
             $file = $model->getFile($handle);
-            $this->assertTrue(file_exists(public_path('files/' . $file->path)));
+            $source = $file->getSource();
+            $this->assertTrue($source->exists($file->path));
         }
     }
 
@@ -110,7 +112,8 @@ class RunPipelineTest extends TestCase
         $this->assertFalse($pipelineModel->hasFailedJobs());
         foreach ($handles as $handle) {
             $file = $model->getFile($handle);
-            $this->assertTrue(file_exists(public_path('files/' . $file->path)));
+            $source = $file->getSource();
+            $this->assertTrue($source->exists($file->path));
         }
     }
 
@@ -155,7 +158,8 @@ class RunPipelineTest extends TestCase
         $this->assertFalse($pipelineModel->hasFailedJobs());
         foreach ($handles as $handle) {
             $file = $model->getFile($handle);
-            $this->assertTrue(file_exists(public_path('files/' . $file->path)));
+            $source = $file->getSource();
+            $this->assertTrue($source->exists($file->path));
         }
     }
 
@@ -200,7 +204,8 @@ class RunPipelineTest extends TestCase
         $this->assertFalse($pipelineModel->hasFailedJobs());
         foreach ($handles as $handle) {
             $file = $model->getFile($handle);
-            $this->assertTrue(file_exists(public_path('files/' . $file->path)));
+            $source = $file->getSource();
+            $this->assertTrue($source->exists($file->path));
             $this->assertEquals($file->getMetadata('width')->getValue(), 320);
         }
     }
@@ -247,7 +252,8 @@ class RunPipelineTest extends TestCase
         $this->assertFalse($pipelineModel->hasFailedJobs());
         foreach ($handles as $handle) {
             $file = $model->getFile($handle);
-            $this->assertTrue(file_exists(public_path('files/' . $file->path)));
+            $source = $file->getSource();
+            $this->assertTrue($source->exists($file->path));
             if ($handle !== 'original') {
                 $this->assertEquals($file->getMetadata('width')->getValue(), 600);
             }
@@ -291,7 +297,8 @@ class RunPipelineTest extends TestCase
         $this->assertFalse($pipelineModel->hasFailedJobs());
         foreach ($handles as $handle) {
             $file = $model->getFile($handle);
-            $this->assertTrue(file_exists(public_path('files/' . $file->path)));
+            $source = $file->getSource();
+            $this->assertTrue($source->exists($file->path));
         }
     }
 
