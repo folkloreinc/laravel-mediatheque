@@ -12,14 +12,18 @@ class WebM extends FFMpegJob
     protected $defaultOptions = [
         'quality' => 26,
         'extension' => 'webm',
+        // 'deadline' => 'realtime',
     ];
 
     protected function getAdditionalParameters()
     {
         $parameters = parent::getAdditionalParameters();
 
-        $parameters[] = '-deadline';
-        $parameters[] = 'realtime';
+        $deadline = data_get($this->options, 'deadline', null);
+        if (!is_null($deadline)) {
+            $parameters[] = '-deadline';
+            $parameters[] = $deadline;
+        }
 
         if ($this->file->mime === 'image/gif') {
             $parameters[] = '-auto-alt-ref';
