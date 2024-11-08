@@ -38,7 +38,14 @@ class FFMpegJob extends PipelineJob
 
         $format = $this->getFormat();
 
-        $ffmpeg = BaseFFMpeg::create(config('mediatheque.services.ffmpeg'));
+        $ffmpeg = BaseFFMpeg::create(
+            array_merge(
+                [
+                    'timeout' => config('mediatheque.process_timeout', 600),
+                ],
+                config('mediatheque.services.ffmpeg')
+            )
+        );
         $media = $ffmpeg->open($path);
 
         $this->applyFilters($media);
