@@ -8,6 +8,7 @@ use FFMpeg\FFMpeg as BaseFFMpeg;
 use FFMpeg\Filters\Video\ResizeFilter;
 use FFMpeg\Coordinate\Dimension;
 use FFMpeg\Exception\RuntimeException;
+use Illuminate\Support\Facades\Log;
 
 class FFMpegJob extends PipelineJob
 {
@@ -49,6 +50,17 @@ class FFMpegJob extends PipelineJob
         $media = $ffmpeg->open($path);
 
         $this->applyFilters($media);
+
+        $debug = data_get($this->options, 'debug', false);
+        if ($debug) {
+            $parameters = $this->getAdditionalParameters();
+            Log::info('[Laravel Mediatheque] Running FFMpegJob '.get_class($this), [
+                'path' => $path,
+                'destination_path' => $destinationPath,
+                'parameters' => $parameters,
+                'options' => $this->options,
+            ]);
+        }
 
         $media->save($format, $destinationPath);
 

@@ -12,12 +12,19 @@ class WebM extends FFMpegJob
     protected $defaultOptions = [
         'quality' => 26,
         'extension' => 'webm',
+        'kilo_bitrate' => 0,
         // 'deadline' => 'realtime',
     ];
 
     protected function getAdditionalParameters()
     {
         $parameters = parent::getAdditionalParameters();
+
+        $kiloBitrate = data_get($this->options, 'kilo_bitrate', null);
+        if ($kiloBitrate === 0) {
+            $parameters[] = '-b:v';
+            $parameters[] = 0;
+        }
 
         $deadline = data_get($this->options, 'deadline', null);
         if (!is_null($deadline)) {
