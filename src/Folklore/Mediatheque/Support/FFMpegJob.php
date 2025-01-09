@@ -70,6 +70,16 @@ class FFMpegJob extends PipelineJob
             $format->setVideoCodec($videoCodec);
         }
 
+        $kiloBitrate = data_get($this->options, 'kilo_bitrate', null);
+        if (!is_null($kiloBitrate)) {
+            $format->setKiloBitrate($kiloBitrate);
+        }
+
+        $audioKiloBitrate = data_get($this->options, 'audio_kilo_bitrate', null);
+        if (!is_null($audioKiloBitrate)) {
+            $format->setAudioKiloBitrate($audioKiloBitrate);
+        }
+
         $passes = data_get($this->options, 'passes', null);
         if (!is_null($passes)) {
             $format->setPasses($passes);
@@ -153,7 +163,7 @@ class FFMpegJob extends PipelineJob
 
     protected function getAdditionalParameters()
     {
-        $parameters = data_get($this->options, 'parameters', null);
+        $parameters = data_get($this->options, 'parameters', null) ?? [];
 
         $quality = data_get($this->options, 'quality', null);
         if (!is_null($quality)) {
