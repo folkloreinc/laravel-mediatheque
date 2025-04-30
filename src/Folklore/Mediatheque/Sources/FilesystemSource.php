@@ -123,7 +123,7 @@ class FilesystemSource implements Source
     {
         $disk = $this->getDisk();
         $realPath = $this->getFullPath($path);
-        return $disk->url($realPath);
+        return $disk->url(ltrim($realPath, '/'));
     }
 
     public function getDisk(): FilesystemContract
