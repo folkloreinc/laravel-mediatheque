@@ -6,3 +6,4 @@ package-lock.json
 .phpunit.result.cache
 .DS_Store
 /coverage
+/notes
