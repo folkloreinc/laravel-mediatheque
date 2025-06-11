@@ -10,7 +10,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Folklore\Mediatheque\Contracts\Support\HasPipelines as HasPipelinesInterface;
 use Folklore\Mediatheque\Contracts\Models\Pipeline;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob;
-use Carbon\Carbon;
 use Exception;
 
 class RunPipeline implements ShouldQueue
@@ -18,6 +17,7 @@ class RunPipeline implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $model;
+
     public $pipeline;
 
     /**
@@ -44,12 +44,10 @@ class RunPipeline implements ShouldQueue
 
         $definition = $this->pipeline->getDefinition();
         $jobs = $definition->jobs();
+
         foreach ($jobs as $name => $job) {
             // Ensure job definition is an array and merge handle
-            $job = array_merge(
-                is_string($job) ? ['job' => $job] : $job,
-                ['name' => $name]
-            );
+            $job = array_merge(is_string($job) ? ['job' => $job] : $job, ['name' => $name]);
 
             if (!isset($job['from_file']) || is_null($job['from_file'])) {
                 $job['from_file'] = $definition->fromFile();

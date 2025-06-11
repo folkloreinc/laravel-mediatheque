@@ -28,7 +28,7 @@ abstract class PipelineJob
 
     protected $localFilePath = null;
 
-    public function __construct(FileContract $file, $options = [], HasFilesContract $model = null)
+    public function __construct(FileContract $file, $options = [], ?HasFilesContract $model = null)
     {
         $this->options = array_merge($this->defaultOptions, $options);
         $this->file = $file;

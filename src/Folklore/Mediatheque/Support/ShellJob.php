@@ -15,7 +15,7 @@ class ShellJob extends PipelineJob
         'arguments' => [],
     ];
 
-    public function __construct(FileContract $file, $options = [], HasFilesContract $model = null)
+    public function __construct(FileContract $file, $options = [], ?HasFilesContract $model = null)
     {
         $this->options = array_merge($this->defaultShellOptions, $this->defaultOptions, $options);
         $this->file = $file;

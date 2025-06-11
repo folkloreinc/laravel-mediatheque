@@ -5,7 +5,6 @@ namespace Folklore\Mediatheque\Tests\Feature;
 use Folklore\Mediatheque\Tests\TestCase;
 use Folklore\Mediatheque\Support\Pipeline;
 use Folklore\Mediatheque\Contracts\Models\Media;
-use Illuminate\Support\Facades\Storage;
 
 class RunPipelineTest extends TestCase
 {
@@ -22,7 +21,6 @@ class RunPipelineTest extends TestCase
         if (app('files')->exists($filesPath)) {
             app('files')->deleteDirectory($filesPath);
         }
-
         parent::tearDown();
     }
 
@@ -69,6 +67,43 @@ class RunPipelineTest extends TestCase
             $source = $file->getSource();
             $this->assertTrue($source->exists($file->path));
         }
+    }
+
+    public function testMediaConvert()
+    {
+        $pipeline = Pipeline::fromJobs([
+            'videos' => \Folklore\Mediatheque\Jobs\Video\MediaConvert::class,
+        ]);
+
+        $handles = ['h264', 'webm'];
+
+        $filePath = public_path('test.mp4');
+        $model = app(Media::class);
+        $model->withoutTypePipeline();
+        $model->setOriginalFile($filePath);
+        $pipelineModel = $model->runPipeline($pipeline);
+        $pipelineModel = $pipelineModel->fresh();
+        $model = $model->fresh();
+
+        // $model->load('files');
+        // $this->assertEquals(
+        //     $handles,
+        //     $model->files
+        //         ->map(function ($file) {
+        //             return $file->getHandle();
+        //         })
+        //         ->toArray()
+        // );
+        // $this->assertTrue($pipelineModel->ended);
+        // $this->assertFalse($pipelineModel->started);
+        // $this->assertFalse($pipelineModel->failed);
+        // $this->assertTrue($pipelineModel->allJobsEnded());
+        // $this->assertFalse($pipelineModel->hasFailedJobs());
+        // foreach ($handles as $handle) {
+        //     $file = $model->getFile($handle);
+        //     $source = $file->getSource();
+        //     $this->assertTrue($source->exists($file->path));
+        // }
     }
 
     /**

@@ -25,7 +25,7 @@ class FFMpegJob extends PipelineJob
         'parameters' => [],
     ];
 
-    public function __construct(FileContract $file, $options = [], HasFilesContract $model = null)
+    public function __construct(FileContract $file, $options = [], ?HasFilesContract $model = null)
     {
         $this->options = array_merge($this->defaultFFmpegOptions, $this->defaultOptions, $options);
         $this->file = $file;
@@ -54,7 +54,7 @@ class FFMpegJob extends PipelineJob
         $debug = data_get($this->options, 'debug', false);
         if ($debug) {
             $parameters = $this->getAdditionalParameters();
-            Log::info('[Laravel Mediatheque] Running FFMpegJob '.get_class($this), [
+            Log::info('[Laravel Mediatheque] Running FFMpegJob ' . get_class($this), [
                 'path' => $path,
                 'destination_path' => $destinationPath,
                 'parameters' => $parameters,

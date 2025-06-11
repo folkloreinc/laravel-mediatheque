@@ -112,6 +112,7 @@ class ServiceProvider extends BaseServiceProvider
         $this->registerRouter();
         $this->registerMediatheque();
         $this->registerMimeTypesGuesser();
+        $this->registerMediaConvert();
     }
 
     /**
@@ -223,6 +224,28 @@ class ServiceProvider extends BaseServiceProvider
         $this->app->bind(\Symfony\Component\Mime\MimeTypeGuesserInterface::class, function () {
             return new \Symfony\Component\Mime\MimeTypes();
         });
+    }
+
+    public function registerMediaConvert()
+    {
+        $this->app->singleton('mediatheque.media_convert', function ($app) {
+            $config = $app['config']->get('mediatheque.services.mediaConvert', []);
+            if (empty($config)) {
+                throw new InvalidArgumentException('Media Convert configuration is required.');
+            }
+            $key = Arr::get($config, 'key');
+            $secret = Arr::get($config, 'secret');
+            return new \Folklore\Mediatheque\Services\MediaConvertClient(
+                $key,
+                $secret,
+                Arr::except($config, ['key', 'secret'])
+            );
+        });
+
+        $this->app->bind(
+            \Folklore\Mediatheque\Contracts\Services\MediaConvertClient::class,
+            'mediatheque.media_convert'
+        );
     }
 
     /**
@@ -357,6 +380,18 @@ class ServiceProvider extends BaseServiceProvider
             foreach ($aliases as $alias) {
                 $this->app->alias($key, $alias);
             }
+        }
+    }
+
+    protected function registerConfigInjections($classes, $injections)
+    {
+        foreach ($injections as $variable => $configKey) {
+            $this->app
+                ->when($classes)
+                ->needs($variable)
+                ->give(function () use ($configKey) {
+                    return $this->app['config']->get($configKey);
+                });
         }
     }
 

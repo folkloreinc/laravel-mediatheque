@@ -168,6 +168,12 @@ return [
                     'count' => 5,
                     'in_middle' => true,
                 ],
+                'media_convert' => [
+                    'job' => \Folklore\Mediatheque\Jobs\Video\MediaConvert::class,
+                    'outputs' => ['webm', 'h264'],
+                    'max_width' => 1080,
+                    'max_height' => 1080,
+                ],
             ],
         ],
 
@@ -276,6 +282,13 @@ return [
 
         'convertFonts' => [
             'bin' => env('CONVERTFONTS_BIN', '/usr/local/bin/convertFonts.sh'),
+        ],
+
+        'mediaConvert' => [
+            'key' => env('AWS_MEDIACONVERT_KEY', null),
+            'secret' => env('AWS_MEDIACONVERT_SECRET', null),
+            'region' => env('AWS_MEDIACONVERT_REGION', 'us-east-1'),
+            'endpoint' => env('AWS_MEDIACONVERT_ENDPOINT', null), // 'https://api.mediaconvert.us-east-1.amazonaws.com',
         ],
     ],
 ];

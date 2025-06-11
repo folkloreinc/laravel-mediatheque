@@ -13,14 +13,11 @@ class ThumbnailsJob extends PipelineJob
     protected $defaultThumbnailsOptions = [
         'count' => null,
         'path_format' => '{dirname}/{filename}-{name}-{index}.{extension}',
-        'extension' => 'jpg'
+        'extension' => 'jpg',
     ];
 
-    public function __construct(
-        FileContract $file,
-        $options = [],
-        HasFilesContract $model = null
-    ) {
+    public function __construct(FileContract $file, $options = [], ?HasFilesContract $model = null)
+    {
         $this->options = array_merge(
             $this->defaultThumbnailsOptions,
             $this->defaultOptions,
@@ -40,13 +37,9 @@ class ThumbnailsJob extends PipelineJob
         for ($i = 0; $i < $maxIndex; $i++) {
             $options = $this->getOptions($i);
             $destinationPath = $this->formatDestinationPath($path, [
-                'index' => $i
+                'index' => $i,
             ]);
-            $thumbnail = $thumbnailService->getThumbnail(
-                $path,
-                $destinationPath,
-                $options
-            );
+            $thumbnail = $thumbnailService->getThumbnail($path, $destinationPath, $options);
             $files[] = $this->makeFileFromPath($destinationPath);
         }
 

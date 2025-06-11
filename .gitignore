@@ -7,3 +7,5 @@ package-lock.json
 .DS_Store
 /coverage
 /notes
+
+phpunit.xml
