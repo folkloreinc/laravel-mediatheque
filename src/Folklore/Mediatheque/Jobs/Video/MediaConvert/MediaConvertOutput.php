@@ -8,11 +8,15 @@ use \JsonSerializable;
 
 class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
 {
-    protected $containerSettings = [
+    protected $containerSettingsMP4 = [
         'Container' => 'MP4',
         'Mp4Settings' => [
             'MoovPlacement' => 'PROGRESSIVE_DOWNLOAD',
         ],
+    ];
+
+    protected $containerSettingsWebM = [
+        'Container' => 'WEBM',
     ];
 
     protected $videoDescriptionH264 = [
@@ -25,7 +29,17 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
         ],
     ];
 
-    protected $videoDescriptionWebm = [
+    protected $videoDescriptionH265 = [
+        'Codec' => 'H_265',
+        'H265Settings' => [
+            'MaxBitrate' => 5000000,
+            'RateControlMode' => 'QVBR',
+            'SceneChangeDetect' => 'TRANSITION_DETECTION',
+            'QualityTuningLevel' => 'SINGLE_PASS_HQ',
+        ],
+    ];
+
+    protected $videoDescriptionWebM = [
         'Codec' => 'VP9',
         'Vp9Settings' => [
             'RateControlMode' => 'VBR',
@@ -44,14 +58,14 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
 
     protected $audioDescriptionOpus = [
         'Codec' => 'OPUS',
-        'OpusSettings' => [],
+        'OpusSettings' => [
+            'Bitrate' => 128000,
+            'SampleRate' => 48000,
+            'Channels' => 2,
+        ],
     ];
 
     protected $options;
-
-    protected $extension = null;
-
-    protected $nameModifier = null;
 
     protected $width = null;
 
@@ -69,8 +83,6 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
         int $width,
         int $height,
         ?string $scaling = null,
-        ?string $extension = null,
-        ?string $nameModifier = null,
         ?array $options = []
     ) {
         $this->videoCodec = $videoCodec;
@@ -80,15 +92,17 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
         $this->height = $height;
         $this->scaling = $scaling ?? 'DEFAULT'; // Means fit with padding
 
-        $this->extension = $extension;
-        $this->nameModifier = $nameModifier;
-
         $this->options = $options;
     }
 
-    protected function getContainerSettings()
+    protected function getContainerSettings($videoCodec)
     {
-        return $this->containerSettings;
+        if ($videoCodec === 'h264' || $videoCodec === 'h265') {
+            return $this->containerSettingsMP4;
+        } elseif ($videoCodec === 'webm') {
+            return $this->containerSettingsWebM;
+        }
+        return null;
     }
 
     protected function getVideoDescription($videoCodec)
@@ -146,12 +160,10 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
     {
         return array_merge(
             [
-                'Extension' => $this->extension,
-                'ContainerSettings' => $this->getContainerSettings(),
+                'ContainerSettings' => $this->getContainerSettings($this->videoCodec),
                 'VideoDescription' => $this->getVideoDescription($this->videoCodec),
                 'AudioDescriptions' => $this->getAudioDescriptions($this->audioCodecs),
             ],
-            isset($this->nameModifier) ? ['NameModifier' => $this->nameModifier] : [],
             $this->options ?? []
         );
     }

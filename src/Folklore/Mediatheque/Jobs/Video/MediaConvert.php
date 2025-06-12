@@ -10,6 +10,7 @@ use Folklore\Mediatheque\Jobs\Video\MediaConvert\MediaConvertJob;
 use Folklore\Mediatheque\Jobs\Video\MediaConvert\MediaConvertOutput;
 use Folklore\Mediatheque\Support\PipelineJob;
 use Folklore\Mediatheque\Contracts\Services\MediaConvertClient;
+// use Folklore\Mediatheque\Models\File;
 use Illuminate\Support\Arr;
 use Folklore\Mediatheque\Sources\FilesystemSource;
 use Illuminate\Filesystem\AwsS3V3Adapter;
@@ -49,12 +50,15 @@ class MediaConvert extends PipelineJob
         $fileWidth = $file->getMetadata('width')->getValue();
         $fileHeight = $file->getMetadata('height')->getValue();
 
-        $inputs = data_get($this->options, 'inputs', null); // can batch
-        $outputs = data_get($this->options, 'outputs', null); // can batch
+        // TODO
+        // $inputs = data_get($this->options, 'inputs', null);
+        // $outputs = data_get($this->options, 'outputs', null);
+
         $bitrate = data_get($this->options, 'bitrate', null);
 
-        $format = data_get($this->options, 'format', 'h264');
-        $extension = 'mp4';
+        $format = data_get($this->options, 'formats', data_get($this->options, 'format', 'h264'));
+        $formats = is_array($format) ? $format : [$format];
+
         $width = $fileWidth;
         $height = $fileHeight;
         $scaling = null;
@@ -73,9 +77,9 @@ class MediaConvert extends PipelineJob
             'MediaConvertJob',
             $destination,
             new MediaConvertInput($path),
-            is_array($format) ? collect($format)->map(function($fmt) use ($width, $height, $scaling, $extension) {
-                return new MediaConvertOutput($fmt, ['aac'], $width, $height, $scaling, $extension);
-            })->toArray() : new MediaConvertOutput($format, ['aac'], $width, $height, $scaling, $extension),
+            collect($formats)->map(function($fmt) use ($width, $height, $scaling) {
+                return new MediaConvertOutput($fmt, $fmt === 'webm' ? ['opus'] : ['aac'], $width, $height, $scaling);
+            })->toArray(),
             Arr::except($this->options, ['inputs', 'outputs'])
         );
 
@@ -87,12 +91,23 @@ class MediaConvert extends PipelineJob
 
         $this->client->createJob($job);
 
-        return 's3://'.$destination;
+        $files = [];
+        foreach($formats as $format) {
+            // $path = null; // $this->formatS3Destination($info['dirname']).$info['filename'].($format === 'h264' || $format === 'h265' ? '.mp4': '.'.$format);
+            // $files[] = $this->makeFileFromPath($path);
+        }
+
+        return $files;
     }
 
     public function formatS3DestinationPath($bucket, $path)
     {
-        return 's3://'.$bucket.'/'.rtrim(ltrim($path, '/'), '/').'/converted';
+        return 's3://'.$bucket.'/'.$this->formatS3Destination($path);
+    }
+
+    public function formatS3Destination($path)
+    {
+        return rtrim(ltrim($path, '/'), '/').'/converted/';
     }
 
     public function formatS3SourcePath($bucket, $path)
