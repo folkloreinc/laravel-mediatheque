@@ -93,11 +93,22 @@ class MediaConvert extends PipelineJob
 
         $files = [];
         foreach($formats as $format) {
-            // $path = null; // $this->formatS3Destination($info['dirname']).$info['filename'].($format === 'h264' || $format === 'h265' ? '.mp4': '.'.$format);
-            // $files[] = $this->makeFileFromPath($path);
+            $path = $this->formatS3Destination($info['dirname']).$info['filename'].($format === 'h264' || $format === 'h265' ? '.mp4': '.'.$format);
+            $files[] = $path; // $this->makeFileFromPath($path);
         }
 
-        return $files;
+        // Launch the check job
+        $data = array_merge($this->options, ['job' => MediaConvertCheck::class, 'files' => $files]);
+        $jobModel = app(PipelineJob::class);
+        $jobModel->setDefinition($data);
+        $this->model->pipeline->addJob($jobModel);
+
+        // Run the job
+        if ($jobModel->canRun($this->model)) {
+            $jobModel->run();
+        }
+
+        return [];
     }
 
     public function formatS3DestinationPath($bucket, $path)
