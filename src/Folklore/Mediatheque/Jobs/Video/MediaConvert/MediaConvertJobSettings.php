@@ -1,6 +1,6 @@
 <?php
 
-namespace Folklore\Mediatheque\Support\MediaConvert;
+namespace Folklore\Mediatheque\Jobs\Video\MediaConvert;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
@@ -65,7 +65,15 @@ class MediaConvertJobSettings implements JsonSerializable, Arrayable, Jsonable
                         'OutputGroupSettings' => [
                             'Type' => 'FILE_GROUP_SETTINGS',
                             'FileGroupSettings' => [
-                                'Destination' => 's3://' . $this->destination . '/',
+                                'Destination' => $this->destination, // S3 path
+                                'DestinationSettings' => [
+                                    'S3Settings' => [
+                                        'StorageClass' => 'STANDARD',
+                                        'AccessControl' => [
+                                            'CannedAcl' => 'PUBLIC_READ',
+                                        ],
+                                    ],
+                                ],
                             ],
                         ],
                         'Outputs' => collect(

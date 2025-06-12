@@ -1,6 +1,6 @@
 <?php
 
-namespace Folklore\Mediatheque\Support\MediaConvert;
+namespace Folklore\Mediatheque\Jobs\Video\MediaConvert;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
@@ -9,10 +9,11 @@ use \JsonSerializable;
 class MediaConvertInput implements JsonSerializable, Arrayable, Jsonable
 {
     protected $options = [
-        'FileInput' => null, // ex: 'https://cdn.microm.ag/video/2025-06-02/66908-011310.mp4'
         'AudioSelectors' => [
             'Audio Selector 1' => [
+                'Offset' => 0,
                 'DefaultSelection' => 'DEFAULT',
+                'SelectorType' => 'TRACK',
             ],
         ],
         'VideoSelector' => [
@@ -25,10 +26,10 @@ class MediaConvertInput implements JsonSerializable, Arrayable, Jsonable
 
     protected $fileInput = null;
 
-    public function __construct($fileInput, array $options = [])
+    public function __construct($fileInput, ?array $options = [])
     {
         $this->fileInput = $fileInput;
-        $this->options = $options;
+        $this->options = array_merge($this->options, $options);
     }
 
     public function setFileInput($fileInput): self

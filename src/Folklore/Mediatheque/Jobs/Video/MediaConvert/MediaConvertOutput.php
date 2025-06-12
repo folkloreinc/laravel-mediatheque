@@ -1,6 +1,6 @@
 <?php
 
-namespace Folklore\Mediatheque\Support\MediaConvert;
+namespace Folklore\Mediatheque\Jobs\Video\MediaConvert;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
@@ -57,6 +57,8 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
 
     protected $height = null;
 
+    protected $scaling = null;
+
     protected $videoCodec = null;
 
     protected $audioCodecs = [];
@@ -66,6 +68,7 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
         ?array $audioCodecs,
         int $width,
         int $height,
+        ?string $scaling = null,
         ?string $extension = null,
         ?string $nameModifier = null,
         ?array $options = []
@@ -75,6 +78,7 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
 
         $this->width = $width;
         $this->height = $height;
+        $this->scaling = $scaling ?? 'DEFAULT'; // Means fit with padding
 
         $this->extension = $extension;
         $this->nameModifier = $nameModifier;
@@ -98,15 +102,15 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
         } elseif ($videoCodec === 'webm') {
             $videoDescription['CodecSettings'] = $this->videoDescriptionWebM ?? [];
         }
-
         if (isset($this->width)) {
             $videoDescription['Width'] = $this->width;
         }
-
         if (isset($this->height)) {
             $videoDescription['Height'] = $this->height;
         }
-
+        if (isset($this->scaling)) {
+            $videoDescription['ScalingBehavior'] = $this->scaling;
+        }
         return $videoDescription;
     }
 
@@ -147,8 +151,8 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
                 'VideoDescription' => $this->getVideoDescription($this->videoCodec),
                 'AudioDescriptions' => $this->getAudioDescriptions($this->audioCodecs),
             ],
-            isset($this->nameModifier) ? ['NameModifier' => $this->nameModifier] : null,
-            $this->options
+            isset($this->nameModifier) ? ['NameModifier' => $this->nameModifier] : [],
+            $this->options ?? []
         );
     }
 }
