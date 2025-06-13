@@ -121,6 +121,48 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
             ->save();
     }
 
+    public function setRemoteFile(string $handle, array $data = []): void
+    {
+        $path = data_get($data, 'path');
+        $info = pathinfo($path);
+        $name = $info['basename'] ?? null;
+        $extension = $info['extension'] ?? null;
+
+        if (isset($handle)) {
+            $data['handle'] = $handle;
+        }
+
+        if (isset($name)) {
+            $data['name'] = $name;
+        }
+
+        if (!isset($data['type'])) {
+            $data['type'] = app(TypeFactory::class)->typeFromPath($path);
+        }
+
+        if (isset($extension)) {
+            $data['extension'] = $extension;
+        }
+
+        // if (!isset($data['path'])) {
+        //     if (!$this->exists) {
+        //         $this->save();
+        //     }
+        //     $data['path'] = app(PathFormatterService::class)->formatPath(
+        //         config('mediatheque.file_path_format'),
+        //         $this,
+        //         $data
+        //     );
+        // }
+
+        // $source = $this->getSource(data_get($data, 'source'));
+        // $source->putFromRemotePath($data['path'], $remotePath);
+
+        $this->fill(Arr::only($data, $this->fillable))
+            ->setMetadatas(collect(data_get($data, 'metadata', [])))
+            ->save();
+    }
+
     public function deleteFile(): void
     {
         $source = $this->getSource();
