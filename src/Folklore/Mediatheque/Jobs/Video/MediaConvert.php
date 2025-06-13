@@ -37,7 +37,7 @@ class MediaConvert extends PipelineJob
             'container' => 'webm',
             'audio' => ['opus'],
             'mime' => 'video/webm',
-        ]
+        ],
     ];
 
     public function __construct(FileContract $file, $options = [], ?HasFilesContract $model = null)
@@ -50,7 +50,12 @@ class MediaConvert extends PipelineJob
 
     public function handle()
     {
-        set_time_limit(config('mediatheque.services.mediaConvert.timeout', config('mediatheque.process_timeout', 600)));
+        set_time_limit(
+            config(
+                'mediatheque.services.mediaConvert.timeout',
+                config('mediatheque.process_timeout', 600)
+            )
+        );
 
         $file = $this->file;
         $source = $file->getSource();
@@ -58,23 +63,20 @@ class MediaConvert extends PipelineJob
             throw new \Exception('MediaConvert job requires a FilesystemSource');
         }
         $disk = $source->getDisk();
-        if(!$disk instanceof AwsS3V3Adapter) {
+        if (!$disk instanceof AwsS3V3Adapter) {
             throw new \Exception('MediaConvert job requires an S3 disk');
         }
 
         $source = config('mediatheque.source');
-        $name = config('mediatheque.sources.'.$source.'.disk', null);
-        $disk =  config('filesystems.'.$name, null);
-        $driver = config('filesystems.disks.'.$disk.'.driver');
+        $name = config('mediatheque.sources.' . $source . '.disk', null);
+        $disk = config('filesystems.' . $name, null);
+        $driver = config('filesystems.disks.' . $disk . '.driver');
         if ($driver !== 's3') {
             throw new \Exception('MediaConvert job requires an S3 disk');
         }
-        $bucket = config('filesystems.disks.'.$disk.'.bucket');
+        $bucket = config('filesystems.disks.' . $disk . '.bucket');
 
-        $path = $this->formatS3SourcePath(
-            $bucket,
-            $file->path
-        );
+        $path = $this->formatS3SourcePath($bucket, $file->path);
 
         $fileWidth = $file->getMetadata('width')->getValue();
         $fileHeight = $file->getMetadata('height')->getValue();
@@ -84,7 +86,11 @@ class MediaConvert extends PipelineJob
         // $outputs = data_get($this->options, 'outputs', null);
 
         $bitrate = data_get($this->options, 'bitrate', null);
-        $videoFormat = data_get($this->options, 'formats', data_get($this->options, 'format', 'h264'));
+        $videoFormat = data_get(
+            $this->options,
+            'formats',
+            data_get($this->options, 'format', 'h264')
+        );
         $formats = is_array($videoFormat) ? $videoFormat : [$videoFormat];
 
         $width = $fileWidth;
@@ -99,24 +105,33 @@ class MediaConvert extends PipelineJob
         }
 
         $info = pathinfo($file->path);
-        $destination = $this->formatS3DestinationPath($bucket, ($info['dirname'] ?? ''));
+        $destination = $this->formatS3DestinationPath($bucket, $info['dirname'] ?? '');
 
         $settings = new MediaConvertJobSettings(
             'MediaConvertJob',
             $destination,
             new MediaConvertInput($path),
-            collect($formats)->map(function($format) use ($width, $height, $scaling, $bitrate) {
-                $config = data_get($this->formats, $format, null);
-                return new MediaConvertOutput($format, $config['audio'], $width, $height, $scaling, ['videoBitrate' => $bitrate]);
-            })->toArray(),
-            Arr::except($this->options, ['inputs', 'outputs', 'bitrate', 'formats', 'format']),
+            collect($formats)
+                ->map(function ($format) use ($width, $height, $scaling, $bitrate) {
+                    $config = data_get($this->formats, $format, null);
+                    return new MediaConvertOutput(
+                        $format,
+                        $config['audio'],
+                        $width,
+                        $height,
+                        $scaling,
+                        ['videoBitrate' => $bitrate]
+                    );
+                })
+                ->toArray(),
+            Arr::except($this->options, ['inputs', 'outputs', 'bitrate', 'formats', 'format'])
         );
 
-        $config = new MediaConvertJob(
+        $config = (new MediaConvertJob(
             config('mediatheque.services.mediaConvert.queue', null),
             config('mediatheque.services.mediaConvert.role', null),
             $settings
-        )->toArray();
+        ))->toArray();
 
         $job = $this->client->createJob($config);
 
@@ -132,35 +147,38 @@ class MediaConvert extends PipelineJob
 
         $output = data_get($job, 'Job.OutputGroupDetails.0.OutputDetails', []);
 
-        $values = collect($formats)->map(function($format, $index) use ($info, $output) {
-            $config = data_get($this->formats, $format, null);
-            $path = $this->formatS3Destination($info['dirname']).$info['filename'].($format === 'h264' || $format === 'h265' ? '.mp4': '.'.$format);
-            $metadata = data_get($output, $index, []);
-            $duration = (float)((int) data_get($metadata, 'DurationInMs', 0)) / 1000;
-            $width = data_get($metadata, 'VideoDetails.WidthInPx', null);
-            $height = data_get($metadata, 'VideoDetails.HeightInPx', null);
-            $data = array_merge($config, [
-                'path' => $path,
-                'format' => $format,
-                'size' => 0,
-                'remote' => true,
-                'metadata' => [
-                    'duration' => new MetadataValue('duration', $duration, 'float'),
-                    'width' => new MetadataValue('width', $width, 'integer'),
-                    'height' => new MetadataValue('height', $height, 'integer'),
-                    'format' => new MetadataValue('format', $format, 'string'),
-                ],
-            ]);
-            return $data;
-        })->toArray();
+        $values = collect($formats)
+            ->map(function ($format, $index) use ($info, $output) {
+                $config = data_get($this->formats, $format, null);
+                $path =
+                    $this->formatS3Destination($info['dirname']) .
+                    $info['filename'] .
+                    ($format === 'h264' || $format === 'h265' ? '.mp4' : '.' . $format);
+                $metadata = data_get($output, $index, []);
+                $duration = (float) ((int) data_get($metadata, 'DurationInMs', 0)) / 1000;
+                $width = data_get($metadata, 'VideoDetails.WidthInPx', null);
+                $height = data_get($metadata, 'VideoDetails.HeightInPx', null);
+                $data = array_merge($config, [
+                    'path' => $path,
+                    'format' => $format,
+                    'size' => 0,
+                    'remote' => true,
+                    'metadata' => [
+                        'duration' => new MetadataValue('duration', $duration, 'float'),
+                        'width' => new MetadataValue('width', $width, 'integer'),
+                        'height' => new MetadataValue('height', $height, 'integer'),
+                        'format' => new MetadataValue('format', $format, 'string'),
+                    ],
+                ]);
+                return $data;
+            })
+            ->toArray();
 
         $files = [];
         foreach ($values as $data) {
             $format = data_get($data, 'format');
             $file = app(FileContract::class);
-            $file->setRemoteFile(
-                $format, $data
-            );
+            $file->setRemoteFile($format, $data);
             $file->save();
             $files[$format] = $file;
         }
@@ -170,17 +188,17 @@ class MediaConvert extends PipelineJob
 
     public function formatS3DestinationPath($bucket, $path)
     {
-        return 's3://'.$bucket.'/'.$this->formatS3Destination($path);
+        return 's3://' . $bucket . '/' . $this->formatS3Destination($path);
     }
 
     public function formatS3Destination($path)
     {
-        return rtrim(ltrim($path, '/'), '/').'/converted/';
+        return rtrim(ltrim($path, '/'), '/') . '/converted/';
     }
 
     public function formatS3SourcePath($bucket, $path)
     {
-        return 's3://'.$bucket.'/'.ltrim($path, '/');
+        return 's3://' . $bucket . '/' . ltrim($path, '/');
     }
 
     protected function getVideoSize($fileWidth, $fileHeight)
@@ -192,19 +210,19 @@ class MediaConvert extends PipelineJob
             return [
                 'width' => $width,
                 'height' => $height,
-                'scaling' => 'DEFAULT'
+                'scaling' => 'DEFAULT',
             ];
         } elseif (!is_null($height)) {
             return [
                 'width' => null,
                 'height' => $height,
-                'scaling' => 'FIT'
+                'scaling' => 'FIT',
             ];
         } elseif (!is_null($width)) {
             return [
                 'width' => $width,
                 'height' => null,
-                'scaling' => 'FIT'
+                'scaling' => 'FIT',
             ];
         }
 
@@ -212,25 +230,26 @@ class MediaConvert extends PipelineJob
         $maxHeight = data_get($this->options, 'max_height', null);
         $upscale = data_get($this->options, 'upscale', false);
 
-        $needsResize = $upscale || $this->mediaNeedsResize($fileWidth, $fileHeight, $maxWidth, $maxHeight);
+        $needsResize =
+            $upscale || $this->mediaNeedsResize($fileWidth, $fileHeight, $maxWidth, $maxHeight);
 
         if ($needsResize && !is_null($maxWidth) && !is_null($maxHeight)) {
             return [
                 'width' => $maxWidth,
                 'height' => $maxHeight,
-                'scaling' => 'FILL' // TEST THIS: ResizeFilter::RESIZEMODE_INSET
+                'scaling' => 'FILL', // TEST THIS: ResizeFilter::RESIZEMODE_INSET
             ];
         } elseif ($needsResize && !is_null($maxHeight)) {
             return [
                 'width' => null,
                 'height' => $maxHeight,
-                'scaling' => 'FIT'
+                'scaling' => 'FIT',
             ];
         } elseif ($needsResize && !is_null($maxWidth)) {
             return [
                 'width' => $maxWidth,
                 'height' => null,
-                'scaling' => 'FIT'
+                'scaling' => 'FIT',
             ];
         }
 
