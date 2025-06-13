@@ -5,6 +5,7 @@ namespace Folklore\Mediatheque\Jobs\Video\MediaConvert;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use \JsonSerializable;
+use Illuminate\Support\Arr;
 
 class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
 {
@@ -73,6 +74,10 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
 
     protected $scaling = null;
 
+    protected $videoBitrate = 5000000;
+
+    protected $audioBitrate = 128000;
+
     protected $videoCodec = null;
 
     protected $audioCodecs = [];
@@ -92,7 +97,16 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
         $this->height = $height;
         $this->scaling = $scaling ?? 'DEFAULT'; // Means fit with padding
 
-        $this->options = $options;
+        $this->videoBitrate =
+            isset($options['videoBitrate']) && !empty($options['videoBitrate'])
+                ? (int) $options['videoBitrate'] * 1000
+                : $this->videoBitrate;
+        $this->audioBitrate =
+            isset($options['audioBitrate']) && !empty($options['audioBitrate'])
+                ? (int) $options['audioBitrate'] * 1000
+                : $this->audioBitrate;
+
+        $this->options = Arr::except($options, ['videoBitrate', 'audioBitrate']);
     }
 
     protected function getContainerSettings($videoCodec)
@@ -107,25 +121,27 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
 
     protected function getVideoDescription($videoCodec)
     {
-        $videoDescription = [];
+        $codecSettings = [];
 
         if ($videoCodec === 'h264') {
-            $videoDescription['CodecSettings'] = $this->videoDescriptionH264;
+            $codecSettings = $this->videoDescriptionH264;
+            data_set($codecSettings, 'H264Settings.MaxBitrate', $this->videoBitrate);
         } elseif ($videoCodec === 'h265') {
-            $videoDescription['CodecSettings'] = $this->videoDescriptionH265 ?? [];
+            $codecSettings = $this->videoDescriptionH265 ?? [];
+            data_set($codecSettings, 'H265Settings.MaxBitrate', $this->videoBitrate);
         } elseif ($videoCodec === 'webm') {
-            $videoDescription['CodecSettings'] = $this->videoDescriptionWebM ?? [];
+            $codecSettings = $this->videoDescriptionWebM ?? [];
+            data_set($codecSettings, 'Vp9Settings.Bitrate', $this->videoBitrate);
         }
-        if (isset($this->width)) {
-            $videoDescription['Width'] = $this->width;
-        }
-        if (isset($this->height)) {
-            $videoDescription['Height'] = $this->height;
-        }
-        if (isset($this->scaling)) {
-            $videoDescription['ScalingBehavior'] = $this->scaling;
-        }
-        return $videoDescription;
+
+        return array_merge(
+            [
+                'CodecSettings' => $codecSettings,
+            ],
+            isset($this->width) ? ['Width' => $this->width] : [],
+            isset($this->height) ? ['Height' => $this->height] : [],
+            isset($this->scaling) ? ['ScalingBehavior' => $this->scaling] : []
+        );
     }
 
     public function getAudioDescriptions()
@@ -138,6 +154,7 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
                 } elseif ($codec === 'opus') {
                     $codecSettings = $this->audioDescriptionOpus;
                 }
+                data_set($codecSettings, 'Bitrate', $this->audioBitrate);
                 return [
                     'AudioSourceName' => 'Audio Selector ' . ($index + 1),
                     'CodecSettings' => $codecSettings,

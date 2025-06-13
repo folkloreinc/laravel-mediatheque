@@ -66,7 +66,12 @@ class RunPipelineJob implements ShouldQueue
         $isIndexed = is_array($newFile);
         $files = !is_array($newFile) ? [$newFile] : $newFile;
         foreach ($files as $index => $file) {
-            $fileHandle = $isIndexed && !is_null($name) ? $name . '.' . $index : $name;
+            $fileHandle = null;
+            if ($isIndexed) {
+                $fileHandle = !is_null($name) && is_numeric($index) ? $name . '.' . $index : $index;
+            } else {
+                $fileHandle = $name;
+            }
             if (!is_null($fileHandle)) {
                 $this->model->setFile($fileHandle, $file);
             } else {

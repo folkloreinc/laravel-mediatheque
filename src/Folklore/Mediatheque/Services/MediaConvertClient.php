@@ -47,6 +47,17 @@ class MediaConvertClient implements MediaConvertClientContract
         return $this->client->cancelJob(['Id' => $jobId])->toArray();
     }
 
+    public function isJobComplete(?array $job = null): bool
+    {
+        $id = data_get($job, 'Job.Id', null);
+        $job = $this->getJob($id);
+        if (empty($job)) {
+            return false;
+        }
+        $status = data_get($job, 'Job.Status', null);
+        return isset($status) && in_array($status, ['COMPLETE', 'ERROR']);
+    }
+
     public function getClient(): AwsMediaConvertClient
     {
         return $this->client;

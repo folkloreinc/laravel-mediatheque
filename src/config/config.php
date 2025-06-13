@@ -173,6 +173,7 @@ return [
                     'outputs' => ['webm', 'h264'],
                     'max_width' => 1080,
                     'max_height' => 1080,
+                    'bitrate' => 4000,
                 ],
             ],
         ],

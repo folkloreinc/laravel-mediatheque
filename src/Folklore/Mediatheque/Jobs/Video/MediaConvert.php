@@ -10,7 +10,8 @@ use Folklore\Mediatheque\Jobs\Video\MediaConvert\MediaConvertJob;
 use Folklore\Mediatheque\Jobs\Video\MediaConvert\MediaConvertOutput;
 use Folklore\Mediatheque\Support\PipelineJob;
 use Folklore\Mediatheque\Contracts\Services\MediaConvertClient;
-// use Folklore\Mediatheque\Models\File;
+use Folklore\Mediatheque\Metadata\Value as MetadataValue;
+
 use Illuminate\Support\Arr;
 use Folklore\Mediatheque\Sources\FilesystemSource;
 use Illuminate\Filesystem\AwsS3V3Adapter;
@@ -20,6 +21,24 @@ class MediaConvert extends PipelineJob
     public $config = [];
 
     protected $client;
+
+    protected $formats = [
+        'h264' => [
+            'container' => 'mp4',
+            'audio' => ['aac'],
+            'mime' => 'video/mp4',
+        ],
+        'h265' => [
+            'container' => 'mp4',
+            'audio' => ['aac'],
+            'mime' => 'video/mp4',
+        ],
+        'webm' => [
+            'container' => 'webm',
+            'audio' => ['opus'],
+            'mime' => 'video/webm',
+        ]
+    ];
 
     public function __construct(FileContract $file, $options = [], ?HasFilesContract $model = null)
     {
@@ -31,6 +50,8 @@ class MediaConvert extends PipelineJob
 
     public function handle()
     {
+        set_time_limit(config('mediatheque.services.mediaConvert.timeout', config('mediatheque.process_timeout', 600)));
+
         $file = $this->file;
         $source = $file->getSource();
         if (!$source instanceof FilesystemSource) {
@@ -40,7 +61,15 @@ class MediaConvert extends PipelineJob
         if(!$disk instanceof AwsS3V3Adapter) {
             throw new \Exception('MediaConvert job requires an S3 disk');
         }
-        $bucket = config('filesystems.disks.s3.bucket');
+
+        $source = config('mediatheque.source');
+        $name = config('mediatheque.sources.'.$source.'.disk', null);
+        $disk =  config('filesystems.'.$name, null);
+        $driver = config('filesystems.disks.'.$disk.'.driver');
+        if ($driver !== 's3') {
+            throw new \Exception('MediaConvert job requires an S3 disk');
+        }
+        $bucket = config('filesystems.disks.'.$disk.'.bucket');
 
         $path = $this->formatS3SourcePath(
             $bucket,
@@ -55,9 +84,8 @@ class MediaConvert extends PipelineJob
         // $outputs = data_get($this->options, 'outputs', null);
 
         $bitrate = data_get($this->options, 'bitrate', null);
-
-        $format = data_get($this->options, 'formats', data_get($this->options, 'format', 'h264'));
-        $formats = is_array($format) ? $format : [$format];
+        $videoFormat = data_get($this->options, 'formats', data_get($this->options, 'format', 'h264'));
+        $formats = is_array($videoFormat) ? $videoFormat : [$videoFormat];
 
         $width = $fileWidth;
         $height = $fileHeight;
@@ -70,45 +98,74 @@ class MediaConvert extends PipelineJob
             $scaling = $size['scaling'] ?? 'DEFAULT';
         }
 
-        $info = pathinfo($this->file->path);
+        $info = pathinfo($file->path);
         $destination = $this->formatS3DestinationPath($bucket, ($info['dirname'] ?? ''));
 
         $settings = new MediaConvertJobSettings(
             'MediaConvertJob',
             $destination,
             new MediaConvertInput($path),
-            collect($formats)->map(function($fmt) use ($width, $height, $scaling) {
-                return new MediaConvertOutput($fmt, $fmt === 'webm' ? ['opus'] : ['aac'], $width, $height, $scaling);
+            collect($formats)->map(function($format) use ($width, $height, $scaling, $bitrate) {
+                $config = data_get($this->formats, $format, null);
+                return new MediaConvertOutput($format, $config['audio'], $width, $height, $scaling, ['videoBitrate' => $bitrate]);
             })->toArray(),
-            Arr::except($this->options, ['inputs', 'outputs'])
+            Arr::except($this->options, ['inputs', 'outputs', 'bitrate', 'formats', 'format']),
         );
 
-        $job = new MediaConvertJob(
+        $config = new MediaConvertJob(
             config('mediatheque.services.mediaConvert.queue', null),
             config('mediatheque.services.mediaConvert.role', null),
             $settings
         )->toArray();
 
-        $this->client->createJob($job);
+        $job = $this->client->createJob($config);
+
+        if (!$job) {
+            throw new \Exception('Failed to create MediaConvert job');
+        }
+
+        while (!$this->client->isJobComplete($job)) {
+            sleep(10);
+        }
+
+        $job = $this->client->getJob(data_get($job, 'Job.Id'));
+
+        $output = data_get($job, 'Job.OutputGroupDetails.0.OutputDetails', []);
+
+        $values = collect($formats)->map(function($format, $index) use ($info, $output) {
+            $config = data_get($this->formats, $format, null);
+            $path = $this->formatS3Destination($info['dirname']).$info['filename'].($format === 'h264' || $format === 'h265' ? '.mp4': '.'.$format);
+            $metadata = data_get($output, $index, []);
+            $duration = (float)((int) data_get($metadata, 'DurationInMs', 0)) / 1000;
+            $width = data_get($metadata, 'VideoDetails.WidthInPx', null);
+            $height = data_get($metadata, 'VideoDetails.HeightInPx', null);
+            $data = array_merge($config, [
+                'path' => $path,
+                'format' => $format,
+                'size' => 0,
+                'remote' => true,
+                'metadata' => [
+                    'duration' => new MetadataValue('duration', $duration, 'float'),
+                    'width' => new MetadataValue('width', $width, 'integer'),
+                    'height' => new MetadataValue('height', $height, 'integer'),
+                    'format' => new MetadataValue('format', $format, 'string'),
+                ],
+            ]);
+            return $data;
+        })->toArray();
 
         $files = [];
-        foreach($formats as $format) {
-            $path = $this->formatS3Destination($info['dirname']).$info['filename'].($format === 'h264' || $format === 'h265' ? '.mp4': '.'.$format);
-            $files[] = $path; // $this->makeFileFromPath($path);
+        foreach ($values as $data) {
+            $format = data_get($data, 'format');
+            $file = app(FileContract::class);
+            $file->setRemoteFile(
+                $format, $data
+            );
+            $file->save();
+            $files[$format] = $file;
         }
 
-        // Launch the check job
-        $data = array_merge($this->options, ['job' => MediaConvertCheck::class, 'files' => $files]);
-        $jobModel = app(PipelineJob::class);
-        $jobModel->setDefinition($data);
-        $this->model->pipeline->addJob($jobModel);
-
-        // Run the job
-        if ($jobModel->canRun($this->model)) {
-            $jobModel->run();
-        }
-
-        return [];
+        return $files;
     }
 
     public function formatS3DestinationPath($bucket, $path)
@@ -126,7 +183,6 @@ class MediaConvert extends PipelineJob
         return 's3://'.$bucket.'/'.ltrim($path, '/');
     }
 
-    // Do something with this cuz resize is gonna be difficult
     protected function getVideoSize($fileWidth, $fileHeight)
     {
         $width = data_get($this->options, 'width', null);
@@ -136,19 +192,19 @@ class MediaConvert extends PipelineJob
             return [
                 'width' => $width,
                 'height' => $height,
-                'scaling' => 'DEFAULT' //
+                'scaling' => 'DEFAULT'
             ];
         } elseif (!is_null($height)) {
             return [
                 'width' => null,
                 'height' => $height,
-                'scaling' => 'FIT' // ResizeFilter::RESIZEMODE_SCALE_HEIGHT
+                'scaling' => 'FIT'
             ];
         } elseif (!is_null($width)) {
             return [
                 'width' => $width,
                 'height' => null,
-                'scaling' => 'FIT' // ResizeFilter::RESIZEMODE_SCALE_WIDTH
+                'scaling' => 'FIT'
             ];
         }
 
@@ -162,19 +218,19 @@ class MediaConvert extends PipelineJob
             return [
                 'width' => $maxWidth,
                 'height' => $maxHeight,
-                'scaling' => 'FILL' // ResizeFilter::RESIZEMODE_INSET
+                'scaling' => 'FILL' // TEST THIS: ResizeFilter::RESIZEMODE_INSET
             ];
         } elseif ($needsResize && !is_null($maxHeight)) {
             return [
                 'width' => null,
                 'height' => $maxHeight,
-                'scaling' => 'FIT' // ResizeFilter::RESIZEMODE_SCALE_HEIGHT
+                'scaling' => 'FIT'
             ];
         } elseif ($needsResize && !is_null($maxWidth)) {
             return [
                 'width' => $maxWidth,
                 'height' => null,
-                'scaling' => 'FIT' // ResizeFilter::RESIZEMODE_SCALE_WIDTH
+                'scaling' => 'FIT'
             ];
         }
 

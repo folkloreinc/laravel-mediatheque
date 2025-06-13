@@ -11,4 +11,6 @@ interface MediaConvertClient
     public function listJobs(array $params = []): array;
 
     public function cancelJob(string $jobId): array;
+
+    public function isJobComplete(?array $job = null): bool;
 }
