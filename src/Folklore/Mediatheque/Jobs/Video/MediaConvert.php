@@ -143,18 +143,21 @@ class MediaConvert extends PipelineJob
         $values = collect($formats)
             ->map(function ($format, $index) use ($info, $output) {
                 $config = data_get($this->formats, $format, null);
+                $extension = data_get($config, 'container');
                 $path =
                     $this->formatS3Destination($info['dirname']) .
                     $info['filename'] .
-                    ($format === 'h264' || $format === 'h265' ? '.mp4' : '.' . $format);
-
+                    '.' .
+                    $extension;
                 $metadata = data_get($output, $index, []);
                 $duration = (float) ((int) data_get($metadata, 'DurationInMs', 0)) / 1000;
                 $width = data_get($metadata, 'VideoDetails.WidthInPx', null);
                 $height = data_get($metadata, 'VideoDetails.HeightInPx', null);
                 $data = array_merge($config, [
+                    'handle' => $format,
+                    'type' => 'video',
                     'path' => $path,
-                    'format' => $format,
+                    'extension' => $extension,
                     'size' => 0, // TODO: get size from S3 filesystem afterwards
                     'remote' => true,
                     'metadata' => [
@@ -171,7 +174,7 @@ class MediaConvert extends PipelineJob
         $files = [];
         foreach ($values as $data) {
             $path = data_get($data, 'path');
-            $format = data_get($data, 'format');
+            $format = data_get($data, 'handle');
             $file = app(FileContract::class);
             $file->setFileFromSource($path, $data);
             $file->save();

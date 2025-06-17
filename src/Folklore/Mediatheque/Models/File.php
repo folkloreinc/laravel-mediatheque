@@ -90,25 +90,25 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
             $data['name'] = $name;
         }
 
-        if (!isset($data['type'])) {
+        if (!isset($data['type']) && !is_null($localPath)) {
             $data['type'] = app(TypeFactory::class)->typeFromPath($localPath);
         }
 
-        if (!isset($data['mime'])) {
+        if (!isset($data['mime']) && !is_null($localPath)) {
             $data['mime'] = app(MimeService::class)->getMime($localPath);
         }
 
-        if (!isset($data['extension'])) {
+        if (!isset($data['extension']) && !is_null($localPath)) {
             $defaultExtension = $extension;
             $extension = app(ExtensionService::class)->getExtension($localPath, $data['name']);
             $data['extension'] = !empty($extension) ? $extension : $defaultExtension;
         }
 
-        if (!isset($data['size'])) {
+        if (!isset($data['size']) && !is_null($file)) {
             $data['size'] = $file->getSize();
         }
 
-        if (!isset($data['metadata'])) {
+        if (!isset($data['metadata']) && !is_null($localPath)) {
             $data['metadata'] = app(MetadataService::class)->getMetadata($localPath);
         }
 
@@ -128,15 +128,19 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
             $source->putFromLocalPath($data['path'], $localPath);
         }
 
+        $metadata = data_get($data, 'metadata', []);
+
         $this->fill(Arr::only($data, $this->fillable))
-            ->setMetadatas(data_get($data, 'metadata', []))
+            ->setMetadatas(is_array($metadata) ? collect($metadata) : $metadata)
             ->save();
     }
 
     public function setFileFromSource(string $path, array $data = [])
     {
         $info = pathinfo($path);
-        return $this->setFile(array_merge(['name' => $info['basename']], $data));
+        return $this->setFile(
+            array_merge(['name' => $info['basename']], Arr::except($data, ['path']))
+        );
     }
 
     public function deleteFile(): void
