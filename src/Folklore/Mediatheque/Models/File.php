@@ -62,35 +62,45 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
 
     public function setFile($file, array $data = []): void
     {
+        if (is_array($file)) {
+            $data = $file;
+            $file = null;
+        }
+
         if (is_string($file)) {
             $file = new HttpFile($file);
         }
 
-        $path = $file->getRealPath();
-        $name =
-            $file instanceof SymfonyUploadedFile
-                ? $file->getClientOriginalName()
-                : $file->getFilename();
-        $extension =
-            $file instanceof SymfonyUploadedFile
-                ? $file->guessClientExtension()
-                : $file->guessExtension();
+        $localPath = null;
+        $name = null;
+        $extension = null;
+        if (!is_null($file)) {
+            $localPath = $file->getRealPath();
+            $name =
+                $file instanceof SymfonyUploadedFile
+                    ? $file->getClientOriginalName()
+                    : $file->getFilename();
+            $extension =
+                $file instanceof SymfonyUploadedFile
+                    ? $file->guessClientExtension()
+                    : $file->guessExtension();
+        }
 
         if (!isset($data['name'])) {
             $data['name'] = $name;
         }
 
         if (!isset($data['type'])) {
-            $data['type'] = app(TypeFactory::class)->typeFromPath($path);
+            $data['type'] = app(TypeFactory::class)->typeFromPath($localPath);
         }
 
         if (!isset($data['mime'])) {
-            $data['mime'] = app(MimeService::class)->getMime($path);
+            $data['mime'] = app(MimeService::class)->getMime($localPath);
         }
 
         if (!isset($data['extension'])) {
             $defaultExtension = $extension;
-            $extension = app(ExtensionService::class)->getExtension($path, $data['name']);
+            $extension = app(ExtensionService::class)->getExtension($localPath, $data['name']);
             $data['extension'] = !empty($extension) ? $extension : $defaultExtension;
         }
 
@@ -99,7 +109,7 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
         }
 
         if (!isset($data['metadata'])) {
-            $data['metadata'] = app(MetadataService::class)->getMetadata($path);
+            $data['metadata'] = app(MetadataService::class)->getMetadata($localPath);
         }
 
         if (!isset($data['path'])) {
@@ -113,54 +123,20 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
             );
         }
 
-        $source = $this->getSource(data_get($data, 'source'));
-        $source->putFromLocalPath($data['path'], $path);
+        if (!is_null($file)) {
+            $source = $this->getSource(data_get($data, 'source'));
+            $source->putFromLocalPath($data['path'], $localPath);
+        }
 
         $this->fill(Arr::only($data, $this->fillable))
             ->setMetadatas(data_get($data, 'metadata', []))
             ->save();
     }
 
-    public function setRemoteFile(string $handle, array $data = []): void
+    public function setFileFromSource(string $path, array $data = [])
     {
-        $path = data_get($data, 'path');
         $info = pathinfo($path);
-        $name = $info['basename'] ?? null;
-        $extension = $info['extension'] ?? null;
-
-        if (isset($handle)) {
-            $data['handle'] = $handle;
-        }
-
-        if (isset($name)) {
-            $data['name'] = $name;
-        }
-
-        if (!isset($data['type'])) {
-            $data['type'] = app(TypeFactory::class)->typeFromPath($path);
-        }
-
-        if (isset($extension)) {
-            $data['extension'] = $extension;
-        }
-
-        // if (!isset($data['path'])) {
-        //     if (!$this->exists) {
-        //         $this->save();
-        //     }
-        //     $data['path'] = app(PathFormatterService::class)->formatPath(
-        //         config('mediatheque.file_path_format'),
-        //         $this,
-        //         $data
-        //     );
-        // }
-
-        // $source = $this->getSource(data_get($data, 'source'));
-        // $source->putFromRemotePath($data['path'], $remotePath);
-
-        $this->fill(Arr::only($data, $this->fillable))
-            ->setMetadatas(collect(data_get($data, 'metadata', [])))
-            ->save();
+        return $this->setFile(array_merge(['name' => $info['basename']], $data));
     }
 
     public function deleteFile(): void

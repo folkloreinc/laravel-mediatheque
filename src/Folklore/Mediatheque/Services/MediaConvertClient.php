@@ -20,7 +20,7 @@ class MediaConvertClient implements MediaConvertClientContract
                     'key' => $key,
                     'secret' => $secret,
                 ],
-                // 'endpoint' => 'https://abcd1234.mediaconvert.us-east-1.amazonaws.com' // optionnel
+                // 'endpoint' => 'https://abcd1234.mediaconvert.us-east-1.amazonaws.com'
             ],
             $config
         );

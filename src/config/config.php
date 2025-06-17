@@ -286,10 +286,12 @@ return [
         ],
 
         'mediaConvert' => [
-            'key' => env('AWS_MEDIACONVERT_KEY', null),
-            'secret' => env('AWS_MEDIACONVERT_SECRET', null),
-            'region' => env('AWS_MEDIACONVERT_REGION', 'us-east-1'),
+            'filesystem' => env('AWS_MEDIACONVERT_FILESYSTEM', 's3'),
+            'temp_path' => env('AWS_MEDIACONVERT_TEMP_PATH', 'converted'),
             'endpoint' => env('AWS_MEDIACONVERT_ENDPOINT', null), // 'https://api.mediaconvert.us-east-1.amazonaws.com',
+            // 'key' => env('AWS_MEDIACONVERT_KEY', null),
+            // 'secret' => env('AWS_MEDIACONVERT_SECRET', null),
+            // 'region' => env('AWS_MEDIACONVERT_REGION', 'us-east-1'),
         ],
     ],
 ];
