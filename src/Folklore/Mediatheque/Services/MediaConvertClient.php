@@ -10,8 +10,13 @@ class MediaConvertClient implements MediaConvertClientContract
 {
     protected $client;
 
-    public function __construct(string $key, string $secret, ?array $config = null)
-    {
+    public function __construct(
+        string $key,
+        string $secret,
+        string $role,
+        string $queue,
+        ?array $config = null
+    ) {
         $config = array_merge(
             [
                 'region' => 'us-east-1',
@@ -20,6 +25,8 @@ class MediaConvertClient implements MediaConvertClientContract
                     'key' => $key,
                     'secret' => $secret,
                 ],
+                'role' => $role ?? null,
+                'queue' => $queue ?? null,
                 // 'endpoint' => 'https://abcd1234.mediaconvert.us-east-1.amazonaws.com'
             ],
             $config

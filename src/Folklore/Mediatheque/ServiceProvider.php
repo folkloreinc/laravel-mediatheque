@@ -229,10 +229,9 @@ class ServiceProvider extends BaseServiceProvider
     public function registerMediaConvert()
     {
         $this->app->singleton('mediatheque.media_convert', function ($app) {
-            $config = $app['config']->get('mediatheque.services.mediaConvert.config', []);
-            $filesystem = $app['config']->get('mediatheque.services.mediaConvert.filesystem');
-            $endpoint = $app['config']->get('mediatheque.services.mediaConvert.endpoint');
+            $config = $app['config']->get('mediatheque.services.mediaConvert', []);
 
+            $filesystem = data_get($config, 'filesystem', 's3');
             $disk = $app['config']->get('filesystems.disks.' . $filesystem, []);
             if (empty($disk)) {
                 throw new InvalidArgumentException(
@@ -243,12 +242,19 @@ class ServiceProvider extends BaseServiceProvider
             $secret = Arr::get($disk, 'secret');
             $region = Arr::get($disk, 'region', 'us-east-1');
 
+            $role = data_get($config, 'role', null);
+            $queue = data_get($config, 'queue', null);
+            $endpoint = data_get($config, 'endpoint', null);
+            $region = data_get($config, 'region', null);
+
             return new \Folklore\Mediatheque\Services\MediaConvertClient(
                 $key,
                 $secret,
+                $role,
+                $queue,
                 array_merge(
-                    $config,
-                    ['region' => $region],
+                    data_get($config, 'config', []),
+                    !empty($region) ? ['region' => $region] : [],
                     !empty($endpoint) ? ['endpoint' => $endpoint] : []
                 )
             );
