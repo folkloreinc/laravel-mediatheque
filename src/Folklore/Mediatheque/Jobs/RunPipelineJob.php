@@ -21,7 +21,9 @@ class RunPipelineJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $pipelineJob;
+
     public $pipeline;
+
     public $model;
 
     /**

@@ -50,13 +50,6 @@ class MediaConvert extends PipelineJob
 
     public function handle()
     {
-        set_time_limit(
-            config(
-                'mediatheque.services.mediaConvert.timeout',
-                config('mediatheque.process_timeout', 600)
-            )
-        );
-
         $file = $this->file;
         $source = $file->getSource();
         if (!$source instanceof FilesystemSource) {
@@ -99,8 +92,8 @@ class MediaConvert extends PipelineJob
 
         $size = $this->getVideoSize($fileWidth, $fileHeight);
         if (!is_null($size)) {
-            $width = $size['width'] ?? $width;
-            $height = $size['height'] ?? $height;
+            $width = $size['width'];
+            $height = $size['height'];
             $scaling = $size['scaling'] ?? 'DEFAULT';
         }
 
