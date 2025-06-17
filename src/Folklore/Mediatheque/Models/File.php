@@ -16,7 +16,6 @@ use Folklore\Mediatheque\Contracts\Support\HasMetadatas as HasMetadatasInterface
 use Folklore\Mediatheque\Contracts\Support\HasUrl as HasUrlInterface;
 use Folklore\Mediatheque\Support\Traits\HasUrl;
 use Folklore\Mediatheque\Support\Traits\HasMetadatas;
-use Folklore\Mediatheque\Models\Collections\FilesCollection;
 use Folklore\Mediatheque\Observers\FileObserver;
 
 use Symfony\Component\HttpFoundation\File\File as HttpFile;
@@ -123,9 +122,25 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
             );
         }
 
+        $source = data_get($data, 'source');
         if (!is_null($file)) {
-            $source = $this->getSource(data_get($data, 'source'));
+            $source = $this->getSource($source);
             $source->putFromLocalPath($data['path'], $localPath);
+        }
+
+        $originalPath = data_get($data, 'original_path', null);
+        if (isset($originalPath)) {
+            $destination = data_get($data, 'destination', null);
+            $filesystem = $this->getSource($source);
+
+            if (is_null($destination) || $source === $destination) {
+                $filesystem->move($originalPath, $data['path']);
+            } else {
+                $localPath = $filesystem->copyToLocalPath($originalPath, $data['path']);
+                $filesystem = app(SourceFactory::class)->source($destination);
+                $filesystem->putFromLocalPath($data['path'], $localPath);
+            }
+            // dd($filesystem);
         }
 
         $metadata = data_get($data, 'metadata', []);
@@ -139,7 +154,10 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
     {
         $info = pathinfo($path);
         return $this->setFile(
-            array_merge(['name' => $info['basename']], Arr::except($data, ['path']))
+            array_merge(
+                ['name' => $info['basename'], 'original_path' => $path],
+                Arr::except($data, ['path'])
+            )
         );
     }
 

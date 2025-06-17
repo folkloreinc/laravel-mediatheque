@@ -141,7 +141,7 @@ class MediaConvert extends PipelineJob
         $output = data_get($job, 'Job.OutputGroupDetails.0.OutputDetails', []);
 
         $values = collect($formats)
-            ->map(function ($format, $index) use ($info, $output) {
+            ->map(function ($format, $index) use ($info, $output, $disk) {
                 $config = data_get($this->formats, $format, null);
                 $extension = data_get($config, 'container');
                 $path =
