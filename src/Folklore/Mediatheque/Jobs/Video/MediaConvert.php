@@ -188,7 +188,8 @@ class MediaConvert extends PipelineJob
 
     public function formatS3Destination($path)
     {
-        return rtrim(ltrim($path, '/'), '/') . '/converted/';
+        $tempPath = config('mediatheque.services.mediaConvert.temp_path', 'converted');
+        return rtrim(ltrim($path, '/'), '/') . '/' . rtrim(ltrim($tempPath, '/'), '/') . '/';
     }
 
     public function formatS3SourcePath($bucket, $path)
