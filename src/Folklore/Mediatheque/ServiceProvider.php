@@ -245,7 +245,6 @@ class ServiceProvider extends BaseServiceProvider
             $role = data_get($config, 'role', null);
             $queue = data_get($config, 'queue', null);
             $endpoint = data_get($config, 'endpoint', null);
-            $region = data_get($config, 'region', null);
 
             return new \Folklore\Mediatheque\Services\MediaConvertClient(
                 $key,
@@ -254,7 +253,7 @@ class ServiceProvider extends BaseServiceProvider
                 $queue,
                 array_merge(
                     data_get($config, 'config', []),
-                    !empty($region) ? ['region' => $region] : [],
+                    ['region' => $region],
                     !empty($endpoint) ? ['endpoint' => $endpoint] : []
                 )
             );
