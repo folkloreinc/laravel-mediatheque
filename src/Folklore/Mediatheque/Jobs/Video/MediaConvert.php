@@ -15,6 +15,7 @@ use Folklore\Mediatheque\Metadata\Value as MetadataValue;
 use Illuminate\Support\Arr;
 use Folklore\Mediatheque\Sources\FilesystemSource;
 use Illuminate\Filesystem\AwsS3V3Adapter;
+use Folklore\Mediatheque\Contracts\Source\Factory as SourceFactory;
 
 class MediaConvert extends PipelineJob
 {
@@ -51,6 +52,7 @@ class MediaConvert extends PipelineJob
     public function handle()
     {
         $file = $this->file;
+
         $source = $file->getSource();
         if (!$source instanceof FilesystemSource) {
             throw new \Exception('MediaConvert job requires a FilesystemSource');
@@ -60,15 +62,15 @@ class MediaConvert extends PipelineJob
             throw new \Exception('MediaConvert job requires an S3 disk');
         }
 
-        $source = config('mediatheque.source');
-        $name = config('mediatheque.sources.' . $source . '.disk', null);
+        $sourceName = config('mediatheque.source');
+        $name = config('mediatheque.sources.' . $sourceName . '.disk', null);
         $disk = config('filesystems.' . $name, null);
         $driver = config('filesystems.disks.' . $disk . '.driver');
         if ($driver !== 's3') {
             throw new \Exception('MediaConvert job requires an S3 disk');
         }
-        $bucket = config('filesystems.disks.' . $disk . '.bucket');
 
+        $bucket = config('filesystems.disks.' . $disk . '.bucket');
         $path = $this->formatS3SourcePath($bucket, $file->path);
 
         $fileWidth = $file->getMetadata('width')->getValue();
@@ -171,12 +173,26 @@ class MediaConvert extends PipelineJob
             })
             ->toArray();
 
+        $isSameSource = true;
+        $defaultSource = app(SourceFactory::class)->source();
+        if ($defaultSource instanceof FilesystemSource) {
+            $disk = $defaultSource->getDisk();
+            if ($disk instanceof AwsS3V3Adapter) {
+                $diskConfig = $disk->getConfig();
+                $isSameSource = $bucket === data_get($diskConfig, 'bucket', null);
+            }
+        }
+
         $files = [];
         foreach ($values as $data) {
             $path = data_get($data, 'path');
             $format = data_get($data, 'handle');
             $file = app(FileContract::class);
-            $file->setFileFromSource($path, $data);
+            if ($isSameSource) {
+                $file->setFileFromSource($path, $data);
+            } else {
+                $file->setFile($path, $data);
+            }
             $file->save();
             $files[$format] = $file;
         }

@@ -286,7 +286,7 @@ return [
         ],
 
         'mediaConvert' => [
-            'filesystem' => env('AWS_MEDIACONVERT_FILESYSTEM', 's3'),
+            'disk' => env('AWS_MEDIACONVERT_DISK', 's3'),
             'temp_path' => env('AWS_MEDIACONVERT_TEMP_PATH', 'converted'),
             'endpoint' => env('AWS_MEDIACONVERT_ENDPOINT', null), // 'https://api.mediaconvert.us-east-1.amazonaws.com',
             'role' => env('AWS_MEDIACONVERT_ROLE', null),

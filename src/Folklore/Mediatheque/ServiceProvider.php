@@ -231,7 +231,7 @@ class ServiceProvider extends BaseServiceProvider
         $this->app->singleton('mediatheque.media_convert', function ($app) {
             $config = $app['config']->get('mediatheque.services.mediaConvert', []);
 
-            $filesystem = data_get($config, 'filesystem', 's3');
+            $filesystem = data_get($config, 'disk', 's3');
             $disk = $app['config']->get('filesystems.disks.' . $filesystem, []);
             if (empty($disk)) {
                 throw new InvalidArgumentException(

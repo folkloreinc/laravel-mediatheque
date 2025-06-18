@@ -123,24 +123,13 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
         }
 
         $source = data_get($data, 'source');
+        $originalPath = data_get($data, 'original_path', null);
         if (!is_null($file)) {
             $source = $this->getSource($source);
             $source->putFromLocalPath($data['path'], $localPath);
-        }
-
-        $originalPath = data_get($data, 'original_path', null);
-        if (isset($originalPath)) {
-            $destination = data_get($data, 'destination', null);
+        } elseif (isset($originalPath)) {
             $filesystem = $this->getSource($source);
-
-            if (is_null($destination) || $source === $destination) {
-                $filesystem->move($originalPath, $data['path']);
-            } else {
-                $localPath = $filesystem->copyToLocalPath($originalPath, $data['path']);
-                $filesystem = app(SourceFactory::class)->source($destination);
-                $filesystem->putFromLocalPath($data['path'], $localPath);
-            }
-            // dd($filesystem);
+            $filesystem->move($originalPath, $data['path']);
         }
 
         $metadata = data_get($data, 'metadata', []);
