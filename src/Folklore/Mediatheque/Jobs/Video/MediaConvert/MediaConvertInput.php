@@ -16,10 +16,10 @@ class MediaConvertInput implements JsonSerializable, Arrayable, Jsonable
                 'SelectorType' => 'TRACK',
             ],
         ],
-        'VideoSelector' => [
-            'ColorSpace' => 'REC_601',
-            'ColorSpaceUsage' => 'FORCE',
-        ],
+        // 'VideoSelector' => [
+        //     'ColorSpace' => 'REC_601',
+        //     'ColorSpaceUsage' => 'FORCE',
+        // ],
         'FilterEnable' => 'AUTO',
         'TimecodeSource' => 'ZEROBASED',
     ];
