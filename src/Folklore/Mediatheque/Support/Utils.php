@@ -14,7 +14,13 @@ class Utils
             $response = Http::withHeaders([
                 'Range' => 'bytes=' . $offset . '-' . ($offset + ($length - 1)),
             ])->get($path);
-            return in_array($response->status(), [200, 206], true) ? $response->body() : null;
+            if (!$response->successful()) {
+                return null;
+            }
+            $body = $response->body();
+            return $response->status() === 206 || strlen($body) === $length
+                ? $body
+                : substr($body, $offset, $length);
         }
 
         return file_get_contents($path, false, null, $offset, $length);
