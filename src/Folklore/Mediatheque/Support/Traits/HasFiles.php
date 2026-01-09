@@ -34,7 +34,7 @@ trait HasFiles
 
     public function getFiles(): Collection
     {
-        return $this->files->mapWithKeys(function ($file) {
+        return $this->files->toBase()->mapWithKeys(function ($file) {
             return [
                 $file->getHandle() => $file,
             ];
