@@ -3,7 +3,7 @@
 namespace Folklore\Mediatheque\Jobs\Video;
 
 use Folklore\Mediatheque\Support\FFMpegJob;
-use FFMpeg\Format\Video\WebM as WebMFormat;
+use Folklore\Mediatheque\Jobs\Video\Formats\WebM as WebMFormat;
 
 class WebM extends FFMpegJob
 {
