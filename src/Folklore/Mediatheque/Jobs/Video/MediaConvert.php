@@ -250,9 +250,9 @@ class MediaConvert extends PipelineJob
 
         if ($needsResize && !is_null($maxWidth) && !is_null($maxHeight)) {
             return [
-                'width' => $maxWidth,
-                'height' => $maxHeight,
-                'scaling' => 'FILL', // TEST THIS: ResizeFilter::RESIZEMODE_INSET
+                'width' => $fileWidth >= $fileHeight ? $maxWidth : null,
+                'height' => $fileHeight > $fileWidth ? $maxHeight : null,
+                'scaling' => 'FIT', // TEST THIS: ResizeFilter::RESIZEMODE_INSET
             ];
         } elseif ($needsResize && !is_null($maxHeight)) {
             return [
