@@ -2,12 +2,14 @@
 
 namespace Folklore\Mediatheque;
 
+use Closure;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactoryContract;
 use Folklore\Mediatheque\Contracts\Type\Type as TypeContract;
 use Folklore\Mediatheque\Support\Type;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 
 class TypeManager implements TypeFactoryContract
 {
@@ -48,7 +50,7 @@ class TypeManager implements TypeFactoryContract
      *
      * @return mixed
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function type(string $name): TypeContract
     {
@@ -80,7 +82,7 @@ class TypeManager implements TypeFactoryContract
      * @param  string  $name
      * @return mixed
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function types(): Collection
     {
@@ -99,7 +101,7 @@ class TypeManager implements TypeFactoryContract
      * @param  string  $name
      * @return mixed
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     protected function createType($name)
     {
@@ -127,7 +129,7 @@ class TypeManager implements TypeFactoryContract
      * @param  string  $name
      * @return mixed
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     protected function createTypeInstance($name, $config): TypeContract
     {
@@ -168,7 +170,7 @@ class TypeManager implements TypeFactoryContract
      * Register a custom type
      *
      * @param  string  $name
-     * @param  string|array|\Closure  $type
+     * @param  string|array|Closure  $type
      * @return $this
      */
     public function extend($name, $type)

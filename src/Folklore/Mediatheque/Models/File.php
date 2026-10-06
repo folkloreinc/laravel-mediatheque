@@ -214,8 +214,8 @@ class File extends Model implements FileContract, HasMetadatasInterface, HasUrlI
     {
         $query->where(function ($query) use ($text) {
             $query->where('handle', 'LIKE', '%'.$text.'%');
-            $query->where('name', 'LIKE', '%'.$text.'%');
-            $query->where('path', 'LIKE', '%'.$text.'%');
+            $query->orWhere('name', 'LIKE', '%'.$text.'%');
+            $query->orWhere('path', 'LIKE', '%'.$text.'%');
         });
 
         return $query;

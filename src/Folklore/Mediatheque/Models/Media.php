@@ -86,7 +86,7 @@ class Media extends Model implements MediaContract
     {
         $this->setAttribute(
             $this->getTypeName(),
-            $type instanceof TypeContract ? $type->getName() : $type
+            $type instanceof TypeContract ? $type->name() : $type
         );
     }
 

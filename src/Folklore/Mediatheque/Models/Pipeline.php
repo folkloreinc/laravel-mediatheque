@@ -102,10 +102,11 @@ class Pipeline extends Model implements PipelineContract
     public function allJobsEnded(): bool
     {
         return $this->jobs()
-            ->where('started', true)
-            ->orWhere(function ($query) {
-                $query->where('ended', false);
-                $query->where('failed', false);
+            ->where(function ($query) {
+                $query->where('started', true)->orWhere(function ($query) {
+                    $query->where('ended', false);
+                    $query->where('failed', false);
+                });
             })
             ->count() === 0;
     }

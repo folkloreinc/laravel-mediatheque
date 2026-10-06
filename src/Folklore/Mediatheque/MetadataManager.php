@@ -2,10 +2,12 @@
 
 namespace Folklore\Mediatheque;
 
+use Closure;
 use Folklore\Mediatheque\Contracts\Metadata\Factory as MetadataFactory;
 use Folklore\Mediatheque\Contracts\Metadata\Reader as MetadataReader;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Arr;
+use InvalidArgumentException;
 
 class MetadataManager implements MetadataFactory
 {
@@ -46,7 +48,7 @@ class MetadataManager implements MetadataFactory
      *
      * @return mixed
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function metadata(string $name): MetadataReader
     {
@@ -66,7 +68,7 @@ class MetadataManager implements MetadataFactory
      * @param  string  $name
      * @return mixed
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     protected function createReader($name)
     {
@@ -98,10 +100,14 @@ class MetadataManager implements MetadataFactory
      * @param  string  $name
      * @return mixed
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     protected function createReaderInstance($name, $config)
     {
+        if (is_null($config)) {
+            return null;
+        }
+
         if (is_string($config)) {
             $reader = $this->app->make($config);
         } elseif (is_array($config)) {
@@ -135,7 +141,7 @@ class MetadataManager implements MetadataFactory
      * Register a custom driver creator Closure.
      *
      * @param  string  $name
-     * @param  \Closure  $callback
+     * @param  Closure  $callback
      * @return $this
      */
     public function extend($name, $reader)

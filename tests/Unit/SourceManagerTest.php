@@ -2,10 +2,14 @@
 
 namespace Folklore\Mediatheque\Tests\Unit;
 
+use Folklore\Mediatheque\Contracts\Source\Source as SourceContract;
+use Folklore\Mediatheque\Exception\InvalidSourceException;
 use Folklore\Mediatheque\SourceManager;
 use Folklore\Mediatheque\Sources\FilesystemSource;
 use Folklore\Mediatheque\Sources\LocalSource;
 use Folklore\Mediatheque\Tests\TestCase;
+use InvalidArgumentException;
+use Mockery;
 
 class SourceManagerTest extends TestCase
 {
@@ -48,5 +52,31 @@ class SourceManagerTest extends TestCase
         $sourceManager = new SourceManager(app(), app('files'));
         $source = $sourceManager->source('cloud');
         $this->assertInstanceOf(FilesystemSource::class, $source);
+    }
+
+    public function test_unknown_source_throws()
+    {
+        $sourceManager = new SourceManager(app(), app('files'));
+
+        $this->expectException(InvalidSourceException::class);
+        $sourceManager->source('unknown');
+    }
+
+    public function test_invalid_source_exception_is_an_invalid_argument_exception()
+    {
+        $this->assertInstanceOf(InvalidArgumentException::class, new InvalidSourceException);
+    }
+
+    public function test_extend_with_a_closure()
+    {
+        config()->set('mediatheque.sources.custom', ['driver' => 'custom']);
+        $source = Mockery::mock(SourceContract::class);
+
+        $sourceManager = new SourceManager(app(), app('files'));
+        $sourceManager->extend('custom', function ($app, $config) use ($source) {
+            return $source;
+        });
+
+        $this->assertSame($source, $sourceManager->source('custom'));
     }
 }
