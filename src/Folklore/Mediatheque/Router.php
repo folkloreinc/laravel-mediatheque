@@ -11,6 +11,8 @@ class Router
 {
     protected $router;
 
+    protected $mediatheque;
+
     protected $namePrefix = 'mediatheque.';
 
     protected $prefix = 'mediatheque';

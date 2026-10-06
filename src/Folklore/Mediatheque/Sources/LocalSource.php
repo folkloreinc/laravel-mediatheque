@@ -7,6 +7,8 @@ use Illuminate\Filesystem\Filesystem;
 
 class LocalSource implements Source
 {
+    protected $config;
+
     protected $filesystem;
 
     public function __construct(array $config, Filesystem $filesystem)

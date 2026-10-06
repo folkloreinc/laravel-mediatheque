@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque\Tests\Unit;
 
+use ErrorException;
 use Folklore\Mediatheque\Contracts\Source\Source as SourceContract;
 use Folklore\Mediatheque\Exception\InvalidSourceException;
 use Folklore\Mediatheque\SourceManager;
@@ -78,5 +79,20 @@ class SourceManagerTest extends TestCase
         });
 
         $this->assertSame($source, $sourceManager->source('custom'));
+    }
+
+    public function test_local_source_has_no_dynamic_property()
+    {
+        set_error_handler(function ($severity, $message) {
+            throw new ErrorException($message, 0, $severity);
+        }, E_DEPRECATED);
+
+        try {
+            $source = new LocalSource(['path' => sys_get_temp_dir()], app('files'));
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertEquals(sys_get_temp_dir().'/file.jpg', $source->getFullPath('file.jpg'));
     }
 }
