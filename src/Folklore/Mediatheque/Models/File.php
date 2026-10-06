@@ -122,14 +122,15 @@ class File extends Model implements FileContract, HasMetadatasInterface, HasUrlI
             );
         }
 
-        $source = data_get($data, 'source');
+        // Store the file on the requested source, or the current or default one, and
+        // record its name so changing the default source later doesn't move the file
+        $data['source'] = data_get($data, 'source', $this->getAttribute('source')) ?: config('mediatheque.source');
+        $source = app(SourceFactory::class)->source($data['source']);
         $originalPath = data_get($data, 'original_path', null);
         if (! is_null($file)) {
-            $source = $this->getSource($source);
             $source->putFromLocalPath($data['path'], $localPath);
         } elseif (isset($originalPath)) {
-            $filesystem = $this->getSource($source);
-            $filesystem->move($originalPath, $data['path']);
+            $source->move($originalPath, $data['path']);
         }
 
         $metadata = data_get($data, 'metadata', []);
