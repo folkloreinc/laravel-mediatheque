@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque;
 
+use Closure;
 use Folklore\Mediatheque\Contracts\Source\Factory as SourceFactoryContract;
 use Folklore\Mediatheque\Contracts\Source\Source as SourceContract;
 use Folklore\Mediatheque\Exception\InvalidSourceException;
@@ -9,6 +10,7 @@ use Folklore\Mediatheque\Sources\FilesystemSource;
 use Folklore\Mediatheque\Sources\LocalSource;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Application;
+use InvalidArgumentException;
 
 class SourceManager implements SourceFactoryContract
 {
@@ -78,7 +80,7 @@ class SourceManager implements SourceFactoryContract
      * @param  string  $name
      * @return mixed
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function source($name = null): SourceContract
     {
@@ -109,7 +111,7 @@ class SourceManager implements SourceFactoryContract
      * @param  string  $driver
      * @return mixed
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     protected function createSource($name)
     {
@@ -149,7 +151,6 @@ class SourceManager implements SourceFactoryContract
      * Register a custom driver creator Closure.
      *
      * @param  string  $driver
-     * @param  \Closure  $callback
      * @return $this
      */
     public function extend($driver, Closure $callback)
