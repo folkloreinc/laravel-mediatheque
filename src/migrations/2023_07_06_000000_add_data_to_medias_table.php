@@ -13,7 +13,7 @@ class AddDataToMediasTable extends Migration
      */
     public function up()
     {
-        if (! Schema::hasColumn('mediatheque_medias', 'data')) {
+        if (! Schema::hasColumn(config('mediatheque.table_prefix').'medias', 'data')) {
             Schema::table(config('mediatheque.table_prefix').'medias', function (Blueprint $table) {
                 $table->json('data')->nullable()->after('name');
             });
@@ -27,7 +27,7 @@ class AddDataToMediasTable extends Migration
      */
     public function down()
     {
-        if (Schema::hasColumn('mediatheque_medias', 'data')) {
+        if (Schema::hasColumn(config('mediatheque.table_prefix').'medias', 'data')) {
             Schema::table(config('mediatheque.table_prefix').'medias', function (Blueprint $table) {
                 $table->dropColumn('data');
             });
