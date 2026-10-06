@@ -17,7 +17,7 @@ jobs:
         name: Pint and Larastan
         runs-on: ubuntu-24.04
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
 
             - uses: shivammathur/setup-php@v2
               with:
@@ -56,7 +56,7 @@ jobs:
             IMAGICK_CONVERT_BIN: /usr/bin/convert
             OTFINFO_BIN: /usr/bin/otfinfo
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v5
 
             - name: Install media tools
               run: |
