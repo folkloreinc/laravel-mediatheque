@@ -2,7 +2,9 @@
 
 namespace Folklore\Mediatheque\Tests;
 
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Folklore\Mediatheque\Facade;
+use Folklore\Mediatheque\ServiceProvider;
+use Illuminate\Foundation\Application;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 
 class TestCase extends BaseTestCase
@@ -10,7 +12,7 @@ class TestCase extends BaseTestCase
     /**
      * Define environment setup.
      *
-     * @param  \Illuminate\Foundation\Application  $app
+     * @param  Application  $app
      * @return void
      */
     protected function getEnvironmentSetUp($app)
@@ -18,9 +20,9 @@ class TestCase extends BaseTestCase
         // Setup default database to use sqlite :memory:
         $app['config']->set('database.default', 'testbench');
         $app['config']->set('database.connections.testbench', [
-            'driver'   => 'sqlite',
+            'driver' => 'sqlite',
             'database' => ':memory:',
-            'prefix'   => '',
+            'prefix' => '',
         ]);
 
         $app->usePublicPath(__DIR__.'/fixture');
@@ -29,14 +31,14 @@ class TestCase extends BaseTestCase
     protected function getPackageProviders($app)
     {
         return [
-            \Folklore\Mediatheque\ServiceProvider::class,
+            ServiceProvider::class,
         ];
     }
 
     protected function getPackageAliases($app)
     {
         return [
-            'Mediatheque' => \Folklore\Mediatheque\Facade::class,
+            'Mediatheque' => Facade::class,
         ];
     }
 }

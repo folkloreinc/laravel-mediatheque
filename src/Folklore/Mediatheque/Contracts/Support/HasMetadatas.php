@@ -1,9 +1,10 @@
 <?php
+
 namespace Folklore\Mediatheque\Contracts\Support;
 
-use Illuminate\Support\Collection;
-use Folklore\Mediatheque\Contracts\Models\Metadata;
 use Folklore\Mediatheque\Contracts\Metadata\Value as MetadataValue;
+use Folklore\Mediatheque\Contracts\Models\Metadata;
+use Illuminate\Support\Collection;
 
 interface HasMetadatas
 {

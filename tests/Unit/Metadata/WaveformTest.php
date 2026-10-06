@@ -2,18 +2,18 @@
 
 namespace Folklore\Mediatheque\Tests\Unit\Metadata;
 
-use Folklore\Mediatheque\Tests\TestCase;
-use Folklore\Mediatheque\Metadata\Waveform;
 use Folklore\Mediatheque\Contracts\Metadata\Value as ValueContract;
+use Folklore\Mediatheque\Metadata\Waveform;
+use Folklore\Mediatheque\Tests\TestCase;
 
 class WaveformTest extends TestCase
 {
     /**
      * Test getting a pipeline
      */
-    public function testGetValue()
+    public function test_get_value()
     {
-        $metadata = new Waveform();
+        $metadata = new Waveform;
         $metadata->setName('waveform');
         $value = $metadata->getValue(public_path('test.wav'));
         $this->assertInstanceOf(ValueContract::class, $value);

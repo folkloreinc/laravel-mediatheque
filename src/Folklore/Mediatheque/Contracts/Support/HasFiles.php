@@ -1,8 +1,9 @@
 <?php
+
 namespace Folklore\Mediatheque\Contracts\Support;
 
-use Illuminate\Support\Collection;
 use Folklore\Mediatheque\Contracts\Models\File;
+use Illuminate\Support\Collection;
 
 interface HasFiles
 {

@@ -2,7 +2,4 @@
 
 use Folklore\Mediatheque\Support\Pipeline;
 
-class PipelineTest extends Pipeline
-{
-
-}
+class PipelineTest extends Pipeline {}

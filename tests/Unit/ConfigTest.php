@@ -6,12 +6,12 @@ use Folklore\Mediatheque\Tests\TestCase;
 
 class ConfigTest extends TestCase
 {
-    public function testVideoPipelineSkipsMediaConvertWhenNotConfigured()
+    public function test_video_pipeline_skips_media_convert_when_not_configured()
     {
         $this->assertArrayNotHasKey('media_convert', config('mediatheque.pipelines.video.jobs'));
     }
 
-    public function testVideoPipelineRunsMediaConvertWhenConfigured()
+    public function test_video_pipeline_runs_media_convert_when_configured()
     {
         putenv('AWS_MEDIACONVERT_ROLE=arn:aws:iam::123456789012:role/MediaConvert');
         try {

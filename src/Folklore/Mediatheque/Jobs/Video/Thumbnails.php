@@ -17,7 +17,7 @@ class Thumbnails extends ThumbnailsJob
     protected function getOptions($index = 0)
     {
         $duration = $this->getDuration();
-        if (!isset($duration)) {
+        if (! isset($duration)) {
             return $this->options;
         }
 
@@ -43,18 +43,19 @@ class Thumbnails extends ThumbnailsJob
 
     protected function getDuration()
     {
-        if (!isset($this->duration) && $this->file instanceof HasMetadatas) {
+        if (! isset($this->duration) && $this->file instanceof HasMetadatas) {
             $metadata = $this->file->getMetadata('duration');
             $this->duration = isset($metadata) ? $metadata->getValue() : null;
         }
-        if (!isset($this->duration) && $this->model instanceof HasMetadatas) {
+        if (! isset($this->duration) && $this->model instanceof HasMetadatas) {
             $metadata = $this->model->getMetadata('duration');
             $this->duration = isset($metadata) ? $metadata->getValue() : null;
         }
-        if (!isset($this->duration)) {
+        if (! isset($this->duration)) {
             $localPath = $this->getLocalFilePath($this->file);
             $this->duration = resolve(Duration::class)->getDuration($localPath);
         }
+
         return $this->duration;
     }
 }

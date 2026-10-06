@@ -2,8 +2,8 @@
 
 namespace Folklore\Mediatheque\Metadata;
 
-use Folklore\Mediatheque\Contracts\Services\FontFamilyName as FontFamilyNameService;
 use Folklore\Mediatheque\Contracts\Metadata\Value as ValueContract;
+use Folklore\Mediatheque\Contracts\Services\FontFamilyName as FontFamilyNameService;
 
 class FontFamilyName extends Reader
 {
@@ -14,7 +14,8 @@ class FontFamilyName extends Reader
         $value = app(FontFamilyNameService::class)->getFontFamilyName(
             $path
         );
-        return !is_null($value)
+
+        return ! is_null($value)
             ? new Value($this->getName(), $value, 'string')
             : null;
     }

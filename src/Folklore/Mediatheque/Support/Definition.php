@@ -5,13 +5,13 @@ namespace Folklore\Mediatheque\Support;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Support\Str;
-use \JsonSerializable;
+use JsonSerializable;
 
-abstract class Definition implements JsonSerializable, Arrayable, Jsonable
+abstract class Definition implements Arrayable, Jsonable, JsonSerializable
 {
     public function __construct($definition = [])
     {
-        if (!is_null($definition)) {
+        if (! is_null($definition)) {
             $this->setDefinition($definition);
         }
     }
@@ -24,12 +24,14 @@ abstract class Definition implements JsonSerializable, Arrayable, Jsonable
                 $this->set($propertyName, $value);
             }
         }
+
         return $this;
     }
 
     public function set($key, $value)
     {
         $this->{$key} = $value;
+
         return $this;
     }
 

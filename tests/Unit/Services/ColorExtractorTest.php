@@ -7,7 +7,7 @@ use Folklore\Mediatheque\Tests\TestCase;
 
 class ColorExtractorTest extends TestCase
 {
-    public function testGetColors()
+    public function test_get_colors()
     {
         $service = new ColorExtractor;
         $colors = $service->getColors(public_path('image.jpg'), 3);
@@ -15,7 +15,7 @@ class ColorExtractorTest extends TestCase
         $this->assertNotEmpty($colors);
     }
 
-    public function testGetPalette()
+    public function test_get_palette()
     {
         $service = new ColorExtractor;
         $palette = $service->getPalette(public_path('image.jpg'), 3);

@@ -2,6 +2,4 @@
 
 namespace Folklore\Mediatheque\Contracts\Services;
 
-interface AudioDuration extends Duration
-{
-}
+interface AudioDuration extends Duration {}

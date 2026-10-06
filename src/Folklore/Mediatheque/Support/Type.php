@@ -2,20 +2,21 @@
 
 namespace Folklore\Mediatheque\Support;
 
-use Illuminate\Database\Eloquent\Builder as QueryBuilder;
-use Illuminate\Support\Collection;
 use Folklore\Mediatheque\Contracts\Metadata\Factory as MetadataFactory;
-use Folklore\Mediatheque\Contracts\Type\Type as TypeContract;
+use Folklore\Mediatheque\Contracts\Models\Media;
+use Folklore\Mediatheque\Contracts\Models\Media as MediaModelContract;
 use Folklore\Mediatheque\Contracts\Pipeline\Factory as PipelineFactory;
 use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineContract;
-use Folklore\Mediatheque\Contracts\Models\Media as MediaModelContract;
 use Folklore\Mediatheque\Contracts\Services\Mime as MimeService;
+use Folklore\Mediatheque\Contracts\Type\Type as TypeContract;
+use Illuminate\Database\Eloquent\Builder as QueryBuilder;
+use Illuminate\Support\Collection;
 
 class Type extends Definition implements TypeContract
 {
     protected $name;
 
-    protected $model = \Folklore\Mediatheque\Contracts\Models\Media::class;
+    protected $model = Media::class;
 
     protected $pipeline;
 
@@ -31,7 +32,7 @@ class Type extends Definition implements TypeContract
     {
         $this->name = $name;
 
-        if (!is_null($definition)) {
+        if (! is_null($definition)) {
             $this->setDefinition($definition);
         }
     }
@@ -50,18 +51,21 @@ class Type extends Definition implements TypeContract
     {
         $model = resolve($this->model());
         $model->setType($this->name());
+
         return $model;
     }
 
     public function newQuery(): QueryBuilder
     {
         $model = $this->newModel();
+
         return $model->newQuery()->where($model->getTypeName(), $this->name());
     }
 
     public function mimes(): array
     {
         $mimes = $this->get('mimes');
+
         return isset($mimes) ? $mimes : [];
     }
 
@@ -69,6 +73,7 @@ class Type extends Definition implements TypeContract
     {
         $metadatas = $this->get('metadatas');
         $metadataFactory = resolve(MetadataFactory::class);
+
         return collect(isset($metadatas) ? $metadatas : [])->map(function ($metadata) use (
             $metadataFactory
         ) {
@@ -79,7 +84,8 @@ class Type extends Definition implements TypeContract
     public function pipeline(): ?PipelineContract
     {
         $pipeline = $this->get('pipeline');
-        return !is_null($pipeline) ? resolve(PipelineFactory::class)->pipeline($pipeline) : null;
+
+        return ! is_null($pipeline) ? resolve(PipelineFactory::class)->pipeline($pipeline) : null;
     }
 
     public function canUpload(): bool
@@ -90,9 +96,10 @@ class Type extends Definition implements TypeContract
     public function pathIsType(string $path): bool
     {
         $pathIsType = $this->get('pathIsType');
-        if (!is_null($pathIsType)) {
+        if (! is_null($pathIsType)) {
             return $pathIsType($path);
         }
+
         return $this->pathIsMime($path);
     }
 
@@ -102,10 +109,11 @@ class Type extends Definition implements TypeContract
         $mimes = array_keys($this->mimes());
         foreach ($mimes as $mime) {
             $pattern = str_replace('\*', '[^\/]+', preg_quote($mime, '/'));
-            if (preg_match('/^' . $pattern . '$/', $fileMime) === 1) {
+            if (preg_match('/^'.$pattern.'$/', $fileMime) === 1) {
                 return true;
             }
         }
+
         return false;
     }
 

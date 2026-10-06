@@ -2,17 +2,19 @@
 
 namespace Folklore\Mediatheque;
 
-use Illuminate\Support\Collection;
-use Illuminate\Contracts\Container\Container;
-use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactoryContract;
-use Folklore\Mediatheque\Contracts\Type\Type as TypeContract;
 use Folklore\Mediatheque\Contracts\Pipeline\Factory as PipelineFactoryContract;
 use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineContract;
+use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactoryContract;
+use Folklore\Mediatheque\Contracts\Type\Type as TypeContract;
+use Illuminate\Contracts\Container\Container;
+use Illuminate\Support\Collection;
 
 class Mediatheque
 {
     protected $container;
+
     protected $typeFactory;
+
     protected $pipelineFactory;
 
     public function __construct(

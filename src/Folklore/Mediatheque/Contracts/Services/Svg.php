@@ -2,6 +2,4 @@
 
 namespace Folklore\Mediatheque\Contracts\Services;
 
-interface Svg extends ImageDimension
-{
-}
+interface Svg extends ImageDimension {}

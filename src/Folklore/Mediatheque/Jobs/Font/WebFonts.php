@@ -2,13 +2,13 @@
 
 namespace Folklore\Mediatheque\Jobs\Font;
 
-use Folklore\Mediatheque\Support\ShellJob;
 use Folklore\Mediatheque\Services\PathFormatter as PathFormatterService;
+use Folklore\Mediatheque\Support\ShellJob;
 
 class WebFonts extends ShellJob
 {
     protected $defaultOptions = [
-        'formats' => ['ttf', 'otf', 'eot', 'woff', 'woff2', 'svg']
+        'formats' => ['ttf', 'otf', 'eot', 'woff', 'woff2', 'svg'],
     ];
 
     protected function getLocalFilePath($file)
@@ -21,6 +21,7 @@ class WebFonts extends ShellJob
         $destinationPath = $this->formatDestinationPath($path);
         app('files')->copy($path, $destinationPath);
         $this->localFilePath = $destinationPath;
+
         return $this->localFilePath;
     }
 
@@ -32,6 +33,7 @@ class WebFonts extends ShellJob
     protected function arguments()
     {
         $path = $this->getLocalFilePath($this->file);
+
         return [$path];
     }
 
@@ -51,6 +53,7 @@ class WebFonts extends ShellJob
                 $files[$format] = $this->makeFileFromPath($filePath);
             }
         }
+
         return $files;
     }
 }

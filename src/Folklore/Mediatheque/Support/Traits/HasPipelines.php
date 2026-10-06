@@ -1,9 +1,10 @@
 <?php
+
 namespace Folklore\Mediatheque\Support\Traits;
 
-use Illuminate\Support\Collection;
-use Folklore\Mediatheque\Contracts\Pipeline\Factory as PipelineFactory;
 use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
+use Folklore\Mediatheque\Contracts\Pipeline\Factory as PipelineFactory;
+use Illuminate\Support\Collection;
 
 trait HasPipelines
 {
@@ -19,6 +20,7 @@ trait HasPipelines
         $morphName = 'pipelinable';
         $model = app(PipelineContract::class);
         $modelClass = get_class($model);
+
         return $this->morphMany($modelClass, $morphName);
     }
 
@@ -60,6 +62,7 @@ trait HasPipelines
         $model = app(PipelineContract::class);
         $model->setDefinition($definition);
         $this->pipelines()->save($model);
+
         return $model;
     }
 
@@ -71,12 +74,14 @@ trait HasPipelines
     public function withTypePipeline()
     {
         $this->typePipelineDisabled = false;
+
         return $this;
     }
 
     public function withoutTypePipeline()
     {
         $this->typePipelineDisabled = true;
+
         return $this;
     }
 }

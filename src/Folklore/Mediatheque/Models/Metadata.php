@@ -2,7 +2,6 @@
 
 namespace Folklore\Mediatheque\Models;
 
-use Folklore\Mediatheque\Models\Collections\MetadatasCollection;
 use Folklore\Mediatheque\Contracts\Metadata\Value;
 use Folklore\Mediatheque\Contracts\Models\Metadata as MetadataContract;
 
@@ -36,6 +35,7 @@ class Metadata extends Model implements MetadataContract
     {
         $model = static::create();
         $model->setValue($value);
+
         return $model;
     }
 
@@ -48,6 +48,7 @@ class Metadata extends Model implements MetadataContract
     {
         $type = $value->getType();
         $valueKey = sprintf('value_%s', $type);
+
         return $this->fill([
             'name' => $value->getName(),
             'type' => $type,
@@ -58,6 +59,7 @@ class Metadata extends Model implements MetadataContract
     public function getValue()
     {
         $valueKey = sprintf('value_%s', $this->type);
+
         return $this->{$valueKey};
     }
 }

@@ -2,26 +2,22 @@
 
 namespace Folklore\Mediatheque\Services;
 
-use Folklore\Mediatheque\Contracts\Services\VideoThumbnail;
-use Folklore\Mediatheque\Contracts\Services\VideoDimension;
-use Folklore\Mediatheque\Contracts\Services\VideoDuration;
+use Exception;
+use FFMpeg\Coordinate\TimeCode;
+use FFMpeg\FFMpeg as BaseFFMpeg;
+use FFMpeg\FFProbe;
 use Folklore\Mediatheque\Contracts\Services\AudioDuration;
 use Folklore\Mediatheque\Contracts\Services\AudioTracks;
+use Folklore\Mediatheque\Contracts\Services\VideoDimension;
+use Folklore\Mediatheque\Contracts\Services\VideoDuration;
+use Folklore\Mediatheque\Contracts\Services\VideoThumbnail;
 use Illuminate\Support\Collection;
-
-use FFMpeg\FFProbe;
-use FFMpeg\FFMpeg as BaseFFMpeg;
-use FFMpeg\Coordinate\TimeCode;
-use Exception;
 use Illuminate\Support\Facades\Log;
 
-class FFMpeg implements VideoThumbnail, VideoDimension, VideoDuration, AudioDuration, AudioTracks
+class FFMpeg implements AudioDuration, AudioTracks, VideoDimension, VideoDuration, VideoThumbnail
 {
     /**
      * Get duration of a file
-     *
-     * @param  string  $path
-     * @return float
      */
     public function getDuration(string $path): ?float
     {
@@ -31,7 +27,8 @@ class FFMpeg implements VideoThumbnail, VideoDimension, VideoDuration, AudioDura
 
             return collect($streams->all())->reduce(function ($longestDuration, $stream) {
                 $duration = $stream->get('duration');
-                return !is_null($duration) && (float) $duration > $longestDuration
+
+                return ! is_null($duration) && (float) $duration > $longestDuration
                     ? (float) $duration
                     : $longestDuration;
             }, 0);
@@ -41,15 +38,17 @@ class FFMpeg implements VideoThumbnail, VideoDimension, VideoDuration, AudioDura
             } else {
                 Log::error($e);
             }
+
             return null;
         }
     }
 
     /**
      * Get the thumbnail of a path
-     * @param  string $source The source path
-     * @param  string $destination The destination path
-     * @param  array $options The options
+     *
+     * @param  string  $source  The source path
+     * @param  string  $destination  The destination path
+     * @param  array  $options  The options
      * @return string The path of the thumbnails
      */
     public function getThumbnail(string $source, string $destination, array $options = []): ?string
@@ -65,9 +64,6 @@ class FFMpeg implements VideoThumbnail, VideoDimension, VideoDuration, AudioDura
 
     /**
      * Get dimension
-     *
-     * @param  string  $path
-     * @return array
      */
     public function getDimension(string $path): ?array
     {
@@ -90,20 +86,19 @@ class FFMpeg implements VideoThumbnail, VideoDimension, VideoDuration, AudioDura
             } else {
                 Log::error($e);
             }
+
             return null;
         }
     }
 
     /**
      * Get audio tracks
-     *
-     * @param  string  $path
-     * @return Collection|null
      */
     public function getAudioTracks(string $path): ?Collection
     {
         try {
             $ffprobe = FFProbe::create(config('mediatheque.services.ffmpeg'));
+
             return new Collection(
                 $ffprobe
                     ->streams($path)
@@ -116,6 +111,7 @@ class FFMpeg implements VideoThumbnail, VideoDimension, VideoDuration, AudioDura
             } else {
                 Log::error($e);
             }
+
             return null;
         }
     }

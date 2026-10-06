@@ -1,4 +1,5 @@
 <?php
+
 namespace Folklore\Mediatheque;
 
 use Illuminate\Support\Facades\Facade as BaseFacade;

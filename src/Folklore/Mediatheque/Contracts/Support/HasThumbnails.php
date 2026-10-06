@@ -1,4 +1,5 @@
 <?php
+
 namespace Folklore\Mediatheque\Contracts\Support;
 
 use Illuminate\Support\Collection;

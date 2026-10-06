@@ -2,6 +2,4 @@
 
 namespace Folklore\Mediatheque\Contracts\Services;
 
-interface Gif extends AnimatedImage
-{
-}
+interface Gif extends AnimatedImage {}

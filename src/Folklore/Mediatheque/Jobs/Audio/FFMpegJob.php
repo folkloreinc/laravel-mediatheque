@@ -16,12 +16,12 @@ class FFMpegJob extends BaseFFMpegJob
         $format = parent::getFormat();
 
         $bitrate = data_get($this->options, 'bitrate', null);
-        if (!is_null($bitrate)) {
+        if (! is_null($bitrate)) {
             $format->setAudioKiloBitrate($bitrate);
         }
 
         $channels = data_get($this->options, 'channels', null);
-        if (!is_null($channels)) {
+        if (! is_null($channels)) {
             $format->setAudioChannels($channels);
         }
 

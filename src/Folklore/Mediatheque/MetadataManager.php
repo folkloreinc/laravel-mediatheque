@@ -1,8 +1,10 @@
 <?php
+
 namespace Folklore\Mediatheque;
 
 use Folklore\Mediatheque\Contracts\Metadata\Factory as MetadataFactory;
 use Folklore\Mediatheque\Contracts\Metadata\Reader as MetadataReader;
+use Illuminate\Foundation\Application;
 use Illuminate\Support\Arr;
 
 class MetadataManager implements MetadataFactory
@@ -10,7 +12,7 @@ class MetadataManager implements MetadataFactory
     /**
      * The application instance.
      *
-     * @var \Illuminate\Foundation\Application
+     * @var Application
      */
     protected $app;
 
@@ -31,7 +33,7 @@ class MetadataManager implements MetadataFactory
     /**
      * Create a new manager instance.
      *
-     * @param  \Illuminate\Foundation\Application  $app
+     * @param  Application  $app
      * @return void
      */
     public function __construct($app)
@@ -42,7 +44,6 @@ class MetadataManager implements MetadataFactory
     /**
      * Get a metadata reader instance.
      *
-     * @param  string  $name
      * @return mixed
      *
      * @throws \InvalidArgumentException
@@ -52,7 +53,7 @@ class MetadataManager implements MetadataFactory
         // If the given driver has not been created before, we will create the instances
         // here and cache it so we can return it next time very quickly. If there is
         // already a driver created by this name, we'll just return that instance.
-        if (!isset($this->instances[$name])) {
+        if (! isset($this->instances[$name])) {
             $this->instances[$name] = $this->createReader($name);
         }
 
@@ -77,12 +78,12 @@ class MetadataManager implements MetadataFactory
             $reader = $this->createCustomReader($name);
         } else {
             $config = $this->app['config']->get(
-                'mediatheque.metadatas.' . $name
+                'mediatheque.metadatas.'.$name
             );
             $reader = $this->createReaderInstance($name, $config);
         }
 
-        if (!is_null($reader)) {
+        if (! is_null($reader)) {
             return $reader;
         }
 
@@ -105,12 +106,13 @@ class MetadataManager implements MetadataFactory
             $reader = $this->app->make($config);
         } elseif (is_array($config)) {
             $reader = $this->app->makeWith($config['driver'], [
-                'config' => Arr::except($config, ['driver'])
+                'config' => Arr::except($config, ['driver']),
             ]);
         } else {
             $reader = $config;
         }
         $reader->setName($name);
+
         return $reader;
     }
 
@@ -123,6 +125,7 @@ class MetadataManager implements MetadataFactory
     protected function createCustomReader($name)
     {
         $customReader = $this->customReaders[$name];
+
         return $customReader instanceof Closure
             ? $customReader($this->app, $name)
             : $this->createReaderInstance($name, $customReader);
@@ -131,7 +134,7 @@ class MetadataManager implements MetadataFactory
     /**
      * Register a custom driver creator Closure.
      *
-     * @param  string    $name
+     * @param  string  $name
      * @param  \Closure  $callback
      * @return $this
      */
@@ -154,14 +157,11 @@ class MetadataManager implements MetadataFactory
 
     /**
      * Check if a metadata reader exists
-     *
-     * @param string $name
-     * @return boolean
      */
     public function hasMetadata(string $name): bool
     {
-        return !is_null(
-            $this->app['config']->get('mediatheque.metadatas.' . $name)
+        return ! is_null(
+            $this->app['config']->get('mediatheque.metadatas.'.$name)
         ) || isset($this->customReaders[$name]);
     }
 }

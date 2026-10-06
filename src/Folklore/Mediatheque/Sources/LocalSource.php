@@ -18,12 +18,14 @@ class LocalSource implements Source
     public function getFullPath(string $path)
     {
         $dir = isset($this->config['path']) ? $this->config['path'] : '';
-        return rtrim($dir, '/') . '/' . ltrim($path, '/');
+
+        return rtrim($dir, '/').'/'.ltrim($path, '/');
     }
 
     public function exists(string $path): bool
     {
         $realPath = $this->getFullPath($path);
+
         return $this->filesystem->exists($realPath);
     }
 
@@ -34,6 +36,7 @@ class LocalSource implements Source
             return true;
         }
         $mode = data_get($this->config, 'mode', 0775);
+
         return $this->filesystem->makeDirectory($dirname, $mode, true);
     }
 
@@ -45,6 +48,7 @@ class LocalSource implements Source
 
         $realPath = $this->getFullPath($path);
         $this->ensureDirectory($realPath);
+
         return $this->filesystem->put($realPath, $contents);
     }
 
@@ -56,26 +60,29 @@ class LocalSource implements Source
 
         $realPath = $this->getFullPath($path);
         $this->ensureDirectory($realPath);
+
         return $this->filesystem->copy($localPath, $realPath);
     }
 
     public function delete(string $path)
     {
-        if (!$this->exists($path)) {
+        if (! $this->exists($path)) {
             return;
         }
 
         $realPath = $this->getFullPath($path);
+
         return $this->filesystem->delete($realPath);
     }
 
     public function deleteDirectory(string $path)
     {
-        if (!$this->exists($path)) {
+        if (! $this->exists($path)) {
             return;
         }
 
         $realPath = $this->getFullPath($path);
+
         return $this->filesystem->deleteDirectory($realPath);
     }
 
@@ -106,12 +113,14 @@ class LocalSource implements Source
     public function copyToLocalPath(string $path, string $localPath)
     {
         $realPath = $this->getFullPath($path);
+
         return $this->filesystem->copy($realPath, $localPath);
     }
 
     public function getUrl(string $path): string
     {
         $publicPath = data_get($this->config, 'url', '/');
-        return rtrim($publicPath, '/') . '/' . ltrim($path, '/');
+
+        return rtrim($publicPath, '/').'/'.ltrim($path, '/');
     }
 }

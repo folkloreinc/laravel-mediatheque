@@ -2,14 +2,14 @@
 
 namespace Folklore\Mediatheque\Jobs\Video;
 
-use Folklore\Mediatheque\Support\PipelineJob;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesContract;
 use Folklore\Mediatheque\Services\PathFormatter as PathFormatterService;
+use Folklore\Mediatheque\Support\PipelineJob;
 use Illuminate\Support\Facades\File;
-use Streaming\FFMpeg as StreamingFFMpeg;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Streaming\FFMpeg as StreamingFFMpeg;
 use Streaming\Media;
 use Streaming\Representation;
 
@@ -37,7 +37,7 @@ class HLS extends PipelineJob
         ],
     ];
 
-    public function __construct(FileContract $file, $options = [], HasFilesContract $model = null)
+    public function __construct(FileContract $file, $options = [], ?HasFilesContract $model = null)
     {
         $this->options = array_merge($this->defaultHlsOptions, $this->defaultOptions, $options);
         $this->file = $file;
@@ -52,8 +52,8 @@ class HLS extends PipelineJob
         $media = $ffmpeg->open($path);
         $mediaDimensions = $this->getMediaDimensions($media);
 
-        $tempBasePath = sys_get_temp_dir() . '/mediatheque_pipeline_job_' . Str::random(8);
-        $tempIndexPath = $tempBasePath . '/index.m3u8';
+        $tempBasePath = sys_get_temp_dir().'/mediatheque_pipeline_job_'.Str::random(8);
+        $tempIndexPath = $tempBasePath.'/index.m3u8';
 
         $segmentDuration = data_get($this->options, 'segment_duration');
         $defaultAudioBitrate = data_get($this->options, 'default_audio_bitrate');
@@ -69,6 +69,7 @@ class HLS extends PipelineJob
                 $mediaHeight = $mediaDimensions->getHeight();
                 $maxWidthForSpec = data_get($spec, 'max_width');
                 $maxHeightForSpec = data_get($spec, 'max_height');
+
                 return $mediaWidth >= $maxWidthForSpec || $mediaHeight >= $maxHeightForSpec;
             })
             ->map(function ($spec) use ($mediaDimensions, $defaultAudioBitrate) {
@@ -92,7 +93,7 @@ class HLS extends PipelineJob
                     $width = (int) floor($height * $mediaAspectRatio);
                 }
 
-                return (new Representation())
+                return (new Representation)
                     ->setResize($width, $height)
                     ->setKiloBitrate(data_get($spec, 'bitrate'))
                     ->setAudioKiloBitrate(data_get($spec, 'audio_bitrate', $defaultAudioBitrate));
@@ -110,7 +111,7 @@ class HLS extends PipelineJob
         $file->save();
 
         $destinationBasePath = $this->formatHlsBasePath(['id' => $file->id]);
-        $destinationIndexPath = $destinationBasePath . '/index.m3u8';
+        $destinationIndexPath = $destinationBasePath.'/index.m3u8';
 
         $file->setFile($tempIndexPath, [
             'mime' => 'application/vnd.apple.mpegurl',
@@ -119,12 +120,13 @@ class HLS extends PipelineJob
 
         // upload the rest of the files alongside the index file
         $source = $file->getSource();
-        collect(glob($tempBasePath . '/*.{ts,m3u8}', GLOB_BRACE))
+        collect(glob($tempBasePath.'/*.{ts,m3u8}', GLOB_BRACE))
             ->filter(function ($file) {
                 return basename($file) !== 'index.m3u8';
             })
             ->mapWithKeys(function ($file) use ($destinationBasePath) {
-                $fileDestinationPath = $destinationBasePath . '/' . basename($file);
+                $fileDestinationPath = $destinationBasePath.'/'.basename($file);
+
                 return [
                     $fileDestinationPath => $file,
                 ];
@@ -147,6 +149,7 @@ class HLS extends PipelineJob
             $this->options,
             ...$replaces
         );
+
         return $destinationPath;
     }
 
@@ -162,6 +165,7 @@ class HLS extends PipelineJob
                 }
             }
         }
+
         return $dimensions;
     }
 }

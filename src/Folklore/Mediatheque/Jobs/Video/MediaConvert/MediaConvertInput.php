@@ -4,9 +4,9 @@ namespace Folklore\Mediatheque\Jobs\Video\MediaConvert;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
-use \JsonSerializable;
+use JsonSerializable;
 
-class MediaConvertInput implements JsonSerializable, Arrayable, Jsonable
+class MediaConvertInput implements Arrayable, Jsonable, JsonSerializable
 {
     protected $options = [
         'AudioSelectors' => [
@@ -35,6 +35,7 @@ class MediaConvertInput implements JsonSerializable, Arrayable, Jsonable
     public function setFileInput($fileInput): self
     {
         $this->fileInput = $fileInput;
+
         return $this;
     }
 

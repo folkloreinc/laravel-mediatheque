@@ -1,10 +1,12 @@
 <?php
 
-if (!function_exists('mediatheque')) {
+use Folklore\Mediatheque\Mediatheque;
+
+if (! function_exists('mediatheque')) {
     /**
      * Get the mediatheque instance
      *
-     * @return \Folklore\Mediatheque\Mediatheque The mediatheque instance
+     * @return Mediatheque The mediatheque instance
      */
     function mediatheque()
     {
@@ -12,12 +14,12 @@ if (!function_exists('mediatheque')) {
     }
 }
 
-if (!function_exists('media')) {
+if (! function_exists('media')) {
     /**
      * Get a model instance from type
      *
-     * @param string $path The path to the media file
-     * @return \Folklore\Mediatheque\Mediatheque The mediatheque instance
+     * @param  string  $path  The path to the media file
+     * @return Mediatheque The mediatheque instance
      */
     function media($path = null)
     {
@@ -30,6 +32,7 @@ if (!function_exists('media')) {
         }
         $model = $type->newModel();
         $model->setOriginalFile($path);
+
         return $model;
     }
 }

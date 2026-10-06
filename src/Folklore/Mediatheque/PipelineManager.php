@@ -1,21 +1,20 @@
 <?php
+
 namespace Folklore\Mediatheque;
 
-use Illuminate\Support\Str;
-use Illuminate\Support\Arr;
-use Folklore\Mediatheque\Support\Pipeline;
-use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineContract;
-use Folklore\Mediatheque\Contracts\Pipeline\Factory as PipelineFactoryContract;
 use Closure;
+use Folklore\Mediatheque\Contracts\Pipeline\Factory as PipelineFactoryContract;
+use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineContract;
+use Folklore\Mediatheque\Support\Pipeline;
+use Illuminate\Foundation\Application;
 use InvalidArgumentException;
-use Exception;
 
 class PipelineManager implements PipelineFactoryContract
 {
     /**
      * The application instance.
      *
-     * @var \Illuminate\Foundation\Application
+     * @var Application
      */
     protected $app;
 
@@ -36,7 +35,7 @@ class PipelineManager implements PipelineFactoryContract
     /**
      * Create a new manager instance.
      *
-     * @param  \Illuminate\Foundation\Application  $app
+     * @param  Application  $app
      * @return void
      */
     public function __construct($app)
@@ -50,14 +49,14 @@ class PipelineManager implements PipelineFactoryContract
      * @param  string  $name
      * @return mixed
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function pipeline($name): PipelineContract
     {
         // If the given driver has not been created before, we will create the instances
         // here and cache it so we can return it next time very quickly. If there is
         // already a driver created by this name, we'll just return that instance.
-        if (!isset($this->instances[$name])) {
+        if (! isset($this->instances[$name])) {
             $this->instances[$name] = $this->createPipeline($name);
         }
 
@@ -70,7 +69,7 @@ class PipelineManager implements PipelineFactoryContract
      * @param  string  $name
      * @return mixed
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     protected function createPipeline($name)
     {
@@ -85,7 +84,7 @@ class PipelineManager implements PipelineFactoryContract
             $pipeline = $this->createPipelineInstance($name, $config);
         }
 
-        if (!is_null($pipeline)) {
+        if (! is_null($pipeline)) {
             return $pipeline;
         }
 
@@ -98,7 +97,7 @@ class PipelineManager implements PipelineFactoryContract
      * @param  string  $name
      * @return mixed
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     protected function createPipelineInstance($name, $config)
     {
@@ -122,6 +121,7 @@ class PipelineManager implements PipelineFactoryContract
     protected function createCustomPipeline($name)
     {
         $customPipeline = $this->customPipelines[$name];
+
         return $customPipeline instanceof Closure
             ? $customPipeline($this->app, $name)
             : $this->createPipelineInstance($name, $customPipeline);
@@ -130,7 +130,7 @@ class PipelineManager implements PipelineFactoryContract
     /**
      * Register a custom driver creator Closure.
      *
-     * @param  string    $name
+     * @param  string  $name
      * @param  string|array|Closure  $pipeline
      * @return $this
      */
@@ -154,13 +154,12 @@ class PipelineManager implements PipelineFactoryContract
     /**
      * Check if a pipeline exists
      *
-     * @param string $name
-     * @return boolean
+     * @param  string  $name
      */
     public function hasPipeline($name): bool
     {
-        return !is_null(
-            $this->app['config']->get('mediatheque.pipelines.' . $name)
+        return ! is_null(
+            $this->app['config']->get('mediatheque.pipelines.'.$name)
         ) || isset($this->customPipelines[$name]);
     }
 }

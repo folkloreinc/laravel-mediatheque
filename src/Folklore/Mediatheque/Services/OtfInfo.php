@@ -2,19 +2,16 @@
 
 namespace Folklore\Mediatheque\Services;
 
+use Exception;
 use Folklore\Mediatheque\Contracts\Services\FontFamilyName;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
-use Exception;
+use Symfony\Component\Process\Process;
 
 class OtfInfo implements FontFamilyName
 {
     /**
      * Get family name from a file
-     *
-     * @param  string  $path
-     * @return string
      */
     public function getFontFamilyName(string $path): ?string
     {
@@ -27,7 +24,7 @@ class OtfInfo implements FontFamilyName
 
             $process->run();
 
-            if (!$process->isSuccessful()) {
+            if (! $process->isSuccessful()) {
                 throw new ProcessFailedException($process);
             }
 
@@ -38,6 +35,7 @@ class OtfInfo implements FontFamilyName
             } else {
                 Log::error($e);
             }
+
             return null;
         }
     }

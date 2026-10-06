@@ -4,9 +4,9 @@ namespace Folklore\Mediatheque\Jobs\Video\MediaConvert;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
-use \JsonSerializable;
+use JsonSerializable;
 
-class MediaConvertJobSettings implements JsonSerializable, Arrayable, Jsonable
+class MediaConvertJobSettings implements Arrayable, Jsonable, JsonSerializable
 {
     protected $options = [];
 

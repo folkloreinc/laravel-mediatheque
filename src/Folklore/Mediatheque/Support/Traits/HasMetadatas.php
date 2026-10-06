@@ -1,9 +1,10 @@
 <?php
+
 namespace Folklore\Mediatheque\Support\Traits;
 
-use Illuminate\Support\Collection;
-use Folklore\Mediatheque\Contracts\Models\Metadata as MetadataContract;
 use Folklore\Mediatheque\Contracts\Metadata\Value as MetadataValue;
+use Folklore\Mediatheque\Contracts\Models\Metadata as MetadataContract;
+use Illuminate\Support\Collection;
 
 trait HasMetadatas
 {
@@ -18,6 +19,7 @@ trait HasMetadatas
         $model = app(MetadataContract::class);
         $modelClass = get_class($model);
         $query = $this->morphMany($modelClass, $morphName);
+
         return $query;
     }
 
@@ -37,7 +39,7 @@ trait HasMetadatas
 
     public function setMetadata(MetadataValue $value)
     {
-        if (!$this->exists) {
+        if (! $this->exists) {
             $this->save();
         }
 
@@ -50,7 +52,7 @@ trait HasMetadatas
 
     public function setMetadatas(Collection $values)
     {
-        if (!$this->exists) {
+        if (! $this->exists) {
             $this->save();
         }
         $metadatas = $this->getMetadatas();
@@ -59,10 +61,12 @@ trait HasMetadatas
                 $name = $value->getName();
                 $metadata = $metadatas->get($name, app(MetadataContract::class));
                 $metadata->setValue($value);
+
                 return $metadata;
             })
             ->values();
         $this->metadatas()->saveMany($metadatasValues);
+
         return $this;
     }
 }

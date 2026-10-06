@@ -12,7 +12,6 @@ class PathFormatter implements PathFormatterContract
      * Get family name from a file
      *
      * @param  string  $path
-     * @return string
      */
     public function formatPath(string $format, ...$params): string
     {
@@ -32,7 +31,7 @@ class PathFormatter implements PathFormatterContract
             return preg_quote($key, '/');
         }, array_keys($replaces));
         $path = preg_replace_callback(
-            '/\{\s*(' . implode('|', $replaceKeys) . ')\s*\}/i',
+            '/\{\s*('.implode('|', $replaceKeys).')\s*\}/i',
             function ($matches) use ($replaces) {
                 return $replaces[$matches[1]];
             },
@@ -53,6 +52,7 @@ class PathFormatter implements PathFormatterContract
     protected function getReplaceMethods()
     {
         $methods = get_class_methods($this);
+
         return array_filter($methods, function ($method) {
             return preg_match('/^replace(.*?)$/', $method) > 0;
         });
@@ -76,6 +76,7 @@ class PathFormatter implements PathFormatterContract
             function ($matches) use ($replaces) {
                 $name = data_get($replaces, 'name');
                 $withoutExt = preg_replace('/\.\w+$/', '', $name);
+
                 return Str::slug($withoutExt);
             },
             $path
