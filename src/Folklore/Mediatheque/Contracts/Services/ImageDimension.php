@@ -2,6 +2,4 @@
 
 namespace Folklore\Mediatheque\Contracts\Services;
 
-interface ImageDimension extends Dimension
-{
-}
+interface ImageDimension extends Dimension {}

@@ -2,8 +2,8 @@
 
 namespace Folklore\Mediatheque\Metadata;
 
-use Folklore\Mediatheque\Contracts\Services\Dimension as DimensionService;
 use Folklore\Mediatheque\Contracts\Metadata\Value as ValueContract;
+use Folklore\Mediatheque\Contracts\Services\Dimension as DimensionService;
 
 class Dimension extends Reader
 {
@@ -17,6 +17,7 @@ class Dimension extends Reader
         foreach ($dimension as $key => $value) {
             $values[] = new Value($key, $value, 'integer');
         }
+
         return new Values($values);
     }
 }

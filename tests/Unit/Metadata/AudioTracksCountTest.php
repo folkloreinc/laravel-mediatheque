@@ -2,24 +2,18 @@
 
 namespace Folklore\Mediatheque\Tests\Unit\Metadata;
 
-use Folklore\Mediatheque\Tests\TestCase;
-use Folklore\Mediatheque\Metadata\AudioTracksCount;
 use Folklore\Mediatheque\Contracts\Metadata\Value as ValueContract;
+use Folklore\Mediatheque\Metadata\AudioTracksCount;
+use Folklore\Mediatheque\Tests\TestCase;
 
-/**
- * @coversDefaultClass Folklore\Mediatheque\Metadata\AudioTracksCount
- */
 class AudioTracksCountTest extends TestCase
 {
     /**
      * Test getting a pipeline
-     *
-     * @test
-     * @covers ::handle
      */
-    public function testGetValue()
+    public function test_get_value()
     {
-        $metadata = new AudioTracksCount();
+        $metadata = new AudioTracksCount;
         $metadata->setName('audio_tracks_count');
         $value = $metadata->getValue(public_path('test.mp4'));
         $this->assertInstanceOf(ValueContract::class, $value);
@@ -30,13 +24,10 @@ class AudioTracksCountTest extends TestCase
 
     /**
      * Test getting a pipeline
-     *
-     * @test
-     * @covers ::handle
      */
-    public function testGetValueInvalid()
+    public function test_get_value_invalid()
     {
-        $metadata = new AudioTracksCount();
+        $metadata = new AudioTracksCount;
         $metadata->setName('audio_tracks_count');
         $value = $metadata->getValue(public_path('font.otf'));
         $this->assertNull($value);

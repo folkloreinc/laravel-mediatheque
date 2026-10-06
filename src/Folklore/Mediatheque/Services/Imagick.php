@@ -2,25 +2,24 @@
 
 namespace Folklore\Mediatheque\Services;
 
-use Folklore\Mediatheque\Contracts\Services\PagesCount;
+use Exception;
+use Folklore\Mediatheque\Contracts\Services\DocumentThumbnail;
 use Folklore\Mediatheque\Contracts\Services\ImageDimension;
 use Folklore\Mediatheque\Contracts\Services\ImageThumbnail;
-use Folklore\Mediatheque\Contracts\Services\DocumentThumbnail;
-use Imagick as BaseImagick;
-use Exception;
+use Folklore\Mediatheque\Contracts\Services\PagesCount;
 use Illuminate\Support\Facades\Log;
+use Imagick as BaseImagick;
 
-class Imagick implements PagesCount, ImageDimension, ImageThumbnail, DocumentThumbnail
+class Imagick implements DocumentThumbnail, ImageDimension, ImageThumbnail, PagesCount
 {
     /**
      * Get pages count of a file
      *
      * @param  string  $path
-     * @return int
      */
     public function getPagesCount($path): ?int
     {
-        if (!class_exists(BaseImagick::class)) {
+        if (! class_exists(BaseImagick::class)) {
             return 0;
         }
         try {
@@ -33,6 +32,7 @@ class Imagick implements PagesCount, ImageDimension, ImageThumbnail, DocumentThu
             } else {
                 Log::error($e);
             }
+
             return null;
         }
 
@@ -43,11 +43,10 @@ class Imagick implements PagesCount, ImageDimension, ImageThumbnail, DocumentThu
      * Get dimension
      *
      * @param  string  $path
-     * @return array
      */
     public function getDimension($path): ?array
     {
-        if (!class_exists(BaseImagick::class)) {
+        if (! class_exists(BaseImagick::class)) {
             return $this->getDimensionFallback($path);
         }
 
@@ -55,10 +54,11 @@ class Imagick implements PagesCount, ImageDimension, ImageThumbnail, DocumentThu
             $image = new BaseImagick($path);
             $dimension = $image->getImageGeometry();
             $image->destroy();
+
             return $dimension;
         } catch (Exception $e) {
             $size = $this->getDimensionFallback($path);
-            if (!is_null($size)) {
+            if (! is_null($size)) {
                 return $size;
             }
 
@@ -67,6 +67,7 @@ class Imagick implements PagesCount, ImageDimension, ImageThumbnail, DocumentThu
             } else {
                 Log::error($e);
             }
+
             return null;
         }
     }
@@ -75,7 +76,6 @@ class Imagick implements PagesCount, ImageDimension, ImageThumbnail, DocumentThu
      * Get dimension with fallback method
      *
      * @param  string  $path
-     * @return array
      */
     protected function getDimensionFallback($path): ?array
     {
@@ -94,14 +94,16 @@ class Imagick implements PagesCount, ImageDimension, ImageThumbnail, DocumentThu
                 Log::error($e);
             }
         }
+
         return null;
     }
 
     /**
      * Get the thumbnail of a path
-     * @param  string $source The source path
-     * @param  string $destination The destination path
-     * @param  array $options The options
+     *
+     * @param  string  $source  The source path
+     * @param  string  $destination  The destination path
+     * @param  array  $options  The options
      * @return string The path of the thumbnail
      */
     public function getThumbnail(string $source, string $destination, array $options = []): ?string
@@ -117,12 +119,12 @@ class Imagick implements PagesCount, ImageDimension, ImageThumbnail, DocumentThu
         $trim = data_get($options, 'trim', false);
         $trimFuzz = data_get($options, 'trim_fuzz', 0);
 
-        $image = new BaseImagick();
+        $image = new BaseImagick;
         $image->setResolution($resolution, $resolution);
-        if (!is_null($colorNamespace)) {
+        if (! is_null($colorNamespace)) {
             $image->setColorspace($colorNamespace); // ex. BaseImagick::COLORSPACE_SRGB
         }
-        $image->readImage(isset($page) ? $source . '[' . $page . ']' : $source);
+        $image->readImage(isset($page) ? $source.'['.$page.']' : $source);
         if ($flatten) {
             $image = $image->mergeImageLayers(BaseImagick::LAYERMETHOD_FLATTEN);
         }
@@ -131,10 +133,10 @@ class Imagick implements PagesCount, ImageDimension, ImageThumbnail, DocumentThu
         }
         $image->setImageFormat($format);
         $image->setImageCompressionQuality($quality);
-        if (!empty($backgroundColor)) {
+        if (! empty($backgroundColor)) {
             $image->setImageBackgroundColor($backgroundColor);
         }
-        if (!empty($font) && file_exists($font)) {
+        if (! empty($font) && file_exists($font)) {
             $image->setFont($font);
         }
         $image->writeImage($destination);

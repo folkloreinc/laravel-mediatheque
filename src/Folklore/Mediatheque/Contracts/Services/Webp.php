@@ -2,6 +2,4 @@
 
 namespace Folklore\Mediatheque\Contracts\Services;
 
-interface Webp extends AnimatedImage
-{
-}
+interface Webp extends AnimatedImage {}

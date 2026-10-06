@@ -2,8 +2,8 @@
 
 namespace Folklore\Mediatheque\Jobs\Video;
 
-use Folklore\Mediatheque\Support\FFMpegJob;
 use Folklore\Mediatheque\Jobs\Video\Formats\WebM as WebMFormat;
+use Folklore\Mediatheque\Support\FFMpegJob;
 
 class WebM extends FFMpegJob
 {
@@ -27,7 +27,7 @@ class WebM extends FFMpegJob
         }
 
         $deadline = data_get($this->options, 'deadline', null);
-        if (!is_null($deadline)) {
+        if (! is_null($deadline)) {
             $parameters[] = '-deadline';
             $parameters[] = $deadline;
         }

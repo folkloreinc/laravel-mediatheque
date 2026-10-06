@@ -4,9 +4,8 @@ namespace Folklore\Mediatheque\Support;
 
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesContract;
-use Exception;
-use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
+use Symfony\Component\Process\Process;
 
 class ShellJob extends PipelineJob
 {
@@ -39,6 +38,7 @@ class ShellJob extends PipelineJob
         $process = new Process($arguments);
         $process->setTimeout(config('mediatheque.process_timeout', 600));
         $process->setWorkingDirectory(dirname($path));
+
         return $process;
     }
 
@@ -61,9 +61,10 @@ class ShellJob extends PipelineJob
     {
         $process = $this->makeProcess();
         $this->runProcess($process);
-        if (!$process->isSuccessful()) {
+        if (! $process->isSuccessful()) {
             $this->throwProcessException($process);
         }
+
         return $this->getResponseFromProcess($process);
     }
 }

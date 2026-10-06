@@ -4,10 +4,10 @@ namespace Folklore\Mediatheque\Jobs\Video\MediaConvert;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
-use \JsonSerializable;
 use Illuminate\Support\Arr;
+use JsonSerializable;
 
-class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
+class MediaConvertOutput implements Arrayable, Jsonable, JsonSerializable
 {
     protected $containerSettingsMP4 = [
         'Container' => 'MP4',
@@ -98,11 +98,11 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
         $this->scaling = $scaling ?? 'DEFAULT'; // Means fit with padding
 
         $this->videoBitrate =
-            isset($options['videoBitrate']) && !empty($options['videoBitrate'])
+            isset($options['videoBitrate']) && ! empty($options['videoBitrate'])
                 ? (int) $options['videoBitrate'] * 1000
                 : $this->videoBitrate;
         $this->audioBitrate =
-            isset($options['audioBitrate']) && !empty($options['audioBitrate'])
+            isset($options['audioBitrate']) && ! empty($options['audioBitrate'])
                 ? (int) $options['audioBitrate'] * 1000
                 : $this->audioBitrate;
 
@@ -116,6 +116,7 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
         } elseif ($videoCodec === 'webm') {
             return $this->containerSettingsWebM;
         }
+
         return null;
     }
 
@@ -155,8 +156,9 @@ class MediaConvertOutput implements JsonSerializable, Arrayable, Jsonable
                     $codecSettings = $this->audioDescriptionOpus;
                 }
                 data_set($codecSettings, 'Bitrate', $this->audioBitrate);
+
                 return [
-                    'AudioSourceName' => 'Audio Selector ' . ($index + 1),
+                    'AudioSourceName' => 'Audio Selector '.($index + 1),
                     'CodecSettings' => $codecSettings,
                 ];
             })

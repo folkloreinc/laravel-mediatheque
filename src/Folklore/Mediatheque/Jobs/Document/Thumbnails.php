@@ -2,9 +2,9 @@
 
 namespace Folklore\Mediatheque\Jobs\Document;
 
-use Folklore\Mediatheque\Support\ThumbnailsJob;
 use Folklore\Mediatheque\Contracts\Services\PagesCount;
 use Folklore\Mediatheque\Contracts\Support\HasMetadatas;
+use Folklore\Mediatheque\Support\ThumbnailsJob;
 
 class Thumbnails extends ThumbnailsJob
 {
@@ -37,23 +37,25 @@ class Thumbnails extends ThumbnailsJob
         if ($count === 'all') {
             return $this->getPagesCount();
         }
+
         return $count;
     }
 
     protected function getPagesCount()
     {
-        if (!isset($this->pagesCount) && $this->file instanceof HasMetadatas) {
+        if (! isset($this->pagesCount) && $this->file instanceof HasMetadatas) {
             $metadata = $this->file->getMetadata('pages_count');
             $this->pagesCount = isset($metadata) ? $metadata->getValue() : null;
         }
-        if (!isset($this->pagesCount) && $this->model instanceof HasMetadatas) {
+        if (! isset($this->pagesCount) && $this->model instanceof HasMetadatas) {
             $metadata = $this->model->getMetadata('pages_count');
             $this->pagesCount = isset($metadata) ? $metadata->getValue() : null;
         }
-        if (!isset($this->pagesCount)) {
+        if (! isset($this->pagesCount)) {
             $localPath = $this->getLocalFilePath($this->file);
             $this->pagesCount = resolve(PagesCount::class)->getPagesCount($localPath);
         }
+
         return $this->pagesCount;
     }
 }

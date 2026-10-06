@@ -2,15 +2,15 @@
 
 namespace Folklore\Mediatheque\Jobs;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Folklore\Mediatheque\Contracts\Support\HasPipelines as HasPipelinesInterface;
+use Exception;
 use Folklore\Mediatheque\Contracts\Models\Pipeline;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob;
-use Exception;
+use Folklore\Mediatheque\Contracts\Support\HasPipelines as HasPipelinesInterface;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 
 class RunPipeline implements ShouldQueue
 {
@@ -49,16 +49,16 @@ class RunPipeline implements ShouldQueue
             // Ensure job definition is an array and merge handle
             $job = array_merge(is_string($job) ? ['job' => $job] : $job, ['name' => $name]);
 
-            if (!isset($job['from_file']) || is_null($job['from_file'])) {
+            if (! isset($job['from_file']) || is_null($job['from_file'])) {
                 $job['from_file'] = $definition->fromFile();
             }
 
-            if (!isset($job['queue']) || is_null($job['queue'])) {
+            if (! isset($job['queue']) || is_null($job['queue'])) {
                 $job['queue'] = $definition->queue();
             }
 
             $jobModel = $this->pipeline->getJob($name);
-            if (!$jobModel) {
+            if (! $jobModel) {
                 // Create the pipeline job model
                 $jobModel = app(PipelineJob::class);
                 $jobModel->setDefinition($job);

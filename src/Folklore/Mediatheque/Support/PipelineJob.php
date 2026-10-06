@@ -2,15 +2,15 @@
 
 namespace Folklore\Mediatheque\Support;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Support\Str;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesContract;
 use Folklore\Mediatheque\Services\PathFormatter as PathFormatterService;
 use Folklore\Mediatheque\Sources\LocalSource;
+use Illuminate\Bus\Queueable;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Str;
 
 abstract class PipelineJob
 {
@@ -48,8 +48,8 @@ abstract class PipelineJob
         } else {
             $ext = app('files')->extension($file->path);
             $path = tempnam(sys_get_temp_dir(), 'mediatheque_pipeline_job');
-            if (!empty($ext)) {
-                $path .= '.' . $ext;
+            if (! empty($ext)) {
+                $path .= '.'.$ext;
             }
             $file->downloadFile($path);
         }
@@ -75,6 +75,7 @@ abstract class PipelineJob
             $this->options,
             ...$replaces
         );
+
         return $destinationPath;
     }
 
@@ -82,6 +83,7 @@ abstract class PipelineJob
     {
         $file = app(FileContract::class);
         $file->setFile($path);
+
         return $file;
     }
 }

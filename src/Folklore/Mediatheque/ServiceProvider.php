@@ -1,12 +1,53 @@
 <?php
+
 namespace Folklore\Mediatheque;
 
-use Illuminate\Support\ServiceProvider as BaseServiceProvider;
+use Folklore\Mediatheque\Console\Commands\PipelineRun;
+use Folklore\Mediatheque\Contracts\Services\AudioDuration;
+use Folklore\Mediatheque\Contracts\Services\AudioThumbnail;
+use Folklore\Mediatheque\Contracts\Services\AudioTracks;
+use Folklore\Mediatheque\Contracts\Services\Color;
+use Folklore\Mediatheque\Contracts\Services\Dimension;
+use Folklore\Mediatheque\Contracts\Services\DocumentThumbnail;
+use Folklore\Mediatheque\Contracts\Services\Duration;
+use Folklore\Mediatheque\Contracts\Services\Extension;
+use Folklore\Mediatheque\Contracts\Services\FontFamilyName;
+use Folklore\Mediatheque\Contracts\Services\ImageDimension;
+use Folklore\Mediatheque\Contracts\Services\ImageThumbnail;
+use Folklore\Mediatheque\Contracts\Services\Mime;
+use Folklore\Mediatheque\Contracts\Services\PagesCount;
+use Folklore\Mediatheque\Contracts\Services\Palette;
+use Folklore\Mediatheque\Contracts\Services\Svg;
+use Folklore\Mediatheque\Contracts\Services\Thumbnail;
+use Folklore\Mediatheque\Contracts\Services\VideoDimension;
+use Folklore\Mediatheque\Contracts\Services\VideoDuration;
+use Folklore\Mediatheque\Contracts\Services\VideoThumbnail;
+use Folklore\Mediatheque\Contracts\Services\Waveform;
+use Folklore\Mediatheque\Contracts\Type\Factory;
+use Folklore\Mediatheque\Events\FileAttached;
+use Folklore\Mediatheque\Events\FileDetached;
+use Folklore\Mediatheque\Models\File;
+use Folklore\Mediatheque\Models\Media;
+use Folklore\Mediatheque\Models\Metadata;
+use Folklore\Mediatheque\Models\Pipeline;
+use Folklore\Mediatheque\Models\PipelineJob;
+use Folklore\Mediatheque\Observers\FileObserver;
+use Folklore\Mediatheque\Services\AnimatedImage;
+use Folklore\Mediatheque\Services\AudioWaveForm;
+use Folklore\Mediatheque\Services\ColorExtractor;
+use Folklore\Mediatheque\Services\FFMpeg;
+use Folklore\Mediatheque\Services\Gif;
+use Folklore\Mediatheque\Services\Imagick;
+use Folklore\Mediatheque\Services\ImagineSvg;
+use Folklore\Mediatheque\Services\MediaConvertClient;
+use Folklore\Mediatheque\Services\OtfInfo;
+use Folklore\Mediatheque\Services\PathFormatter;
+use Folklore\Mediatheque\Services\Webp;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Database\Eloquent\Model;
-use Folklore\Mediatheque\Jobs\Handler;
+use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 use InvalidArgumentException;
+use Symfony\Component\Mime\MimeTypeGuesserInterface;
+use Symfony\Component\Mime\MimeTypes;
 
 class ServiceProvider extends BaseServiceProvider
 {
@@ -30,16 +71,16 @@ class ServiceProvider extends BaseServiceProvider
 
         // Console
         if ($this->app->runningInConsole()) {
-            $this->commands([\Folklore\Mediatheque\Console\Commands\PipelineRun::class]);
+            $this->commands([PipelineRun::class]);
         }
     }
 
     public function bootPublishes()
     {
         // Config file path
-        $configPath = __DIR__ . '/../../config/config.php';
-        $migrationsPath = __DIR__ . '/../../migrations';
-        $routesPath = __DIR__ . '/../../routes.php';
+        $configPath = __DIR__.'/../../config/config.php';
+        $migrationsPath = __DIR__.'/../../migrations';
+        $routesPath = __DIR__.'/../../routes.php';
 
         // Merge files
         $this->mergeConfigFrom($configPath, 'mediatheque');
@@ -73,12 +114,12 @@ class ServiceProvider extends BaseServiceProvider
     public function bootEvents()
     {
         $this->app['events']->listen(
-            \Folklore\Mediatheque\Events\FileAttached::class,
-            \Folklore\Mediatheque\Observers\FileObserver::class . '@attached'
+            FileAttached::class,
+            FileObserver::class.'@attached'
         );
         $this->app['events']->listen(
-            \Folklore\Mediatheque\Events\FileDetached::class,
-            \Folklore\Mediatheque\Observers\FileObserver::class . '@detached'
+            FileDetached::class,
+            FileObserver::class.'@detached'
         );
     }
 
@@ -91,8 +132,8 @@ class ServiceProvider extends BaseServiceProvider
         });
 
         $map = $this->app['config']->get('mediatheque.routes.map');
-        if (!is_null($map)) {
-            $this->loadRoutesFrom(file_exists($map) ? $map : __DIR__ . '/../../routes.php');
+        if (! is_null($map)) {
+            $this->loadRoutesFrom(file_exists($map) ? $map : __DIR__.'/../../routes.php');
         }
     }
 
@@ -125,7 +166,7 @@ class ServiceProvider extends BaseServiceProvider
         $this->app->singleton('mediatheque.types', function ($app) {
             return new TypeManager($app);
         });
-        $this->app->bind(\Folklore\Mediatheque\Contracts\Type\Factory::class, 'mediatheque.types');
+        $this->app->bind(Factory::class, 'mediatheque.types');
     }
 
     /**
@@ -139,7 +180,7 @@ class ServiceProvider extends BaseServiceProvider
             return new PipelineManager($app);
         });
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Pipeline\Factory::class,
+            Contracts\Pipeline\Factory::class,
             'mediatheque.pipelines'
         );
     }
@@ -155,7 +196,7 @@ class ServiceProvider extends BaseServiceProvider
             return new SourceManager($app, $app['files']);
         });
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Source\Factory::class,
+            Contracts\Source\Factory::class,
             'mediatheque.sources'
         );
     }
@@ -171,7 +212,7 @@ class ServiceProvider extends BaseServiceProvider
             return new MetadataManager($app);
         });
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Metadata\Factory::class,
+            Contracts\Metadata\Factory::class,
             'mediatheque.metadatas'
         );
     }
@@ -206,10 +247,11 @@ class ServiceProvider extends BaseServiceProvider
                         '#/#',
                         '.',
                         $config->get('mediatheque.routes.prefix', 'mediatheque')
-                    ) . '.'
+                    ).'.'
                 )
             );
             $router->setMiddleware($config->get('mediatheque.routes.middleware'));
+
             return $router;
         });
     }
@@ -221,8 +263,8 @@ class ServiceProvider extends BaseServiceProvider
      */
     public function registerMimeTypesGuesser()
     {
-        $this->app->bind(\Symfony\Component\Mime\MimeTypeGuesserInterface::class, function () {
-            return new \Symfony\Component\Mime\MimeTypes();
+        $this->app->bind(MimeTypeGuesserInterface::class, function () {
+            return new MimeTypes;
         });
     }
 
@@ -232,7 +274,7 @@ class ServiceProvider extends BaseServiceProvider
             $config = $app['config']->get('mediatheque.services.mediaConvert', []);
 
             $filesystem = data_get($config, 'disk', 's3');
-            $disk = $app['config']->get('filesystems.disks.' . $filesystem, []);
+            $disk = $app['config']->get('filesystems.disks.'.$filesystem, []);
             if (empty($disk)) {
                 throw new InvalidArgumentException(
                     'Media Convert filesystem configuration is required.'
@@ -246,7 +288,7 @@ class ServiceProvider extends BaseServiceProvider
             $queue = data_get($config, 'queue', null);
             $endpoint = data_get($config, 'endpoint', null);
 
-            return new \Folklore\Mediatheque\Services\MediaConvertClient(
+            return new MediaConvertClient(
                 $key,
                 $secret,
                 $role,
@@ -254,13 +296,13 @@ class ServiceProvider extends BaseServiceProvider
                 array_merge(
                     data_get($config, 'config', []),
                     ['region' => $region],
-                    !empty($endpoint) ? ['endpoint' => $endpoint] : []
+                    ! empty($endpoint) ? ['endpoint' => $endpoint] : []
                 )
             );
         });
 
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Services\MediaConvertClient::class,
+            Contracts\Services\MediaConvertClient::class,
             'mediatheque.media_convert'
         );
     }
@@ -273,28 +315,28 @@ class ServiceProvider extends BaseServiceProvider
     public function registerModels()
     {
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\Media::class,
-            \Folklore\Mediatheque\Models\Media::class
+            Contracts\Models\Media::class,
+            Media::class
         );
 
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\Metadata::class,
-            \Folklore\Mediatheque\Models\Metadata::class
+            Contracts\Models\Metadata::class,
+            Metadata::class
         );
 
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\File::class,
-            \Folklore\Mediatheque\Models\File::class
+            Contracts\Models\File::class,
+            File::class
         );
 
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\Pipeline::class,
-            \Folklore\Mediatheque\Models\Pipeline::class
+            Contracts\Models\Pipeline::class,
+            Pipeline::class
         );
 
         $this->app->bind(
-            \Folklore\Mediatheque\Contracts\Models\PipelineJob::class,
-            \Folklore\Mediatheque\Models\PipelineJob::class
+            Contracts\Models\PipelineJob::class,
+            PipelineJob::class
         );
     }
 
@@ -307,90 +349,90 @@ class ServiceProvider extends BaseServiceProvider
     {
         $this->app->singleton(
             'mediatheque.services.metadata',
-            \Folklore\Mediatheque\Services\Metadata::class
+            Services\Metadata::class
         );
         $this->app->singleton(
             'mediatheque.services.ffmpeg',
-            \Folklore\Mediatheque\Services\FFMpeg::class
+            FFMpeg::class
         );
         $this->app->singleton(
             'mediatheque.services.imagick',
-            \Folklore\Mediatheque\Services\Imagick::class
+            Imagick::class
         );
         $this->app->singleton(
             'mediatheque.services.audiowaveform',
-            \Folklore\Mediatheque\Services\AudioWaveForm::class
+            AudioWaveForm::class
         );
         $this->app->singleton(
             'mediatheque.services.otfinfo',
-            \Folklore\Mediatheque\Services\OtfInfo::class
+            OtfInfo::class
         );
         $this->app->singleton(
             'mediatheque.services.path_formatter',
-            \Folklore\Mediatheque\Services\PathFormatter::class
+            PathFormatter::class
         );
         $this->app->singleton(
             'mediatheque.services.color_extractor',
-            \Folklore\Mediatheque\Services\ColorExtractor::class
+            ColorExtractor::class
         );
         $this->app->singleton(
             'mediatheque.services.gif',
-            \Folklore\Mediatheque\Services\Gif::class
+            Gif::class
         );
         $this->app->singleton(
             'mediatheque.services.webp',
-            \Folklore\Mediatheque\Services\Webp::class
+            Webp::class
         );
         $this->app->singleton(
             'mediatheque.services.animated_image',
-            \Folklore\Mediatheque\Services\AnimatedImage::class
+            AnimatedImage::class
         );
         $this->app->singleton(
             'mediatheque.services.svg',
-            \Folklore\Mediatheque\Services\ImagineSvg::class
+            ImagineSvg::class
         );
 
         $services = [
             'mediatheque.services.animated_image' => [
-                \Folklore\Mediatheque\Contracts\Services\AnimatedImage::class,
+                Contracts\Services\AnimatedImage::class,
             ],
-            'mediatheque.services.gif' => [\Folklore\Mediatheque\Contracts\Services\Gif::class],
-            'mediatheque.services.webp' => [\Folklore\Mediatheque\Contracts\Services\Webp::class],
-            'mediatheque.services.svg' => [\Folklore\Mediatheque\Contracts\Services\Svg::class],
+            'mediatheque.services.gif' => [Contracts\Services\Gif::class],
+            'mediatheque.services.webp' => [Contracts\Services\Webp::class],
+            'mediatheque.services.svg' => [Svg::class],
             'mediatheque.services.otfinfo' => [
-                \Folklore\Mediatheque\Contracts\Services\FontFamilyName::class,
+                FontFamilyName::class,
             ],
             'mediatheque.services.imagick' => [
-                \Folklore\Mediatheque\Contracts\Services\ImageDimension::class,
-                \Folklore\Mediatheque\Contracts\Services\PagesCount::class,
-                \Folklore\Mediatheque\Contracts\Services\DocumentThumbnail::class,
-                \Folklore\Mediatheque\Contracts\Services\ImageThumbnail::class,
+                ImageDimension::class,
+                PagesCount::class,
+                DocumentThumbnail::class,
+                ImageThumbnail::class,
             ],
             'mediatheque.services.metadata' => [
-                \Folklore\Mediatheque\Contracts\Services\Dimension::class,
-                \Folklore\Mediatheque\Contracts\Services\Duration::class,
-                \Folklore\Mediatheque\Contracts\Services\Thumbnail::class,
-                \Folklore\Mediatheque\Contracts\Services\Mime::class,
-                \Folklore\Mediatheque\Contracts\Services\Extension::class,
-                \Folklore\Mediatheque\Contracts\Services\Metadata::class,
+                Dimension::class,
+                Duration::class,
+                Thumbnail::class,
+                Mime::class,
+                Extension::class,
+                Contracts\Services\Metadata::class,
             ],
             'mediatheque.services.ffmpeg' => [
-                \Folklore\Mediatheque\Contracts\Services\VideoDimension::class,
-                \Folklore\Mediatheque\Contracts\Services\AudioDuration::class,
-                \Folklore\Mediatheque\Contracts\Services\VideoDuration::class,
-                \Folklore\Mediatheque\Contracts\Services\VideoThumbnail::class,
-                \Folklore\Mediatheque\Contracts\Services\AudioTracks::class,
+                VideoDimension::class,
+                AudioDuration::class,
+                VideoDuration::class,
+                VideoThumbnail::class,
+                AudioTracks::class,
             ],
             'mediatheque.services.audiowaveform' => [
-                \Folklore\Mediatheque\Contracts\Services\AudioThumbnail::class,
-                \Folklore\Mediatheque\Contracts\Services\Waveform::class,
+                AudioThumbnail::class,
+                Waveform::class,
             ],
             'mediatheque.services.path_formatter' => [
-                \Folklore\Mediatheque\Contracts\Services\PathFormatter::class,
+                Contracts\Services\PathFormatter::class,
             ],
             'mediatheque.services.color_extractor' => [
-                \Folklore\Mediatheque\Contracts\Services\Color::class,
-                \Folklore\Mediatheque\Contracts\Services\Palette::class,
+                Color::class,
+                Palette::class,
             ],
         ];
         foreach ($services as $key => $aliases) {

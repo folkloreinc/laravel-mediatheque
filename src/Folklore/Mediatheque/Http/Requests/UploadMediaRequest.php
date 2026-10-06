@@ -14,7 +14,7 @@ class UploadMediaRequest extends Request
     public function rules()
     {
         $file = $this->file('file');
-        if (!$file) {
+        if (! $file) {
             return [
                 'file' => ['required'],
             ];
@@ -22,6 +22,7 @@ class UploadMediaRequest extends Request
         $path = $file->getRealPath();
         $type = app(TypeFactory::class)->typeFromPath($path);
         $model = $type->newModel();
+
         return [
             'id' => 'exists:'.$model->getTable(),
             'file' => ['required'],

@@ -2,8 +2,9 @@
 
 namespace Folklore\Mediatheque\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class MediaController extends Controller
 {
@@ -17,6 +18,7 @@ class MediaController extends Controller
     protected function getTypeFromRequest(Request $request)
     {
         $type = $request->route()->getAction('type');
+
         return $this->typeFactory->type($type);
     }
 
@@ -35,7 +37,7 @@ class MediaController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function index(Request $request)
     {
@@ -44,14 +46,14 @@ class MediaController extends Controller
         $count = $request->get('count', 15);
         $fields = $request->get('fields', []);
         if (is_string($fields)) {
-            $fields = !empty($fields) ? explode(',', $fields) : [];
+            $fields = ! empty($fields) ? explode(',', $fields) : [];
         }
         $appends = $request->only([
             'count',
             'search',
             'sort',
             'sort_direction',
-            'fields'
+            'fields',
         ]);
 
         if ($request->has('search')) {
@@ -66,7 +68,7 @@ class MediaController extends Controller
 
         $items = $query->paginate($count)->appends($appends);
 
-        if (sizeof($fields)) {
+        if (count($fields)) {
             $items->makeVisible($fields);
         }
 
@@ -76,8 +78,7 @@ class MediaController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store(Request $request)
     {
@@ -94,7 +95,7 @@ class MediaController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function show($id)
     {
@@ -104,9 +105,8 @@ class MediaController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(Request $request, $id)
     {
@@ -123,7 +123,7 @@ class MediaController extends Controller
      * Remove the specified resource from storage.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function destroy(Request $request, $id)
     {

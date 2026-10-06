@@ -40,8 +40,9 @@ class PipelineRun extends Command
         $type = $this->argument('type');
         $name = $this->argument('name');
         $ids = $this->option('id');
-        if (is_null($ids) || !sizeof($ids)) {
+        if (is_null($ids) || ! count($ids)) {
             $this->line('<error>You must provide ids (--id=*)</error>');
+
             return 0;
         }
 

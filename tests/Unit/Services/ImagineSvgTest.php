@@ -2,23 +2,17 @@
 
 namespace Folklore\Mediatheque\Tests\Unit\Services;
 
-use Folklore\Mediatheque\Tests\TestCase;
 use Folklore\Mediatheque\Services\ImagineSvg;
+use Folklore\Mediatheque\Tests\TestCase;
 
-/**
- * @coversDefaultClass Folklore\Mediatheque\Services\ImagineSvg
- */
 class ImagineSvgTest extends TestCase
 {
     /**
      * Test getting a pipeline
-     *
-     * @test
-     * @covers ::getDimension
      */
-    public function testGetDimension()
+    public function test_get_dimension()
     {
-        $service = new ImagineSvg();
+        $service = new ImagineSvg;
         $dimension = $service->getDimension(public_path('image.svg'));
         $this->assertIsArray($dimension);
         $this->assertEquals($dimension[0], $dimension[1]);

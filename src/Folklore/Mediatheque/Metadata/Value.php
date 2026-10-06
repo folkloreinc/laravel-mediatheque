@@ -7,7 +7,9 @@ use Folklore\Mediatheque\Contracts\Metadata\Value as ValueContract;
 class Value implements ValueContract
 {
     protected $name;
+
     protected $value;
+
     protected $type;
 
     public function __construct($name, $value, $type = null)

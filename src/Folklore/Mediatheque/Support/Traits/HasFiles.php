@@ -1,22 +1,21 @@
 <?php
+
 namespace Folklore\Mediatheque\Support\Traits;
 
-use Illuminate\Support\Collection;
+use Folklore\Mediatheque\Contracts\Models\File;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
-use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 use Folklore\Mediatheque\Contracts\Services\Metadata as MetadataService;
+use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 use Folklore\Mediatheque\Events\FileAttached;
 use Folklore\Mediatheque\Events\FileDetached;
-
+use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\File\File as HttpFile;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 trait HasFiles
 {
     /**
-     *
      * Relationships
-     *
      */
     public function files()
     {
@@ -24,11 +23,12 @@ trait HasFiles
         $key = 'file_id';
         $model = app(FileContract::class);
         $modelClass = get_class($model);
-        $table = $model->getTable() . '_pivot';
+        $table = $model->getTable().'_pivot';
         $query = $this->morphToMany($modelClass, $morphName, $table, null, $key)
             ->withTimestamps()
             ->withPivot('handle', 'order')
             ->orderBy('order', 'asc');
+
         return $query;
     }
 
@@ -69,7 +69,7 @@ trait HasFiles
             ],
             $extraData
         );
-        if (!isset($data['type'])) {
+        if (! isset($data['type'])) {
             $data['type'] = app(TypeFactory::class)->typeFromPath($path);
         }
 
@@ -94,18 +94,19 @@ trait HasFiles
 
     /**
      * Get the original file
-     * @return \Folklore\Mediatheque\Contracts\Models\File
      */
     public function getOriginalFile(): ?FileContract
     {
         $this->loadMissing('files');
+
         return $this->getFiles()->get('original');
     }
 
     /**
      * Set the file for a specific handle
-     * @param string $handle The handle
-     * @param \Folklore\Mediatheque\Contracts\Models\File $file The file to set
+     *
+     * @param  string  $handle  The handle
+     * @param  File  $file  The file to set
      * @return $this
      */
     public function setFile(string $handle, FileContract $file): void
@@ -120,7 +121,8 @@ trait HasFiles
 
     /**
      * Remove a file from the files relationship
-     * @param  string|\Folklore\Mediatheque\Contracts\Models\File $handle The handle or tthe file to remove
+     *
+     * @param  string|File  $handle  The handle or tthe file to remove
      * @return $this
      */
     public function removeFile($handle): void
@@ -135,8 +137,8 @@ trait HasFiles
                 : $this->files()
                     ->where(function ($query) use ($table, $pivotTable, $handle) {
                         $query
-                            ->where($table . '.handle', $handle)
-                            ->orWhere($pivotTable . '.handle', $handle);
+                            ->where($table.'.handle', $handle)
+                            ->orWhere($pivotTable.'.handle', $handle);
                     })
                     ->first();
         if ($file) {
@@ -148,14 +150,15 @@ trait HasFiles
 
     /**
      * Add a file to the files relationship
-     * @param \Folklore\Mediatheque\Contracts\Models\File $file The file model
-     * @param string $handle The handle of the file
+     *
+     * @param  File  $file  The file model
+     * @param  string  $handle  The handle of the file
      * @return $this
      */
     public function addFile(FileContract $file, ?string $handle = null): void
     {
         $this->files()->attach($file, [
-            'handle' => !is_null($handle) ? $handle : $file->getHandle(),
+            'handle' => ! is_null($handle) ? $handle : $file->getHandle(),
         ]);
         $this->load('files');
         event(new FileAttached($this, $file));

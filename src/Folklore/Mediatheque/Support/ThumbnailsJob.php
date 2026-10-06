@@ -32,7 +32,7 @@ class ThumbnailsJob extends PipelineJob
         $path = $this->getLocalFilePath($this->file);
 
         $count = $this->getCount();
-        $maxIndex = !is_null($count) ? $count : 1;
+        $maxIndex = ! is_null($count) ? $count : 1;
         $files = [];
         for ($i = 0; $i < $maxIndex; $i++) {
             $options = $this->getOptions($i);

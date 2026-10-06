@@ -2,7 +2,6 @@
 
 namespace Folklore\Mediatheque\Jobs\Video;
 
-use Folklore\Mediatheque\Support\FFMpegJob;
 use Folklore\Mediatheque\Jobs\Video\Formats\HEVC as HEVCFormat;
 
 class HEVC extends H264

@@ -1,11 +1,10 @@
 /vendor
-/node_modules
 composer.phar
 composer.lock
-package-lock.json
+.phpunit.cache
 .phpunit.result.cache
 .DS_Store
 /coverage
 /notes
-
+/build
 phpunit.xml

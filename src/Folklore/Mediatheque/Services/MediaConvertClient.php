@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque\Services;
 
 use Aws\MediaConvert\MediaConvertClient as AwsMediaConvertClient;
 use Folklore\Mediatheque\Contracts\Services\MediaConvertClient as MediaConvertClientContract;
+
 // use Aws\Exception\AwsException;
 
 class MediaConvertClient implements MediaConvertClientContract
@@ -62,6 +63,7 @@ class MediaConvertClient implements MediaConvertClientContract
             return false;
         }
         $status = data_get($job, 'Job.Status', null);
+
         return isset($status) && in_array($status, ['COMPLETE', 'ERROR']);
     }
 

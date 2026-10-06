@@ -2,11 +2,10 @@
 
 namespace Folklore\Mediatheque\Support;
 
-use Ramsey\Uuid\Uuid;
+use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineContract;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineContract;
-use Folklore\Mediatheque\Contracts\Support\HasFiles as HasFilesContract;
+use Ramsey\Uuid\Uuid;
 
 class Pipeline extends Definition implements PipelineContract
 {
@@ -26,7 +25,7 @@ class Pipeline extends Definition implements PipelineContract
     {
         $this->name = $name;
 
-        if (!is_null($definition)) {
+        if (! is_null($definition)) {
             $this->setDefinition($definition);
         }
     }
@@ -53,10 +52,12 @@ class Pipeline extends Definition implements PipelineContract
                         $job['queue'] = $job['should_queue'];
                         unset($job['should_queue']);
                     }
+
                     return $job;
                 })
                 ->toArray();
         }
+
         return parent::setDefinition($definition);
     }
 

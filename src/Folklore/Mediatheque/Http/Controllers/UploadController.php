@@ -2,9 +2,9 @@
 
 namespace Folklore\Mediatheque\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 use Folklore\Mediatheque\Http\Requests\UploadMediaRequest;
+use Illuminate\Http\Request;
 
 class UploadController extends Controller
 {
@@ -19,13 +19,14 @@ class UploadController extends Controller
     {
         $file = $request->file('file');
 
-        if (!$file) {
+        if (! $file) {
             return abort(502);
         }
 
         $type = $this->getFileType($file);
         if ($type->canUpload()) {
             $item = $type->newModel();
+
             return $this->updateItemFromRequest($item, $request);
         }
 
@@ -66,8 +67,10 @@ class UploadController extends Controller
     {
         if (mediatheque()->hasType($method)) {
             $request = app(UploadMediaRequest::class);
+
             return $this->index($request, $method);
         }
+
         return abort(404);
     }
 }

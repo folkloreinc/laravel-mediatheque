@@ -3,14 +3,13 @@
 namespace Folklore\Mediatheque\Models;
 
 use Carbon\Carbon;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
-use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineDefinitionContract;
 use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
+use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineDefinitionContract;
 use Folklore\Mediatheque\Contracts\Support\HasPipelines as HasPipelinesContract;
 use Folklore\Mediatheque\Jobs\RunPipeline;
 use Folklore\Mediatheque\Observers\PipelineObserver;
+use Illuminate\Support\Collection;
 
 class Pipeline extends Model implements PipelineContract
 {
@@ -29,7 +28,7 @@ class Pipeline extends Model implements PipelineContract
         'started_at' => 'datetime',
         'ended_at' => 'datetime',
         'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'updated_at' => 'datetime',
     ];
 
     /**
@@ -46,6 +45,7 @@ class Pipeline extends Model implements PipelineContract
     {
         $model = app(PipelineJobContract::class);
         $modelClass = get_class($model);
+
         return $this->hasMany($modelClass);
     }
 
@@ -95,6 +95,7 @@ class Pipeline extends Model implements PipelineContract
     public function getModelToProcess(): HasPipelinesContract
     {
         $model = app($this->pipelinable_type)->find($this->pipelinable_id);
+
         return $model;
     }
 
@@ -130,7 +131,7 @@ class Pipeline extends Model implements PipelineContract
         $model = $this->getModelToProcess();
         if ($queue === true) {
             RunPipeline::dispatch($this, $model);
-        } else if (is_string($queue)) {
+        } elseif (is_string($queue)) {
             RunPipeline::dispatch($this, $model)->onQueue($queue);
         } else {
             RunPipeline::dispatchSync($this, $model);
@@ -157,7 +158,7 @@ class Pipeline extends Model implements PipelineContract
         $this->started = false;
         $this->failed = true;
         $this->ended_at = Carbon::now();
-        if (!is_null($e)) {
+        if (! is_null($e)) {
             $this->failed_exception = $e;
         }
         $this->save();

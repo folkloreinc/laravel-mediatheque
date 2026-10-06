@@ -2,9 +2,9 @@
 
 namespace Folklore\Mediatheque\Metadata;
 
-use Illuminate\Support\Arr;
-use Folklore\Mediatheque\Contracts\Services\Waveform as WaveformService;
 use Folklore\Mediatheque\Contracts\Metadata\Value as ValueContract;
+use Folklore\Mediatheque\Contracts\Services\Waveform as WaveformService;
+use Illuminate\Support\Arr;
 
 class Waveform extends Reader
 {
@@ -24,6 +24,7 @@ class Waveform extends Reader
         if (is_null($values)) {
             return null;
         }
+
         return new Value($this->getName(), $values, 'json');
     }
 }

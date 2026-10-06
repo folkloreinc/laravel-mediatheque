@@ -6,9 +6,9 @@ interface PathFormatter
 {
     /**
      * Format a path with replacements
-     * @param  string $format The format of the path
-     * @param  array $params The associative array to use as replacement value
-     * @return string
+     *
+     * @param  string  $format  The format of the path
+     * @param  array  $params  The associative array to use as replacement value
      */
     public function formatPath(string $format, ...$params): string;
 }

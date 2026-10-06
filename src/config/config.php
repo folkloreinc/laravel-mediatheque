@@ -1,5 +1,21 @@
 <?php
 
+use Folklore\Mediatheque\Jobs\Font\WebFonts;
+use Folklore\Mediatheque\Jobs\Video\H264;
+use Folklore\Mediatheque\Jobs\Video\HEVC;
+use Folklore\Mediatheque\Jobs\Video\MediaConvert;
+use Folklore\Mediatheque\Jobs\Video\Thumbnails;
+use Folklore\Mediatheque\Jobs\Video\WebM;
+use Folklore\Mediatheque\Metadata\AudioTracksCount;
+use Folklore\Mediatheque\Metadata\Colors;
+use Folklore\Mediatheque\Metadata\Dimension;
+use Folklore\Mediatheque\Metadata\Duration;
+use Folklore\Mediatheque\Metadata\FontFamilyName;
+use Folklore\Mediatheque\Metadata\PagesCount;
+use Folklore\Mediatheque\Metadata\Waveform;
+use Folklore\Mediatheque\Types\Video;
+use Illuminate\Contracts\Filesystem\Filesystem;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -26,14 +42,14 @@ return [
         'public' => [
             'driver' => 'local',
             'path' => storage_path('app/public'),
-            'url' => env('APP_URL') . '/storage',
+            'url' => env('APP_URL').'/storage',
         ],
 
         'cloud' => [
             'driver' => 'filesystem',
             'disk' => 'public',
             'path' => '/',
-            'visibility' => \Illuminate\Contracts\Filesystem\Filesystem::VISIBILITY_PUBLIC,
+            'visibility' => Filesystem::VISIBILITY_PUBLIC,
             'cache' => false,
         ],
     ],
@@ -70,7 +86,7 @@ return [
                 'audio/x-wav' => 'wav',
                 'audio/mpeg' => 'mp3',
             ],
-            'metadatas' => ['duration' /*'waveform'*/],
+            'metadatas' => ['duration' /* 'waveform' */],
         ],
 
         'document' => [
@@ -103,7 +119,7 @@ return [
         ],
 
         'video' => [
-            'type' => \Folklore\Mediatheque\Types\Video::class,
+            'type' => Video::class,
             'pipeline' => 'video',
             'can_upload' => true,
             'animated_image' => false, // Detect animated GIF and WebP as video
@@ -138,13 +154,13 @@ return [
     |--------------------------------------------------------------------------
     */
     'metadatas' => [
-        'duration' => \Folklore\Mediatheque\Metadata\Duration::class,
-        'waveform' => \Folklore\Mediatheque\Metadata\Waveform::class,
-        'dimension' => \Folklore\Mediatheque\Metadata\Dimension::class,
-        'pages_count' => \Folklore\Mediatheque\Metadata\PagesCount::class,
-        'audio_tracks_count' => \Folklore\Mediatheque\Metadata\AudioTracksCount::class,
-        'font_family_name' => \Folklore\Mediatheque\Metadata\FontFamilyName::class,
-        'colors' => \Folklore\Mediatheque\Metadata\Colors::class,
+        'duration' => Duration::class,
+        'waveform' => Waveform::class,
+        'dimension' => Dimension::class,
+        'pages_count' => PagesCount::class,
+        'audio_tracks_count' => AudioTracksCount::class,
+        'font_family_name' => FontFamilyName::class,
+        'colors' => Colors::class,
     ],
 
     /*
@@ -159,30 +175,32 @@ return [
     'pipelines' => [
         'video' => [
             'queue' => true,
-            'jobs' => [
-                'h264' => \Folklore\Mediatheque\Jobs\Video\H264::class,
-                'webm' => \Folklore\Mediatheque\Jobs\Video\WebM::class,
-                'hevc' => \Folklore\Mediatheque\Jobs\Video\HEVC::class,
+            'jobs' => array_filter([
+                'h264' => H264::class,
+                'webm' => WebM::class,
+                'hevc' => HEVC::class,
                 'thumbnails' => [
-                    'job' => \Folklore\Mediatheque\Jobs\Video\Thumbnails::class,
+                    'job' => Thumbnails::class,
                     'count' => 5,
                     'in_middle' => true,
                 ],
-                'media_convert' => [
-                    'job' => \Folklore\Mediatheque\Jobs\Video\MediaConvert::class,
+                // MediaConvert only runs when it is configured: without a role,
+                // the AWS client cannot be created and the job fails.
+                'media_convert' => env('AWS_MEDIACONVERT_ROLE') ? [
+                    'job' => MediaConvert::class,
                     'outputs' => ['webm', 'h264'],
                     'max_width' => 1080,
                     'max_height' => 1080,
                     'bitrate' => 4000,
-                ],
-            ],
+                ] : null,
+            ]),
         ],
 
         'audio' => [
             'queue' => true,
             'jobs' => [
                 'thumbnails' => [
-                    'job' => \Folklore\Mediatheque\Jobs\Audio\Thumbnails::class,
+                    'job' => Folklore\Mediatheque\Jobs\Audio\Thumbnails::class,
                     'zoom' => 600,
                     'width' => 1200,
                     'height' => 400,
@@ -199,7 +217,7 @@ return [
             'queue' => true,
             'jobs' => [
                 'thumbnails' => [
-                    'job' => \Folklore\Mediatheque\Jobs\Document\Thumbnails::class,
+                    'job' => Folklore\Mediatheque\Jobs\Document\Thumbnails::class,
                     'count' => 'all',
                     'resolution' => 150,
                     'quality' => 100,
@@ -213,7 +231,7 @@ return [
         'font' => [
             'queue' => true,
             'jobs' => [
-                'webfonts' => \Folklore\Mediatheque\Jobs\Font\WebFonts::class,
+                'webfonts' => WebFonts::class,
             ],
         ],
     ],

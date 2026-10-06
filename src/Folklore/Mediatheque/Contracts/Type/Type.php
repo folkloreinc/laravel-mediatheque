@@ -2,10 +2,10 @@
 
 namespace Folklore\Mediatheque\Contracts\Type;
 
-use Illuminate\Support\Collection;
 use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Contracts\Pipeline\Pipeline;
 use Illuminate\Database\Eloquent\Builder as QueryBuilder;
+use Illuminate\Support\Collection;
 
 interface Type
 {

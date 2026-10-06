@@ -2,9 +2,9 @@
 
 namespace Folklore\Mediatheque\Contracts\Models;
 
-use Illuminate\Support\Collection;
 use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineDefinition;
 use Folklore\Mediatheque\Contracts\Support\HasPipelines;
+use Illuminate\Support\Collection;
 
 interface Pipeline
 {

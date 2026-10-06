@@ -64,21 +64,24 @@ tests/
 - Code must keep running on the PHP and Laravel versions declared in `composer.json` for 1.x. The minimum is PHP 8.2: don't use language features newer than 8.2.
 - Raising the minimum PHP or Laravel version on `v1.1` breaks every consuming project that still runs an older one. Do it only after the maintainers confirm that all active consumers already run the new minimum.
 - Typehint parameters and return values when it doesn't break subclasses in consuming projects.
-- Format with Prettier and its PHP plugin (`.prettierrc.json`, `package.json`): 4 spaces, single quotes, 100 columns. `phpcs.xml` applies PSR-2 to `src`.
+- Format with [Laravel Pint](https://laravel.com/docs/pint) (`pint.json`, `laravel` preset): run `composer format` before committing. CI runs `composer lint` (`pint --test`).
+- Static analysis runs with [Larastan](https://github.com/larastan/larastan) (`phpstan.neon.dist`): `composer analyse`. Existing errors are listed in `phpstan-baseline.neon`; never add new ones to it. When a fix removes an error, regenerate the baseline (`vendor/bin/phpstan analyse --generate-baseline`) so it only shrinks.
 
 ## Tests
 
 ```bash
 composer install
-FFMPEG_BIN=$(which ffmpeg) FFPROBE_BIN=$(which ffprobe) vendor/bin/phpunit --no-coverage
+FFMPEG_BIN=$(which ffmpeg) FFPROBE_BIN=$(which ffprobe) composer test
 ```
 
-- Feature tests need the real binaries: ffmpeg and ffprobe, audiowaveform, ImageMagick with the `imagick` PHP extension, and otfinfo. `phpunit.xml` points to `/opt/homebrew` paths; environment variables override them.
-- Every bug fix comes with a regression test. Every new pipeline job comes with a feature test on a fixture.
-- Before pushing, run the suite and say in the PR what you ran and what could not run (a missing binary, for example).
+- Feature tests need the real binaries: ffmpeg and ffprobe, audiowaveform, ImageMagick with the `imagick` PHP extension, and otfinfo. Their paths come from environment variables (`FFMPEG_BIN`, `FFPROBE_BIN`, `AUDIOWAVEFORM_BIN`, `IMAGICK_CONVERT_BIN`, `OTFINFO_BIN`); the defaults are in `/usr/local/bin`. For a local setup, copy `phpunit.xml.dist` to `phpunit.xml` (ignored by git) and add your paths there.
+- Tests that need an external service (MediaConvert) are skipped when it is not configured.
+- **Every change comes with tests**: a regression test for each bug fix, a feature test on a fixture for each new pipeline job, and tests for each new behavior.
+- Before pushing, run `composer lint`, `composer analyse` and `composer test`, and say in the PR what you ran and what could not run (a missing binary, for example).
 
 ## Workflow
 
 - `v1.1` is the maintenance branch for 1.x. Older branches (`master`, `develop`, `v1`) are not maintained.
 - Open a pull request for anything with a runtime effect: it is the only review before the change reaches client projects.
+- GitHub Actions (`.github/workflows/ci.yml`) runs Pint, Larastan and the test suite (PHP 8.2–8.5 × Laravel 11–13) on every pull request and on `v1.1`. **Merge only when CI is green.** Never skip, disable or weaken a test to get there.
 - Commit messages follow Conventional Commits (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`…).

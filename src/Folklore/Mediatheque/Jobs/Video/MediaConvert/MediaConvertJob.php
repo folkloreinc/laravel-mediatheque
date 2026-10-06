@@ -4,9 +4,9 @@ namespace Folklore\Mediatheque\Jobs\Video\MediaConvert;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
-use \JsonSerializable;
+use JsonSerializable;
 
-class MediaConvertJob implements JsonSerializable, Arrayable, Jsonable
+class MediaConvertJob implements Arrayable, Jsonable, JsonSerializable
 {
     protected $options = [];
 
@@ -41,8 +41,7 @@ class MediaConvertJob implements JsonSerializable, Arrayable, Jsonable
                 'Queue' => $this->queue,
                 'Role' => $this->role,
                 'UserMetadata' => [],
-                'Settings' =>
-                    $this->settings instanceof MediaConvertJobSettings
+                'Settings' => $this->settings instanceof MediaConvertJobSettings
                         ? $this->settings->toArray()
                         : $this->settings,
                 'BillingTagsSource' => 'JOB',

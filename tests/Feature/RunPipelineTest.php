@@ -2,9 +2,15 @@
 
 namespace Folklore\Mediatheque\Tests\Feature;
 
-use Folklore\Mediatheque\Tests\TestCase;
-use Folklore\Mediatheque\Support\Pipeline;
 use Folklore\Mediatheque\Contracts\Models\Media;
+use Folklore\Mediatheque\Jobs\Video\H264;
+use Folklore\Mediatheque\Jobs\Video\HEVC;
+use Folklore\Mediatheque\Jobs\Video\HLS;
+use Folklore\Mediatheque\Jobs\Video\MediaConvert;
+use Folklore\Mediatheque\Jobs\Video\Thumbnails;
+use Folklore\Mediatheque\Jobs\Video\WebM;
+use Folklore\Mediatheque\Support\Pipeline;
+use Folklore\Mediatheque\Tests\TestCase;
 
 class RunPipelineTest extends TestCase
 {
@@ -26,16 +32,14 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
-    public function testVideo()
+    public function test_video()
     {
         $pipeline = Pipeline::fromJobs([
-            'h264' => \Folklore\Mediatheque\Jobs\Video\H264::class,
-            'webm' => \Folklore\Mediatheque\Jobs\Video\WebM::class,
-            'hevc' => \Folklore\Mediatheque\Jobs\Video\HEVC::class,
-            'thumbnails' => \Folklore\Mediatheque\Jobs\Video\Thumbnails::class,
+            'h264' => H264::class,
+            'webm' => WebM::class,
+            'hevc' => HEVC::class,
+            'thumbnails' => Thumbnails::class,
         ]);
 
         $handles = ['original', 'h264', 'webm', 'hevc', 'thumbnails'];
@@ -69,10 +73,14 @@ class RunPipelineTest extends TestCase
         }
     }
 
-    public function testMediaConvert()
+    public function test_media_convert()
     {
+        if (empty(config('mediatheque.services.mediaConvert.role'))) {
+            $this->markTestSkipped('MediaConvert is not configured (AWS_MEDIACONVERT_ROLE).');
+        }
+
         $pipeline = Pipeline::fromJobs([
-            'videos' => \Folklore\Mediatheque\Jobs\Video\MediaConvert::class,
+            'videos' => MediaConvert::class,
         ]);
 
         $handles = ['h264', 'webm'];
@@ -108,17 +116,15 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test animated gif pipeline
-     *
-     * @test
      */
-    public function testAnimatedGif()
+    public function test_animated_gif()
     {
         $this->app['mediatheque.types']->type('video')->set('animatedImage', true);
 
         $pipeline = Pipeline::fromJobs([
-            'h264' => \Folklore\Mediatheque\Jobs\Video\H264::class,
-            'webm' => \Folklore\Mediatheque\Jobs\Video\WebM::class,
-            'thumbnails' => \Folklore\Mediatheque\Jobs\Video\Thumbnails::class,
+            'h264' => H264::class,
+            'webm' => WebM::class,
+            'thumbnails' => Thumbnails::class,
         ]);
 
         $handles = ['original', 'h264', 'webm', 'thumbnails'];
@@ -154,14 +160,12 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
-    public function testVideoResize()
+    public function test_video_resize()
     {
         $pipeline = Pipeline::fromJobs([
             'h264' => [
-                'job' => \Folklore\Mediatheque\Jobs\Video\H264::class,
+                'job' => H264::class,
                 'max_width' => 100,
                 'max_height' => 100,
             ],
@@ -200,14 +204,12 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
-    public function testVideoResizeNoUpscale()
+    public function test_video_resize_no_upscale()
     {
         $pipeline = Pipeline::fromJobs([
             'h264' => [
-                'job' => \Folklore\Mediatheque\Jobs\Video\H264::class,
+                'job' => H264::class,
                 'max_width' => 600,
                 'max_height' => 600,
             ],
@@ -247,14 +249,12 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
-    public function testVideoResizeUpscale()
+    public function test_video_resize_upscale()
     {
         $pipeline = Pipeline::fromJobs([
             'h264' => [
-                'job' => \Folklore\Mediatheque\Jobs\Video\H264::class,
+                'job' => H264::class,
                 'max_width' => 600,
                 'max_height' => 600,
                 'upscale' => true,
@@ -297,10 +297,8 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test audio pipeline
-     *
-     * @test
      */
-    public function testAudio()
+    public function test_audio()
     {
         $pipeline = Pipeline::fromJobs([
             'thumbnails' => \Folklore\Mediatheque\Jobs\Audio\Thumbnails::class,
@@ -339,14 +337,12 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
-    public function testHLS()
+    public function test_hls()
     {
         $pipeline = Pipeline::fromJobs([
             'hls' => [
-                'job' => \Folklore\Mediatheque\Jobs\Video\HLS::class,
+                'job' => HLS::class,
                 'representations' => [
                     [
                         'max_width' => 360,
@@ -390,9 +386,9 @@ class RunPipelineTest extends TestCase
         $hlsFile = $model->getFile('hls');
         $source = $hlsFile->getSource();
         $basePath = dirname($hlsFile->path);
-        $this->assertTrue($source->exists($basePath . '/index.m3u8'));
-        $this->assertTrue($source->exists($basePath . '/index_360p.m3u8'));
-        $this->assertTrue($source->exists($basePath . '/index_360p_0000.ts'));
+        $this->assertTrue($source->exists($basePath.'/index.m3u8'));
+        $this->assertTrue($source->exists($basePath.'/index_360p.m3u8'));
+        $this->assertTrue($source->exists($basePath.'/index_360p_0000.ts'));
 
         $this->assertTrue($pipelineModel->ended);
         $this->assertFalse($pipelineModel->started);
@@ -406,14 +402,12 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
-    public function testHLSVertical()
+    public function test_hls_vertical()
     {
         $pipeline = Pipeline::fromJobs([
             'hls' => [
-                'job' => \Folklore\Mediatheque\Jobs\Video\HLS::class,
+                'job' => HLS::class,
                 'representations' => [
                     [
                         'max_width' => 360,
@@ -473,7 +467,7 @@ class RunPipelineTest extends TestCase
             'index_1920p_0002.ts',
         ];
         foreach ($expectedSegments as $segment) {
-            $this->assertTrue($source->exists($basePath . '/' . $segment));
+            $this->assertTrue($source->exists($basePath.'/'.$segment));
         }
 
         $this->assertTrue($pipelineModel->ended);

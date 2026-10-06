@@ -1,0 +1,79 @@
+name: CI
+
+on:
+    push:
+        branches: [v1.1]
+    pull_request:
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+jobs:
+    lint:
+        name: Pint and Larastan
+        runs-on: ubuntu-24.04
+        steps:
+            - uses: actions/checkout@v5
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.4'
+                  extensions: imagick
+                  coverage: none
+
+            - name: Validate composer.json
+              run: composer validate --strict
+
+            - name: Install dependencies
+              run: composer update --prefer-dist --no-interaction --no-progress
+
+            - name: Check code style
+              run: vendor/bin/pint --test
+
+            - name: Run static analysis
+              run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+
+    tests:
+        name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }}
+        runs-on: ubuntu-24.04
+        strategy:
+            fail-fast: false
+            matrix:
+                php: ['8.2', '8.3', '8.4', '8.5']
+                laravel: ['11.*', '12.*', '13.*']
+                exclude:
+                    # Laravel 13 requires PHP 8.3
+                    - php: '8.2'
+                      laravel: '13.*'
+        env:
+            FFMPEG_BIN: /usr/bin/ffmpeg
+            FFPROBE_BIN: /usr/bin/ffprobe
+            AUDIOWAVEFORM_BIN: /usr/bin/audiowaveform
+            IMAGICK_CONVERT_BIN: /usr/bin/convert
+            OTFINFO_BIN: /usr/bin/otfinfo
+        steps:
+            - uses: actions/checkout@v5
+
+            - name: Install media tools
+              run: |
+                  sudo add-apt-repository --yes ppa:chris-needham/ppa
+                  sudo apt-get update
+                  sudo apt-get install --yes --no-install-recommends ffmpeg audiowaveform imagemagick lcdf-typetools
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php }}
+                  extensions: imagick
+                  coverage: none
+
+            - name: Install dependencies
+              run: |
+                  composer require "illuminate/support:${{ matrix.laravel }}" --no-update --no-interaction
+                  composer update --prefer-dist --no-interaction --no-progress --with-all-dependencies
+
+            - name: Run tests
+              run: vendor/bin/phpunit

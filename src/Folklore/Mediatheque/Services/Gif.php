@@ -8,9 +8,6 @@ class Gif implements AnimatedImage
 {
     /**
      * Check if a gif is animated
-     *
-     * @param  string  $path
-     * @return bool
      */
     public function isAnimated(string $path): bool
     {
@@ -19,9 +16,6 @@ class Gif implements AnimatedImage
 
     /**
      * Get the number of frames of a gif
-     *
-     * @param  string  $path
-     * @return int|null
      */
     public function framesCount(string $path): ?int
     {
@@ -29,12 +23,13 @@ class Gif implements AnimatedImage
 
         if (fread($fp, 3) !== 'GIF') {
             fclose($fp);
+
             return null;
         }
 
         $frames = 0;
 
-        while (!feof($fp) && $frames < 2) {
+        while (! feof($fp) && $frames < 2) {
             if (fread($fp, 1) === "\x00") {
                 /* Some of the animated GIFs do not contain graphic control extension (starts with 21 f9) */
                 if (fread($fp, 1) === "\x21" || fread($fp, 2) === "\x21\xf9") {

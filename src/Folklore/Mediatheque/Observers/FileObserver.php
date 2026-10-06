@@ -12,7 +12,6 @@ class FileObserver
     /**
      * Listen to the File deleting event.
      *
-     * @param  FileContract  $model
      * @return void
      */
     public function deleting(FileContract $model)
@@ -23,7 +22,6 @@ class FileObserver
     /**
      * Listen to the File attached event.
      *
-     * @param  FileAttached  $event
      * @return void
      */
     public function attached(FileAttached $event)
@@ -31,7 +29,7 @@ class FileObserver
         $model = $event->model;
         $file = $event->file;
         $handle = $file ? $file->getHandle() : null;
-        if ($model instanceof HasPipelinesInterface && !is_null($handle)) {
+        if ($model instanceof HasPipelinesInterface && ! is_null($handle)) {
             $pipelines = $model->getStartedPipelines();
             foreach ($pipelines as $pipeline) {
                 foreach ($pipeline->getJobs() as $job) {

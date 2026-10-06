@@ -2,8 +2,8 @@
 
 namespace Folklore\Mediatheque\Metadata;
 
-use Illuminate\Support\Collection;
 use Folklore\Mediatheque\Contracts\Metadata\Value as ValueContract;
+use Illuminate\Support\Collection;
 
 class Values extends Collection implements ValueContract
 {

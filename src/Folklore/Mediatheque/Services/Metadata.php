@@ -2,36 +2,31 @@
 
 namespace Folklore\Mediatheque\Services;
 
-use Illuminate\Support\Collection;
-use Symfony\Component\Mime\MimeTypeGuesserInterface;
-use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
-use Folklore\Mediatheque\Contracts\Type\Type as Type;
+use Exception;
+use Folklore\Mediatheque\Contracts\Services\AnimatedImage as AnimatedImageService;
+use Folklore\Mediatheque\Contracts\Services\AudioDuration;
+use Folklore\Mediatheque\Contracts\Services\AudioThumbnail;
+use Folklore\Mediatheque\Contracts\Services\Dimension as DimensionService;
+use Folklore\Mediatheque\Contracts\Services\DocumentThumbnail;
+use Folklore\Mediatheque\Contracts\Services\Duration as DurationService;
+use Folklore\Mediatheque\Contracts\Services\Extension as ExtensionService;
+use Folklore\Mediatheque\Contracts\Services\ImageDimension;
+use Folklore\Mediatheque\Contracts\Services\ImageThumbnail;
 use Folklore\Mediatheque\Contracts\Services\Metadata as MetadataService;
 use Folklore\Mediatheque\Contracts\Services\Mime as MimeService;
-use Folklore\Mediatheque\Contracts\Services\Extension as ExtensionService;
-use Folklore\Mediatheque\Contracts\Services\Thumbnail as ThumbnailService;
-use Folklore\Mediatheque\Contracts\Services\AudioThumbnail;
-use Folklore\Mediatheque\Contracts\Services\DocumentThumbnail;
-use Folklore\Mediatheque\Contracts\Services\ImageThumbnail;
-use Folklore\Mediatheque\Contracts\Services\VideoThumbnail;
-use Folklore\Mediatheque\Contracts\Services\Dimension as DimensionService;
 use Folklore\Mediatheque\Contracts\Services\Svg;
-use Folklore\Mediatheque\Contracts\Services\ImageDimension;
+use Folklore\Mediatheque\Contracts\Services\Thumbnail as ThumbnailService;
 use Folklore\Mediatheque\Contracts\Services\VideoDimension;
-use Folklore\Mediatheque\Contracts\Services\Duration as DurationService;
-use Folklore\Mediatheque\Contracts\Services\AudioDuration;
 use Folklore\Mediatheque\Contracts\Services\VideoDuration;
-use Folklore\Mediatheque\Contracts\Services\AnimatedImage as AnimatedImageService;
+use Folklore\Mediatheque\Contracts\Services\VideoThumbnail;
+use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
+use Folklore\Mediatheque\Contracts\Type\Type;
+use Folklore\Mediatheque\Metadata\ValuesCollection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use Exception;
+use Symfony\Component\Mime\MimeTypeGuesserInterface;
 
-class Metadata implements
-    MetadataService,
-    MimeService,
-    ExtensionService,
-    ThumbnailService,
-    DimensionService,
-    DurationService
+class Metadata implements DimensionService, DurationService, ExtensionService, MetadataService, MimeService, ThumbnailService
 {
     protected $mimeTypes;
 
@@ -43,8 +38,7 @@ class Metadata implements
     /**
      * Get metadata from path
      *
-     * @param  string  $path
-     * @return \Folklore\Mediatheque\Metadata\ValuesCollection
+     * @return ValuesCollection
      */
     public function getMetadata(string $path, ?Type $type = null): Collection
     {
@@ -54,20 +48,19 @@ class Metadata implements
         }
 
         $type = is_string($type) ? mediatheque()->type($type) : $type;
+
         return $type->metadatas()->reduce(function ($values, $metadata) use ($path) {
             $value = $metadata->getValue($path);
             if (is_null($value)) {
                 return $values;
             }
+
             return $values->{$value instanceof Collection ? 'merge' : 'push'}($value);
         }, collect([]));
     }
 
     /**
      * Get mime type of a path
-     *
-     * @param  string  $path
-     * @return string
      */
     public function getMime(string $path): ?string
     {
@@ -84,6 +77,7 @@ class Metadata implements
                     }
                 }
             }
+
             return $mime;
         } catch (Exception $e) {
             if (config('mediatheque.debug')) {
@@ -91,25 +85,25 @@ class Metadata implements
             } else {
                 Log::error($e);
             }
+
             return null;
         }
     }
 
     /**
      * Get extension of a file
-     *
-     * @param  string  $path
-     * @return string
      */
     public function getExtension(string $path, ?string $filename = null): ?string
     {
         $mime = app(MimeService::class)->getMime($path);
         $types = array_values(config('mediatheque.types'));
-        $fileExtension = pathinfo(!empty($filename) ? $filename : $path, PATHINFO_EXTENSION);
+        $fileExtension = pathinfo(! empty($filename) ? $filename : $path, PATHINFO_EXTENSION);
+
         return array_reduce(
             $types,
             function ($extension, $type) use ($mime) {
                 $mimes = data_get($type, 'mimes', []);
+
                 return isset($mimes[$mime]) && $mimes[$mime] !== '*' ? $mimes[$mime] : $extension;
             },
             $fileExtension
@@ -118,9 +112,10 @@ class Metadata implements
 
     /**
      * Get the thumbnail of a path
-     * @param  string $source The source path
-     * @param  string $destination The destination path
-     * @param  array $options The options
+     *
+     * @param  string  $source  The source path
+     * @param  string  $destination  The destination path
+     * @param  array  $options  The options
      * @return string The path of the thumbnail
      */
     public function getThumbnail(string $source, string $destination, array $options = []): ?string
@@ -136,12 +131,14 @@ class Metadata implements
         } elseif (preg_match('/^image\//', $mime)) {
             return app(ImageThumbnail::class)->getThumbnail($source, $destination, $options);
         }
+
         return app(DocumentThumbnail::class)->getThumbnail($source, $destination, $options);
     }
 
     /**
      * Get the dimension of a path
-     * @param  string $path The path of a file
+     *
+     * @param  string  $path  The path of a file
      * @return array The dimension
      */
     public function getDimension(string $path): ?array
@@ -152,17 +149,19 @@ class Metadata implements
         }
         if (preg_match('/^image\/svg\+xml/', $mime) === 1) {
             return app(Svg::class)->getDimension($path);
-        } else if (preg_match('/^image\//', $mime)) {
+        } elseif (preg_match('/^image\//', $mime)) {
             return app(ImageDimension::class)->getDimension($path);
         } elseif (preg_match('/^video\//', $mime)) {
             return app(VideoDimension::class)->getDimension($path);
         }
+
         return null;
     }
 
     /**
      * Get the duration of a path
-     * @param  string $path The path of a file
+     *
+     * @param  string  $path  The path of a file
      * @return float The duration in seconds
      */
     public function getDuration(string $path): ?float
@@ -178,6 +177,7 @@ class Metadata implements
         } elseif (preg_match('/^image\//', $mime) && resolve(AnimatedImageService::class)->isAnimated($path)) {
             return app(VideoDuration::class)->getDuration($path);
         }
+
         return null;
     }
 }

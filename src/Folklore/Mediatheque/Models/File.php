@@ -2,28 +2,27 @@
 
 namespace Folklore\Mediatheque\Models;
 
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
-use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
-use Folklore\Mediatheque\Contracts\Source\Factory as SourceFactory;
-use Folklore\Mediatheque\Contracts\Source\Source as SourceContract;
-use Folklore\Mediatheque\Contracts\Services\Mime as MimeService;
 use Folklore\Mediatheque\Contracts\Services\Extension as ExtensionService;
 use Folklore\Mediatheque\Contracts\Services\Metadata as MetadataService;
+use Folklore\Mediatheque\Contracts\Services\Mime as MimeService;
 use Folklore\Mediatheque\Contracts\Services\PathFormatter as PathFormatterService;
+use Folklore\Mediatheque\Contracts\Source\Factory as SourceFactory;
+use Folklore\Mediatheque\Contracts\Source\Source as SourceContract;
 use Folklore\Mediatheque\Contracts\Support\HasMetadatas as HasMetadatasInterface;
 use Folklore\Mediatheque\Contracts\Support\HasUrl as HasUrlInterface;
-use Folklore\Mediatheque\Support\Traits\HasUrl;
-use Folklore\Mediatheque\Support\Traits\HasMetadatas;
+use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 use Folklore\Mediatheque\Observers\FileObserver;
-
+use Folklore\Mediatheque\Support\Traits\HasMetadatas;
+use Folklore\Mediatheque\Support\Traits\HasUrl;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\File\File as HttpFile;
 use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
 
-class File extends Model implements FileContract, HasUrlInterface, HasMetadatasInterface
+class File extends Model implements FileContract, HasMetadatasInterface, HasUrlInterface
 {
-    use HasUrl, HasMetadatas;
+    use HasMetadatas, HasUrl;
 
     protected $table = 'files';
 
@@ -56,6 +55,7 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
         if (is_null($handle)) {
             $handle = $this->pivot && $this->pivot->handle ? $this->pivot->handle : null;
         }
+
         return $handle;
     }
 
@@ -73,7 +73,7 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
         $localPath = null;
         $name = null;
         $extension = null;
-        if (!is_null($file)) {
+        if (! is_null($file)) {
             $localPath = $file->getRealPath();
             $name =
                 $file instanceof SymfonyUploadedFile
@@ -85,34 +85,34 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
                     : $file->guessExtension();
         }
 
-        if (!isset($data['name'])) {
+        if (! isset($data['name'])) {
             $data['name'] = $name;
         }
 
-        if (!isset($data['type']) && !is_null($localPath)) {
+        if (! isset($data['type']) && ! is_null($localPath)) {
             $data['type'] = app(TypeFactory::class)->typeFromPath($localPath);
         }
 
-        if (!isset($data['mime']) && !is_null($localPath)) {
+        if (! isset($data['mime']) && ! is_null($localPath)) {
             $data['mime'] = app(MimeService::class)->getMime($localPath);
         }
 
-        if (!isset($data['extension']) && !is_null($localPath)) {
+        if (! isset($data['extension']) && ! is_null($localPath)) {
             $defaultExtension = $extension;
             $extension = app(ExtensionService::class)->getExtension($localPath, $data['name']);
-            $data['extension'] = !empty($extension) ? $extension : $defaultExtension;
+            $data['extension'] = ! empty($extension) ? $extension : $defaultExtension;
         }
 
-        if (!isset($data['size']) && !is_null($file)) {
+        if (! isset($data['size']) && ! is_null($file)) {
             $data['size'] = $file->getSize();
         }
 
-        if (!isset($data['metadata']) && !is_null($localPath)) {
+        if (! isset($data['metadata']) && ! is_null($localPath)) {
             $data['metadata'] = app(MetadataService::class)->getMetadata($localPath);
         }
 
-        if (!isset($data['path'])) {
-            if (!$this->exists) {
+        if (! isset($data['path'])) {
+            if (! $this->exists) {
                 $this->save();
             }
             $data['path'] = app(PathFormatterService::class)->formatPath(
@@ -124,7 +124,7 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
 
         $source = data_get($data, 'source');
         $originalPath = data_get($data, 'original_path', null);
-        if (!is_null($file)) {
+        if (! is_null($file)) {
             $source = $this->getSource($source);
             $source->putFromLocalPath($data['path'], $localPath);
         } elseif (isset($originalPath)) {
@@ -142,6 +142,7 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
     public function setFileFromSource(string $path, array $data = [])
     {
         $info = pathinfo($path);
+
         return $this->setFile(
             array_merge(
                 ['name' => $info['basename'], 'original_path' => $path],
@@ -196,7 +197,8 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
             return null;
         }
         $i = floor(log($size, 1024));
-        return round($size / pow(1024, $i), [0, 0, 2, 2, 3][$i]) .
+
+        return round($size / pow(1024, $i), [0, 0, 2, 2, 3][$i]).
             ['B', 'kB', 'MB', 'GB', 'TB'][$i];
     }
 
@@ -211,9 +213,9 @@ class File extends Model implements FileContract, HasUrlInterface, HasMetadatasI
     public function scopeSearch($query, $text)
     {
         $query->where(function ($query) use ($text) {
-            $query->where('handle', 'LIKE', '%' . $text . '%');
-            $query->where('name', 'LIKE', '%' . $text . '%');
-            $query->where('path', 'LIKE', '%' . $text . '%');
+            $query->where('handle', 'LIKE', '%'.$text.'%');
+            $query->where('name', 'LIKE', '%'.$text.'%');
+            $query->where('path', 'LIKE', '%'.$text.'%');
         });
 
         return $query;

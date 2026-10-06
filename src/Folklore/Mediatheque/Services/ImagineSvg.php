@@ -12,19 +12,20 @@ class ImagineSvg implements Svg
 
     public function __construct()
     {
-        $this->imagine = new Imagine();
+        $this->imagine = new Imagine;
     }
 
     /**
      * Get the dimension of a path
-     * @param  string $path The path of a file
+     *
+     * @param  string  $path  The path of a file
      * @return array The dimension
      */
     public function getDimension(string $path): ?array
     {
         $size = $this->imagine->open($path)->getSize();
 
-        if (SvgBox::TYPE_NONE === $size->getType()) {
+        if ($size->getType() === SvgBox::TYPE_NONE) {
             return null;
         }
 

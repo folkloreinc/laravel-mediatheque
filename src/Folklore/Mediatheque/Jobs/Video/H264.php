@@ -2,8 +2,8 @@
 
 namespace Folklore\Mediatheque\Jobs\Video;
 
-use Folklore\Mediatheque\Support\FFMpegJob;
 use FFMpeg\Format\Video\X264;
+use Folklore\Mediatheque\Support\FFMpegJob;
 
 class H264 extends FFMpegJob
 {

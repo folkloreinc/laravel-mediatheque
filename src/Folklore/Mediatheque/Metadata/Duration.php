@@ -2,9 +2,8 @@
 
 namespace Folklore\Mediatheque\Metadata;
 
-use Folklore\Mediatheque\Contracts\Services\Duration as DurationService;
-use Folklore\Mediatheque\Contracts\Services\VideoDuration;
 use Folklore\Mediatheque\Contracts\Metadata\Value as ValueContract;
+use Folklore\Mediatheque\Contracts\Services\Duration as DurationService;
 
 class Duration extends Reader
 {
@@ -13,7 +12,8 @@ class Duration extends Reader
     public function getValue(string $path): ?ValueContract
     {
         $value = app(DurationService::class)->getDuration($path);
-        return !is_null($value)
+
+        return ! is_null($value)
             ? new Value($this->getName(), $value, 'float')
             : null;
     }

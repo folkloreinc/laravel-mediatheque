@@ -1,18 +1,20 @@
 <?php
+
 namespace Folklore\Mediatheque;
 
+use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactoryContract;
+use Folklore\Mediatheque\Contracts\Type\Type as TypeContract;
+use Folklore\Mediatheque\Support\Type;
+use Illuminate\Foundation\Application;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Folklore\Mediatheque\Contracts\Type\Type as TypeContract;
-use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactoryContract;
-use Folklore\Mediatheque\Support\Type;
 
 class TypeManager implements TypeFactoryContract
 {
     /**
      * The application instance.
      *
-     * @var \Illuminate\Foundation\Application
+     * @var Application
      */
     protected $app;
 
@@ -33,7 +35,7 @@ class TypeManager implements TypeFactoryContract
     /**
      * Create a new manager instance.
      *
-     * @param  \Illuminate\Foundation\Application  $app
+     * @param  Application  $app
      * @return void
      */
     public function __construct($app)
@@ -44,7 +46,6 @@ class TypeManager implements TypeFactoryContract
     /**
      * Get a type instance.
      *
-     * @param  string  $name
      * @return mixed
      *
      * @throws \InvalidArgumentException
@@ -54,7 +55,7 @@ class TypeManager implements TypeFactoryContract
         // If the given driver has not been created before, we will create the instances
         // here and cache it so we can return it next time very quickly. If there is
         // already a driver created by this name, we'll just return that instance.
-        if (!isset($this->instances[$name])) {
+        if (! isset($this->instances[$name])) {
             $this->instances[$name] = $this->createType($name);
         }
 
@@ -64,7 +65,6 @@ class TypeManager implements TypeFactoryContract
     /**
      * Get type of a path
      *
-     * @param  string  $path
      * @return string
      */
     public function typeFromPath(string $path): ?TypeContract
@@ -114,7 +114,7 @@ class TypeManager implements TypeFactoryContract
             $type = $this->createTypeInstance($name, $config);
         }
 
-        if (!is_null($type)) {
+        if (! is_null($type)) {
             return $type;
         }
 
@@ -142,6 +142,7 @@ class TypeManager implements TypeFactoryContract
         if (is_array($config) && isset($config['type'])) {
             $type = $config['type'];
             $definition = Arr::except($config, ['type']);
+
             return $this->app->makeWith($type, ['name' => $name, 'config' => $definition, 'definition' => $definition]);
         }
 
@@ -157,6 +158,7 @@ class TypeManager implements TypeFactoryContract
     protected function createCustomType($name)
     {
         $customType = $this->customTypes[$name];
+
         return $customType instanceof Closure
             ? $customType($this->app, $name)
             : $this->createTypeInstance($name, $customType);
@@ -165,7 +167,7 @@ class TypeManager implements TypeFactoryContract
     /**
      * Register a custom type
      *
-     * @param  string    $name
+     * @param  string  $name
      * @param  string|array|\Closure  $type
      * @return $this
      */
@@ -188,13 +190,10 @@ class TypeManager implements TypeFactoryContract
 
     /**
      * Check if a reader exists
-     *
-     * @param string $name
-     * @return boolean
      */
     public function hasType(string $name): bool
     {
-        return !is_null($this->app['config']->get('mediatheque.types.' . $name)) ||
+        return ! is_null($this->app['config']->get('mediatheque.types.'.$name)) ||
             isset($this->customTypes[$name]);
     }
 }

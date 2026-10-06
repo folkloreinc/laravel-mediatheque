@@ -1,26 +1,28 @@
 <?php
+
 namespace Folklore\Mediatheque;
 
-use Folklore\Mediatheque\Sources\LocalSource;
-use Folklore\Mediatheque\Sources\FilesystemSource;
-use Folklore\Mediatheque\Exception\InvalidSourceException;
 use Folklore\Mediatheque\Contracts\Source\Factory as SourceFactoryContract;
 use Folklore\Mediatheque\Contracts\Source\Source as SourceContract;
+use Folklore\Mediatheque\Exception\InvalidSourceException;
+use Folklore\Mediatheque\Sources\FilesystemSource;
+use Folklore\Mediatheque\Sources\LocalSource;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Foundation\Application;
 
 class SourceManager implements SourceFactoryContract
 {
     /**
      * The application instance.
      *
-     * @var \Illuminate\Foundation\Application
+     * @var Application
      */
     protected $app;
 
     /**
      * The filesystem
      *
-     * @var \Illuminate\Filesystem\Filesystem
+     * @var Filesystem
      */
     protected $files;
 
@@ -41,7 +43,7 @@ class SourceManager implements SourceFactoryContract
     /**
      * Create a new manager instance.
      *
-     * @param  \Illuminate\Foundation\Application  $app
+     * @param  Application  $app
      * @return void
      */
     public function __construct($app, Filesystem $files)
@@ -53,7 +55,7 @@ class SourceManager implements SourceFactoryContract
     /**
      * Create an instance of the Imagine Gd driver.
      *
-     * @return \Folklore\Mediatheque\Sources\LocalSource
+     * @return LocalSource
      */
     protected function createLocalDriver($config)
     {
@@ -63,7 +65,7 @@ class SourceManager implements SourceFactoryContract
     /**
      * Create an instance of the Imagine Imagick driver.
      *
-     * @return \Folklore\Mediatheque\Sources\FilesystemSource
+     * @return FilesystemSource
      */
     protected function createFilesystemDriver($config)
     {
@@ -94,7 +96,7 @@ class SourceManager implements SourceFactoryContract
         // If the given driver has not been created before, we will create the instances
         // here and cache it so we can return it next time very quickly. If there is
         // already a driver created by this name, we'll just return that instance.
-        if (!isset($this->instances[$name])) {
+        if (! isset($this->instances[$name])) {
             $this->instances[$name] = $this->createSource($name);
         }
 
@@ -112,11 +114,11 @@ class SourceManager implements SourceFactoryContract
     protected function createSource($name)
     {
         $config = $this->getConfig($name);
-        if (!$config) {
+        if (! $config) {
             throw new InvalidSourceException("Source [$name] not found.");
         }
         $driver = $config['driver'];
-        $method = 'create' . ucfirst($driver) . 'Driver';
+        $method = 'create'.ucfirst($driver).'Driver';
 
         // We'll check to see if a creator method exists for the given driver. If not we
         // will check for a custom driver creator, which allows developers to create
@@ -146,7 +148,7 @@ class SourceManager implements SourceFactoryContract
     /**
      * Register a custom driver creator Closure.
      *
-     * @param  string    $driver
+     * @param  string  $driver
      * @param  \Closure  $callback
      * @return $this
      */
@@ -166,7 +168,8 @@ class SourceManager implements SourceFactoryContract
     protected function getConfig($name = null)
     {
         $name = $name ?: $this->getDefaultSource();
-        return $this->app['config']['mediatheque.sources.' . $name];
+
+        return $this->app['config']['mediatheque.sources.'.$name];
     }
 
     /**
@@ -203,19 +206,18 @@ class SourceManager implements SourceFactoryContract
     /**
      * Check if a source exists
      *
-     * @param string $name The source name
-     * @return boolean
+     * @param  string  $name  The source name
      */
     public function hasSource($name): bool
     {
-        return isset($this->app['config']['mediatheque.sources.' . $name]);
+        return isset($this->app['config']['mediatheque.sources.'.$name]);
     }
 
     /**
      * Dynamically call the default source instance.
      *
      * @param  string  $method
-     * @param  array   $parameters
+     * @param  array  $parameters
      * @return mixed
      */
     public function __call($method, $parameters)

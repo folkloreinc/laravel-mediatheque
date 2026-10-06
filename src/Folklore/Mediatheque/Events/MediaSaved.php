@@ -2,8 +2,8 @@
 
 namespace Folklore\Mediatheque\Events;
 
-use Illuminate\Queue\SerializesModels;
 use Folklore\Mediatheque\Models\Media;
+use Illuminate\Queue\SerializesModels;
 
 class MediaSaved
 {

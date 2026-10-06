@@ -3,10 +3,10 @@
 namespace Folklore\Mediatheque\Models;
 
 use Carbon\Carbon;
-use Illuminate\Support\Arr;
 use Folklore\Mediatheque\Contracts\Models\Pipeline as PipelineContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
 use Folklore\Mediatheque\Jobs\RunPipelineJob;
+use Illuminate\Support\Arr;
 
 class PipelineJob extends Model implements PipelineJobContract
 {
@@ -27,12 +27,13 @@ class PipelineJob extends Model implements PipelineJobContract
         'started_at' => 'datetime',
         'ended_at' => 'datetime',
         'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'updated_at' => 'datetime',
     ];
 
     public function pipeline()
     {
         $pipelineClass = get_class(app(PipelineContract::class));
+
         return $this->belongsTo($pipelineClass);
     }
 
@@ -71,13 +72,13 @@ class PipelineJob extends Model implements PipelineJobContract
         $fromFile = data_get($definition, 'from_file', $pipelineDefinition->fromFile());
 
         $file = $model->getFile($fromFile);
-        if (!$file) {
+        if (! $file) {
             return;
         }
 
         if ($queue === true) {
             RunPipelineJob::dispatch($this, $model);
-        } else if (is_string($queue)) {
+        } elseif (is_string($queue)) {
             RunPipelineJob::dispatch($this, $model)->onQueue($queue);
         } else {
             RunPipelineJob::dispatchSync($this, $model);
@@ -104,7 +105,7 @@ class PipelineJob extends Model implements PipelineJobContract
         $this->started = false;
         $this->failed = true;
         $this->ended_at = Carbon::now();
-        if (!is_null($e)) {
+        if (! is_null($e)) {
             $this->failed_exception = $e;
         }
         $this->save();
@@ -116,14 +117,15 @@ class PipelineJob extends Model implements PipelineJobContract
             $model = $this->pipeline->getModelToProcess();
         }
         $fromFile = $this->definition['from_file'];
-        return !$this->started && !$this->ended && !$this->failed && $model->hasFile($fromFile);
+
+        return ! $this->started && ! $this->ended && ! $this->failed && $model->hasFile($fromFile);
     }
 
     public function isWaitingForFile($name): bool
     {
-        return !$this->started &&
-            !$this->ended &&
-            !$this->failed &&
+        return ! $this->started &&
+            ! $this->ended &&
+            ! $this->failed &&
             data_get($this->definition, 'from_file') === $name;
     }
 }

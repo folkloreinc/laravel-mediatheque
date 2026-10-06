@@ -2,11 +2,10 @@
 
 namespace Folklore\Mediatheque\Tests\Feature;
 
-use Folklore\Mediatheque\Tests\TestCase;
-use Folklore\Mediatheque\Support\Pipeline;
-use Folklore\Mediatheque\Contracts\Model\Video;
 use Folklore\Mediatheque\Contracts\Model\Audio;
-use Illuminate\Support\Facades\Storage;
+use Folklore\Mediatheque\Contracts\Model\Video;
+use Folklore\Mediatheque\Support\Pipeline;
+use Folklore\Mediatheque\Tests\TestCase;
 
 class MediaTest extends TestCase
 {
@@ -29,10 +28,8 @@ class MediaTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
-    public function testVideo()
+    public function test_video()
     {
         $media = media(public_path('test.mp4'));
         $media->load('files', 'metadatas');
@@ -45,10 +42,8 @@ class MediaTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
-    public function testAnimatedGif()
+    public function test_animated_gif()
     {
         $this->app['mediatheque.types']->type('video')->set('animatedImage', true);
 
@@ -63,10 +58,8 @@ class MediaTest extends TestCase
 
     /**
      * Test audio pipeline
-     *
-     * @test
      */
-    public function testAudio()
+    public function test_audio()
     {
         $media = media(public_path('test.wav'));
         $media->load('files', 'metadatas');
@@ -77,10 +70,8 @@ class MediaTest extends TestCase
 
     /**
      * Test image pipeline
-     *
-     * @test
      */
-    public function testImage()
+    public function test_image()
     {
         $media = media(public_path('image.jpg'));
         $media->load('files', 'metadatas');

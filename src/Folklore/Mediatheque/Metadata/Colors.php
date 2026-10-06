@@ -2,10 +2,10 @@
 
 namespace Folklore\Mediatheque\Metadata;
 
-use Illuminate\Support\Arr;
+use Folklore\Mediatheque\Contracts\Metadata\Value as ValueContract;
 use Folklore\Mediatheque\Contracts\Services\Color as ColorService;
 use Folklore\Mediatheque\Contracts\Services\Palette as PaletteService;
-use Folklore\Mediatheque\Contracts\Metadata\Value as ValueContract;
+use Illuminate\Support\Arr;
 
 class Colors extends Reader
 {
@@ -28,6 +28,7 @@ class Colors extends Reader
         if (is_null($colors)) {
             return null;
         }
+
         return new Value($this->getName(), $colors, 'json');
     }
 }

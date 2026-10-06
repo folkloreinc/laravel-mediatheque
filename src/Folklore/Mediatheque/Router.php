@@ -2,10 +2,10 @@
 
 namespace Folklore\Mediatheque;
 
-use Illuminate\Support\Arr;
-use Illuminate\Contracts\Routing\Registrar;
-use Folklore\Mediatheque\Http\Controllers\UploadController;
 use Folklore\Mediatheque\Http\Controllers\MediaController;
+use Folklore\Mediatheque\Http\Controllers\UploadController;
+use Illuminate\Contracts\Routing\Registrar;
+use Illuminate\Support\Arr;
 
 class Router
 {
@@ -43,7 +43,7 @@ class Router
         $this->group(function () use ($opts) {
             $apiOptions = isset($opts['api']) ? $opts['api'] : [];
             if ($apiOptions !== false) {
-                $apiOptions['name'] = data_get($apiOptions, 'name', $this->namePrefix . 'api.');
+                $apiOptions['name'] = data_get($apiOptions, 'name', $this->namePrefix.'api.');
                 $this->api($apiOptions);
             }
 
@@ -65,15 +65,15 @@ class Router
                 foreach ($types as $type) {
                     $name = $type->name();
                     if (is_null($allowedTypes) || in_array($name, $allowedTypes)) {
-                        $controller = data_get($opts, 'controllers.' . $name, $defaultController);
+                        $controller = data_get($opts, 'controllers.'.$name, $defaultController);
                         $this->router
                             ->apiResource($name, $controller)
                             ->names([
-                                'index' => $this->namePrefix . $name . '.index',
-                                'show' => $this->namePrefix . $name . '.show',
-                                'store' => $this->namePrefix . $name . '.store',
-                                'update' => $this->namePrefix . $name . '.update',
-                                'destroy' => $this->namePrefix . $name . '.destroy',
+                                'index' => $this->namePrefix.$name.'.index',
+                                'show' => $this->namePrefix.$name.'.show',
+                                'store' => $this->namePrefix.$name.'.store',
+                                'update' => $this->namePrefix.$name.'.update',
+                                'destroy' => $this->namePrefix.$name.'.destroy',
                             ])
                             ->parameters([
                                 $name => $name,
@@ -94,13 +94,13 @@ class Router
                 $allowedTypes = data_get($opts, 'types');
 
                 $this->router->post('/', [
-                    'as' => $this->namePrefix . 'upload',
-                    'uses' => $controller . '@index',
+                    'as' => $this->namePrefix.'upload',
+                    'uses' => $controller.'@index',
                 ]);
 
                 $this->router->post('pull', [
-                    'as' => $this->namePrefix . 'upload.pull',
-                    'uses' => $controller . '@pull',
+                    'as' => $this->namePrefix.'upload.pull',
+                    'uses' => $controller.'@pull',
                 ]);
 
                 foreach ($types as $type) {
@@ -110,8 +110,8 @@ class Router
                         (is_null($allowedTypes) || in_array($name, $allowedTypes))
                     ) {
                         $this->router->post($name, [
-                            'as' => $this->namePrefix . '.upload.' . $name,
-                            'uses' => $controller . '@' . $name,
+                            'as' => $this->namePrefix.'.upload.'.$name,
+                            'uses' => $controller.'@'.$name,
                         ]);
                     }
                 }

@@ -2,6 +2,4 @@
 
 namespace Folklore\Mediatheque\Contracts\Services;
 
-interface AudioThumbnail extends Thumbnail
-{
-}
+interface AudioThumbnail extends Thumbnail {}

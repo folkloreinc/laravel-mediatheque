@@ -2,22 +2,16 @@
 
 namespace Folklore\Mediatheque\Tests\Unit;
 
-use Folklore\Mediatheque\Tests\TestCase;
-use Folklore\Mediatheque\Mediatheque;
 use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineContract;
+use Folklore\Mediatheque\Mediatheque;
+use Folklore\Mediatheque\Tests\TestCase;
 
-/**
- * @coversDefaultClass Folklore\Mediatheque\Mediatheque
- */
 class MediathequeTest extends TestCase
 {
     /**
      * Test getting a pipeline
-     *
-     * @test
-     * @covers ::pipeline
      */
-    public function testPipeline()
+    public function test_pipeline()
     {
         $mediatheque = new Mediatheque(
             app(),
@@ -32,11 +26,8 @@ class MediathequeTest extends TestCase
 
     /**
      * Test add pipeline class
-     *
-     * @test
-     * @covers ::hasPipeline
      */
-    public function testHasPipeline()
+    public function test_has_pipeline()
     {
         $mediatheque = new Mediatheque(
             app(),

@@ -2,25 +2,25 @@
 
 namespace Folklore\Mediatheque\Models;
 
-use Illuminate\Database\Eloquent\Builder;
 use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 use Folklore\Mediatheque\Contracts\Type\Type as TypeContract;
-use Folklore\Mediatheque\Support\Traits\HasFiles;
-use Folklore\Mediatheque\Support\Traits\HasMetadatas;
-use Folklore\Mediatheque\Support\Traits\HasUrl;
-use Folklore\Mediatheque\Support\Traits\HasPipelines;
-use Folklore\Mediatheque\Support\Traits\HasThumbnails;
 use Folklore\Mediatheque\Events\MediaCreated;
-use Folklore\Mediatheque\Events\MediaUpdated;
-use Folklore\Mediatheque\Events\MediaSaved;
 use Folklore\Mediatheque\Events\MediaDeleted;
 use Folklore\Mediatheque\Events\MediaRestored;
+use Folklore\Mediatheque\Events\MediaSaved;
+use Folklore\Mediatheque\Events\MediaUpdated;
 use Folklore\Mediatheque\Observers\MediaObserver;
+use Folklore\Mediatheque\Support\Traits\HasFiles;
+use Folklore\Mediatheque\Support\Traits\HasMetadatas;
+use Folklore\Mediatheque\Support\Traits\HasPipelines;
+use Folklore\Mediatheque\Support\Traits\HasThumbnails;
+use Folklore\Mediatheque\Support\Traits\HasUrl;
+use Illuminate\Database\Eloquent\Builder;
 
 class Media extends Model implements MediaContract
 {
-    use HasFiles, HasUrl, HasPipelines, HasMetadatas, HasThumbnails;
+    use HasFiles, HasMetadatas, HasPipelines, HasThumbnails, HasUrl;
 
     protected $table = 'medias';
 
@@ -29,7 +29,7 @@ class Media extends Model implements MediaContract
     protected $casts = [
         'data' => 'json',
         'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'updated_at' => 'datetime',
     ];
 
     /**
@@ -57,6 +57,7 @@ class Media extends Model implements MediaContract
 
     /**
      * Get the type column name
+     *
      * @return string $name The type column name
      */
     public function getTypeName(): string
@@ -66,17 +67,20 @@ class Media extends Model implements MediaContract
 
     /**
      * Get the current media type
+     *
      * @return string $type The type of the media
      */
     public function getType(): TypeContract
     {
         $typeName = $this->getAttribute($this->getTypeName());
+
         return resolve(TypeFactory::class)->type($typeName);
     }
 
     /**
      * Set the current media type
-     * @param string $type The type of the media
+     *
+     * @param  string  $type  The type of the media
      */
     public function setType($type): void
     {
@@ -89,15 +93,16 @@ class Media extends Model implements MediaContract
     /**
      * Scope a query to only include specific type.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  Builder  $query
      * @param  array|string  $type
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @return Builder
      */
     public function scopeType($query, $type)
     {
         if ($type instanceof TypeContract) {
             return $query->where($this->getTypeName(), $type->name());
         }
+
         return is_array($type)
             ? $query->whereIn($this->getTypeName(), $type)
             : $query->where($this->getTypeName(), $type);

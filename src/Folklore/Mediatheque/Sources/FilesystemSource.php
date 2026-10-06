@@ -3,14 +3,12 @@
 namespace Folklore\Mediatheque\Sources;
 
 use Folklore\Mediatheque\Contracts\Source\Source;
-use League\Flysystem\Adapter\Local;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use Illuminate\Contracts\Filesystem\Factory as FilesystemFactory;
+use Illuminate\Contracts\Filesystem\Filesystem as FilesystemContract;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Arr;
-use Illuminate\Contracts\Filesystem\Filesystem as FilesystemContract;
-use Illuminate\Contracts\Filesystem\Factory as FilesystemFactory;
-use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Symfony\Component\HttpFoundation\File\File;
-use finfo;
 
 class FilesystemSource implements Source
 {
@@ -37,6 +35,7 @@ class FilesystemSource implements Source
     public function exists(string $path): bool
     {
         $fullPath = $this->getFullPath($path);
+
         return $this->existsOnDisk($fullPath);
     }
 
@@ -45,6 +44,7 @@ class FilesystemSource implements Source
         $disk = $this->getDisk();
         $realPath = $this->getFullPath($path);
         $options = Arr::only($this->config, ['visibility']);
+
         return $disk->put($realPath, $contents, $options);
     }
 
@@ -60,28 +60,31 @@ class FilesystemSource implements Source
         $filename = basename($realPath);
         $localFile = new File($localPath);
         $options = Arr::only($this->config, ['visibility']);
+
         return $disk->putFileAs($directory, $localFile, $filename, $options);
     }
 
     public function delete(string $path)
     {
-        if (!$this->exists($path)) {
+        if (! $this->exists($path)) {
             return;
         }
 
         $disk = $this->getDisk();
         $realPath = $this->getFullPath($path);
+
         return $disk->delete($realPath);
     }
 
     public function deleteDirectory(string $path)
     {
-        if (!$this->exists($path)) {
+        if (! $this->exists($path)) {
             return;
         }
 
         $disk = $this->getDisk();
         $realPath = $this->getFullPath($path);
+
         return $disk->deleteDirectory($realPath);
     }
 
@@ -95,6 +98,7 @@ class FilesystemSource implements Source
         $destinationRealPath = $this->getFullPath($destination);
 
         $disk = $this->getDisk();
+
         return $disk->move($sourceRealPath, $destinationRealPath);
     }
 
@@ -108,6 +112,7 @@ class FilesystemSource implements Source
         $destinationRealPath = $this->getFullPath($destination);
 
         $disk = $this->getDisk();
+
         return $disk->copy($sourceRealPath, $destinationRealPath);
     }
 
@@ -116,6 +121,7 @@ class FilesystemSource implements Source
         $disk = $this->getDisk();
         $realPath = $this->getFullPath($path);
         $stream = $disk->readStream($realPath);
+
         return $this->filesystem->put($localPath, $stream);
     }
 
@@ -123,19 +129,22 @@ class FilesystemSource implements Source
     {
         $disk = $this->getDisk();
         $realPath = $this->getFullPath($path);
+
         return $disk->url(ltrim($realPath, '/'));
     }
 
     public function getDisk(): FilesystemContract
     {
         $disk = $this->config['disk'];
+
         return $disk === 'cloud' ? $this->factory->cloud() : $this->factory->disk($disk);
     }
 
     protected function getFullPath(string $path): string
     {
         $prefixPath = data_get($this->config, 'path', '/');
-        return rtrim($prefixPath, '/') . '/' . ltrim($path, '/');
+
+        return rtrim($prefixPath, '/').'/'.ltrim($path, '/');
     }
 
     protected function getCacheFullPath(string $path): string
@@ -143,19 +152,21 @@ class FilesystemSource implements Source
         $prefix = data_get($this->config, 'cache_path', null);
         $cachePath = $this->getCachePath($path);
         $extension = pathinfo($path, \PATHINFO_EXTENSION);
-        return rtrim($prefix, '/') . '/' . $cachePath . (empty($extension) ? '' : '.' . $extension);
+
+        return rtrim($prefix, '/').'/'.$cachePath.(empty($extension) ? '' : '.'.$extension);
     }
 
     protected function getCachePath(string $path): string
     {
-        $key = md5($path) . '_' . sha1($path);
+        $key = md5($path).'_'.sha1($path);
 
-        return 'image/' . preg_replace('/^([0-9a-z]{2})([0-9a-z]{2})/i', '$1/$2/', $key);
+        return 'image/'.preg_replace('/^([0-9a-z]{2})([0-9a-z]{2})/i', '$1/$2/', $key);
     }
 
     protected function getCacheKey(string $path): string
     {
         $cachePath = $this->getCachePath($path);
+
         return preg_replace('/[^a-zA-Z0-9]+/i', '_', $cachePath);
     }
 
@@ -167,6 +178,7 @@ class FilesystemSource implements Source
         }
 
         $cacheKey = $this->getCacheKey($path);
+
         return $this->cache->has($cacheKey);
     }
 
