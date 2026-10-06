@@ -91,24 +91,6 @@ parameters:
 			path: src/Folklore/Mediatheque/Jobs/Video/MediaConvert/MediaConvertOutput.php
 
 		-
-			message: '#^Class Folklore\\Mediatheque\\Closure not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: src/Folklore/Mediatheque/MetadataManager.php
-
-		-
-			message: '#^Instantiated class Folklore\\Mediatheque\\InvalidArgumentException not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: src/Folklore/Mediatheque/MetadataManager.php
-
-		-
-			message: '#^Invoking callable on an unknown class Folklore\\Mediatheque\\Closure\.$#'
-			identifier: class.notFound
-			count: 1
-			path: src/Folklore/Mediatheque/MetadataManager.php
-
-		-
 			message: '#^PHPDoc tag @param references unknown parameter\: \$callback$#'
 			identifier: parameter.notFound
 			count: 1
@@ -117,12 +99,6 @@ parameters:
 		-
 			message: '#^PHPDoc tag @return with type mixed is not subtype of native type Folklore\\Mediatheque\\Contracts\\Metadata\\Reader\.$#'
 			identifier: return.phpDocType
-			count: 1
-			path: src/Folklore/Mediatheque/MetadataManager.php
-
-		-
-			message: '#^Throwing object of an unknown class Folklore\\Mediatheque\\InvalidArgumentException\.$#'
-			identifier: class.notFound
 			count: 1
 			path: src/Folklore/Mediatheque/MetadataManager.php
 
@@ -523,24 +499,6 @@ parameters:
 			path: src/Folklore/Mediatheque/SourceManager.php
 
 		-
-			message: '#^Instantiated class Folklore\\Mediatheque\\Exception\\InvalidSourceException not found\.$#'
-			identifier: class.notFound
-			count: 2
-			path: src/Folklore/Mediatheque/SourceManager.php
-
-		-
-			message: '#^Instantiated class Folklore\\Mediatheque\\InvalidArgumentException not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: src/Folklore/Mediatheque/SourceManager.php
-
-		-
-			message: '#^PHPDoc tag @param for parameter \$callback with type Closure is not subtype of native type Folklore\\Mediatheque\\Closure\.$#'
-			identifier: parameter.phpDocType
-			count: 1
-			path: src/Folklore/Mediatheque/SourceManager.php
-
-		-
 			message: '#^PHPDoc tag @param references unknown parameter\: \$driver$#'
 			identifier: parameter.notFound
 			count: 1
@@ -549,24 +507,6 @@ parameters:
 		-
 			message: '#^PHPDoc tag @return with type mixed is not subtype of native type Folklore\\Mediatheque\\Contracts\\Source\\Source\.$#'
 			identifier: return.phpDocType
-			count: 1
-			path: src/Folklore/Mediatheque/SourceManager.php
-
-		-
-			message: '#^Parameter \$callback of method Folklore\\Mediatheque\\SourceManager\:\:extend\(\) has invalid type Folklore\\Mediatheque\\Closure\.$#'
-			identifier: class.notFound
-			count: 1
-			path: src/Folklore/Mediatheque/SourceManager.php
-
-		-
-			message: '#^Throwing object of an unknown class Folklore\\Mediatheque\\Exception\\InvalidSourceException\.$#'
-			identifier: class.notFound
-			count: 2
-			path: src/Folklore/Mediatheque/SourceManager.php
-
-		-
-			message: '#^Throwing object of an unknown class Folklore\\Mediatheque\\InvalidArgumentException\.$#'
-			identifier: class.notFound
 			count: 1
 			path: src/Folklore/Mediatheque/SourceManager.php
 
@@ -601,24 +541,6 @@ parameters:
 			path: src/Folklore/Mediatheque/Support/Type.php
 
 		-
-			message: '#^Class Folklore\\Mediatheque\\Closure not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: src/Folklore/Mediatheque/TypeManager.php
-
-		-
-			message: '#^Instantiated class Folklore\\Mediatheque\\InvalidArgumentException not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: src/Folklore/Mediatheque/TypeManager.php
-
-		-
-			message: '#^Invoking callable on an unknown class Folklore\\Mediatheque\\Closure\.$#'
-			identifier: class.notFound
-			count: 1
-			path: src/Folklore/Mediatheque/TypeManager.php
-
-		-
 			message: '#^PHPDoc tag @param references unknown parameter\: \$name$#'
 			identifier: parameter.notFound
 			count: 1
@@ -639,12 +561,6 @@ parameters:
 		-
 			message: '#^PHPDoc tag @return with type string is incompatible with native type Folklore\\Mediatheque\\Contracts\\Type\\Type\|null\.$#'
 			identifier: return.phpDocType
-			count: 1
-			path: src/Folklore/Mediatheque/TypeManager.php
-
-		-
-			message: '#^Throwing object of an unknown class Folklore\\Mediatheque\\InvalidArgumentException\.$#'
-			identifier: class.notFound
 			count: 1
 			path: src/Folklore/Mediatheque/TypeManager.php
 
