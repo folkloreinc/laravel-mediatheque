@@ -64,8 +64,12 @@ class RunPipeline implements ShouldQueue
                 $jobModel->setDefinition($job);
                 $this->pipeline->addJob($jobModel);
             }
+        }
 
-            // Run the job
+        // Run the jobs once they all exist, so a job that ends right away
+        // finds the jobs waiting for its file
+        $this->pipeline->load('jobs');
+        foreach ($this->pipeline->getJobs() as $jobModel) {
             if ($jobModel->canRun($this->model)) {
                 $jobModel->run();
             }
