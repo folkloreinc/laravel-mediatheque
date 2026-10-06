@@ -6,16 +6,10 @@ use Folklore\Mediatheque\Tests\TestCase;
 use Folklore\Mediatheque\Mediatheque;
 use Folklore\Mediatheque\Contracts\Pipeline\Pipeline as PipelineContract;
 
-/**
- * @coversDefaultClass Folklore\Mediatheque\Mediatheque
- */
 class MediathequeTest extends TestCase
 {
     /**
      * Test getting a pipeline
-     *
-     * @test
-     * @covers ::pipeline
      */
     public function testPipeline()
     {
@@ -32,9 +26,6 @@ class MediathequeTest extends TestCase
 
     /**
      * Test add pipeline class
-     *
-     * @test
-     * @covers ::hasPipeline
      */
     public function testHasPipeline()
     {

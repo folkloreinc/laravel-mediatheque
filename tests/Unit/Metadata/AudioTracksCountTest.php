@@ -6,16 +6,10 @@ use Folklore\Mediatheque\Tests\TestCase;
 use Folklore\Mediatheque\Metadata\AudioTracksCount;
 use Folklore\Mediatheque\Contracts\Metadata\Value as ValueContract;
 
-/**
- * @coversDefaultClass Folklore\Mediatheque\Metadata\AudioTracksCount
- */
 class AudioTracksCountTest extends TestCase
 {
     /**
      * Test getting a pipeline
-     *
-     * @test
-     * @covers ::handle
      */
     public function testGetValue()
     {
@@ -30,9 +24,6 @@ class AudioTracksCountTest extends TestCase
 
     /**
      * Test getting a pipeline
-     *
-     * @test
-     * @covers ::handle
      */
     public function testGetValueInvalid()
     {

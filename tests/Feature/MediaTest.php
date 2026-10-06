@@ -29,8 +29,6 @@ class MediaTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
     public function testVideo()
     {
@@ -45,8 +43,6 @@ class MediaTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
     public function testAnimatedGif()
     {
@@ -63,8 +59,6 @@ class MediaTest extends TestCase
 
     /**
      * Test audio pipeline
-     *
-     * @test
      */
     public function testAudio()
     {
@@ -77,8 +71,6 @@ class MediaTest extends TestCase
 
     /**
      * Test image pipeline
-     *
-     * @test
      */
     public function testImage()
     {

@@ -23,7 +23,7 @@ class TestCase extends BaseTestCase
             'prefix'   => '',
         ]);
 
-        $app->instance('path.public', __DIR__.'/fixture');
+        $app->usePublicPath(__DIR__.'/fixture');
     }
 
     protected function getPackageProviders($app)

@@ -5,16 +5,10 @@ namespace Folklore\Mediatheque\Tests\Unit;
 use Folklore\Mediatheque\Tests\TestCase;
 use Folklore\Mediatheque\SourceManager;
 
-/**
- * @coversDefaultClass Folklore\Mediatheque\SourceManager
- */
 class SourceManagerTest extends TestCase
 {
     /**
      * Test get default source
-     *
-     * @test
-     * @covers ::getDefaultSource
      */
     public function testGetDefaultSource()
     {
@@ -25,9 +19,6 @@ class SourceManagerTest extends TestCase
 
     /**
      * Test set default source
-     *
-     * @test
-     * @covers ::setDefaultSource
      */
     public function testSetDefaultSource()
     {
@@ -39,9 +30,6 @@ class SourceManagerTest extends TestCase
 
     /**
      * Test the local source
-     *
-     * @test
-     * @covers ::createLocalDriver
      */
     public function testPublicSource()
     {
@@ -52,9 +40,6 @@ class SourceManagerTest extends TestCase
 
     /**
      * Test the cloud source
-     *
-     * @test
-     * @covers ::createFilesystemDriver
      */
     public function testCloudSource()
     {

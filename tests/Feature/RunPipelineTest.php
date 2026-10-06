@@ -26,8 +26,6 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
     public function testVideo()
     {
@@ -71,6 +69,10 @@ class RunPipelineTest extends TestCase
 
     public function testMediaConvert()
     {
+        if (empty(config('mediatheque.services.mediaConvert.role'))) {
+            $this->markTestSkipped('MediaConvert is not configured (AWS_MEDIACONVERT_ROLE).');
+        }
+
         $pipeline = Pipeline::fromJobs([
             'videos' => \Folklore\Mediatheque\Jobs\Video\MediaConvert::class,
         ]);
@@ -108,8 +110,6 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test animated gif pipeline
-     *
-     * @test
      */
     public function testAnimatedGif()
     {
@@ -154,8 +154,6 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
     public function testVideoResize()
     {
@@ -200,8 +198,6 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
     public function testVideoResizeNoUpscale()
     {
@@ -247,8 +243,6 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
     public function testVideoResizeUpscale()
     {
@@ -297,8 +291,6 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test audio pipeline
-     *
-     * @test
      */
     public function testAudio()
     {
@@ -339,8 +331,6 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
     public function testHLS()
     {
@@ -406,8 +396,6 @@ class RunPipelineTest extends TestCase
 
     /**
      * Test video pipeline
-     *
-     * @test
      */
     public function testHLSVertical()
     {

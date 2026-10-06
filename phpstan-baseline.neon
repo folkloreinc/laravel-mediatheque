@@ -1,0 +1,685 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Console/Commands/PipelineRun.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:runPipeline\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Console/Commands/PipelineRun.php
+
+		-
+			message: '#^PHPDoc tag @return with type int is incompatible with native type Illuminate\\Support\\Collection\|null\.$#'
+			identifier: return.phpDocType
+			count: 1
+			path: src/Folklore/Mediatheque/Contracts/Services/AudioTracks.php
+
+		-
+			message: '#^PHPDoc tag @param for parameter \$path with type int is incompatible with native type string\.$#'
+			identifier: parameter.phpDocType
+			count: 1
+			path: src/Folklore/Mediatheque/Contracts/Services/Color.php
+
+		-
+			message: '#^PHPDoc tag @param for parameter \$path with type int is incompatible with native type string\.$#'
+			identifier: parameter.phpDocType
+			count: 1
+			path: src/Folklore/Mediatheque/Contracts/Services/Palette.php
+
+		-
+			message: '#^Undefined variable\: \$request$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/Folklore/Mediatheque/Http/Controllers/MediaController.php
+
+		-
+			message: '#^Call to an undefined method Folklore\\Mediatheque\\Contracts\\Models\\Media\:\:getTable\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Http/Requests/UploadMediaRequest.php
+
+		-
+			message: '#^Right side of \|\| is always false\.$#'
+			identifier: booleanOr.rightAlwaysFalse
+			count: 2
+			path: src/Folklore/Mediatheque/Jobs/RunPipeline.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Contracts\\Models\\PipelineJob\:\:\$pipeline\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Jobs/RunPipelineJob.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Contracts\\Models\\File\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Jobs/Video/HLS.php
+
+		-
+			message: '#^Call to an undefined method Folklore\\Mediatheque\\Contracts\\Models\\File\:\:save\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Jobs/Video/HLS.php
+
+		-
+			message: '#^Anonymous function has an unused use \$disk\.$#'
+			identifier: closure.unusedUse
+			count: 1
+			path: src/Folklore/Mediatheque/Jobs/Video/MediaConvert.php
+
+		-
+			message: '#^Call to an undefined method Folklore\\Mediatheque\\Contracts\\Models\\File\:\:save\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Jobs/Video/MediaConvert.php
+
+		-
+			message: '#^Call to an undefined method Folklore\\Mediatheque\\Contracts\\Models\\File\:\:setFileFromSource\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Jobs/Video/MediaConvert.php
+
+		-
+			message: '#^Method Folklore\\Mediatheque\\Contracts\\Source\\Factory\:\:source\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: src/Folklore/Mediatheque/Jobs/Video/MediaConvert.php
+
+		-
+			message: '#^Method Folklore\\Mediatheque\\Jobs\\Video\\MediaConvert\\MediaConvertOutput\:\:getAudioDescriptions\(\) invoked with 1 parameter, 0 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: src/Folklore/Mediatheque/Jobs/Video/MediaConvert/MediaConvertOutput.php
+
+		-
+			message: '#^Class Folklore\\Mediatheque\\Closure not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/MetadataManager.php
+
+		-
+			message: '#^Instantiated class Folklore\\Mediatheque\\InvalidArgumentException not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/MetadataManager.php
+
+		-
+			message: '#^Invoking callable on an unknown class Folklore\\Mediatheque\\Closure\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/MetadataManager.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$callback$#'
+			identifier: parameter.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/MetadataManager.php
+
+		-
+			message: '#^PHPDoc tag @return with type mixed is not subtype of native type Folklore\\Mediatheque\\Contracts\\Metadata\\Reader\.$#'
+			identifier: return.phpDocType
+			count: 1
+			path: src/Folklore/Mediatheque/MetadataManager.php
+
+		-
+			message: '#^Throwing object of an unknown class Folklore\\Mediatheque\\InvalidArgumentException\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/MetadataManager.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\File\:\:\$handle\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/File.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\File\:\:\$metadatas\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/File.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\File\:\:\$path\.$#'
+			identifier: property.notFound
+			count: 6
+			path: src/Folklore/Mediatheque/Models/File.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\File\:\:\$pivot\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/File.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\File\:\:\$source\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/File.php
+
+		-
+			message: '#^Call to an undefined method Folklore\\Mediatheque\\Contracts\\Models\\File\:\:getUrl\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/File.php
+
+		-
+			message: '#^Invalid array key type float\.$#'
+			identifier: offsetAccess.invalidOffset
+			count: 2
+			path: src/Folklore/Mediatheque/Models/File.php
+
+		-
+			message: '#^Method Folklore\\Mediatheque\\Models\\File\:\:getSource\(\) invoked with 1 parameter, 0 required\.$#'
+			identifier: arguments.count
+			count: 2
+			path: src/Folklore/Mediatheque/Models/File.php
+
+		-
+			message: '#^Parameter \#1 \$related of method Illuminate\\Database\\Eloquent\\Model\:\:morphMany\(\) expects class\-string\<Illuminate\\Database\\Eloquent\\Model\>, class\-string\<Folklore\\Mediatheque\\Contracts\\Models\\Metadata\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Folklore/Mediatheque/Models/File.php
+
+		-
+			message: '#^Result of method Folklore\\Mediatheque\\Models\\File\:\:setFile\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 1
+			path: src/Folklore/Mediatheque/Models/File.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Media\:\:\$files\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Media\:\:\$metadatas\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Media\:\:\$pipelines\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Media\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^Call to an undefined method Folklore\\Mediatheque\\Contracts\\Models\\File\:\:getTable\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^Call to an undefined method Folklore\\Mediatheque\\Contracts\\Models\\File\:\:getUrl\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^Call to an undefined method Folklore\\Mediatheque\\Contracts\\Models\\File\:\:save\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^Instanceof between array\|string and Folklore\\Mediatheque\\Contracts\\Type\\Type will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^Instanceof between string and Folklore\\Mediatheque\\Contracts\\Type\\Type will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^PHPDoc tag @return with type \$this\(Folklore\\Mediatheque\\Models\\Media\) is incompatible with native type void\.$#'
+			identifier: return.phpDocType
+			count: 3
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^PHPDoc tag @return with type string is incompatible with native type Folklore\\Mediatheque\\Contracts\\Type\\Type\.$#'
+			identifier: return.phpDocType
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^PHPDoc type array of property Folklore\\Mediatheque\\Models\\Media\:\:\$dispatchesEvents is not covariant with PHPDoc type array\<string, class\-string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$dispatchesEvents\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^Parameter \#1 \$related of method Illuminate\\Database\\Eloquent\\Model\:\:morphMany\(\) expects class\-string\<Illuminate\\Database\\Eloquent\\Model\>, class\-string\<Folklore\\Mediatheque\\Contracts\\Models\\Metadata\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^Parameter \#1 \$related of method Illuminate\\Database\\Eloquent\\Model\:\:morphMany\(\) expects class\-string\<Illuminate\\Database\\Eloquent\\Model\>, class\-string\<Folklore\\Mediatheque\\Contracts\\Models\\Pipeline\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^Parameter \#1 \$related of method Illuminate\\Database\\Eloquent\\Model\:\:morphToMany\(\) expects class\-string\<Illuminate\\Database\\Eloquent\\Model\>, class\-string\<Folklore\\Mediatheque\\Contracts\\Models\\File\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^Relation ''files'' is not found in Folklore\\Mediatheque\\Models\\Media model\.$#'
+			identifier: larastan.relationExistence
+			count: 4
+			path: src/Folklore/Mediatheque/Models/Media.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Metadata\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Metadata.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Metadata\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Metadata.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Pipeline\:\:\$ended\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Pipeline.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Pipeline\:\:\$ended_at\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Folklore/Mediatheque/Models/Pipeline.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Pipeline\:\:\$failed\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Pipeline.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Pipeline\:\:\$failed_exception\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Pipeline.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Pipeline\:\:\$jobs\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Pipeline.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Pipeline\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Folklore/Mediatheque/Models/Pipeline.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Pipeline\:\:\$pipelinable_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Pipeline.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Pipeline\:\:\$pipelinable_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Pipeline.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Pipeline\:\:\$started\.$#'
+			identifier: property.notFound
+			count: 4
+			path: src/Folklore/Mediatheque/Models/Pipeline.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Pipeline\:\:\$started_at\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Folklore/Mediatheque/Models/Pipeline.php
+
+		-
+			message: '#^Parameter \#1 \$related of method Illuminate\\Database\\Eloquent\\Model\:\:hasMany\(\) expects class\-string\<Illuminate\\Database\\Eloquent\\Model\>, class\-string\<Folklore\\Mediatheque\\Contracts\\Models\\PipelineJob\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Folklore/Mediatheque/Models/Pipeline.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\PipelineJob\:\:\$definition\.$#'
+			identifier: property.notFound
+			count: 4
+			path: src/Folklore/Mediatheque/Models/PipelineJob.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\PipelineJob\:\:\$ended\.$#'
+			identifier: property.notFound
+			count: 3
+			path: src/Folklore/Mediatheque/Models/PipelineJob.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\PipelineJob\:\:\$ended_at\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Folklore/Mediatheque/Models/PipelineJob.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\PipelineJob\:\:\$failed\.$#'
+			identifier: property.notFound
+			count: 3
+			path: src/Folklore/Mediatheque/Models/PipelineJob.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\PipelineJob\:\:\$failed_exception\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/PipelineJob.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\PipelineJob\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Folklore/Mediatheque/Models/PipelineJob.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\PipelineJob\:\:\$pipeline\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Folklore/Mediatheque/Models/PipelineJob.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\PipelineJob\:\:\$started\.$#'
+			identifier: property.notFound
+			count: 6
+			path: src/Folklore/Mediatheque/Models/PipelineJob.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\PipelineJob\:\:\$started_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Models/PipelineJob.php
+
+		-
+			message: '#^Parameter \#1 \$related of method Illuminate\\Database\\Eloquent\\Model\:\:belongsTo\(\) expects class\-string\<Illuminate\\Database\\Eloquent\\Model\>, class\-string\<Folklore\\Mediatheque\\Contracts\\Models\\Pipeline\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Folklore/Mediatheque/Models/PipelineJob.php
+
+		-
+			message: '#^Call to an undefined method Folklore\\Mediatheque\\Models\\Model\:\:getFiles\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Observers/MediaObserver.php
+
+		-
+			message: '#^Call to an undefined method Folklore\\Mediatheque\\Models\\Model\:\:getType\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Observers/MediaObserver.php
+
+		-
+			message: '#^Call to an undefined method Folklore\\Mediatheque\\Models\\Model\:\:runPipeline\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Observers/MediaObserver.php
+
+		-
+			message: '#^Call to an undefined method Folklore\\Mediatheque\\Models\\Model\:\:typePipelineDisabled\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Observers/MediaObserver.php
+
+		-
+			message: '#^Relation ''files'' is not found in Folklore\\Mediatheque\\Models\\Model model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: src/Folklore/Mediatheque/Observers/MediaObserver.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$user$#'
+			identifier: parameter.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Observers/PipelineObserver.php
+
+		-
+			message: '#^PHPDoc tag @return with type mixed is not subtype of native type Folklore\\Mediatheque\\Contracts\\Pipeline\\Pipeline\.$#'
+			identifier: return.phpDocType
+			count: 1
+			path: src/Folklore/Mediatheque/PipelineManager.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Router\:\:\$mediatheque\.$#'
+			identifier: property.notFound
+			count: 3
+			path: src/Folklore/Mediatheque/Router.php
+
+		-
+			message: '#^Call to an undefined method FFMpeg\\Media\\Audio\:\:frame\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Services/FFMpeg.php
+
+		-
+			message: '#^Variable \$queue on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/Folklore/Mediatheque/Services/MediaConvertClient.php
+
+		-
+			message: '#^Variable \$role on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: src/Folklore/Mediatheque/Services/MediaConvertClient.php
+
+		-
+			message: '#^Call to function is_string\(\) with Folklore\\Mediatheque\\Contracts\\Type\\Type will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: src/Folklore/Mediatheque/Services/Metadata.php
+
+		-
+			message: '#^Method Folklore\\Mediatheque\\Services\\Metadata\:\:getMetadata\(\) has invalid return type Folklore\\Mediatheque\\Metadata\\ValuesCollection\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Services/Metadata.php
+
+		-
+			message: '#^PHPDoc tag @return with type Folklore\\Mediatheque\\Metadata\\ValuesCollection is not subtype of native type Illuminate\\Support\\Collection\.$#'
+			identifier: return.phpDocType
+			count: 1
+			path: src/Folklore/Mediatheque/Services/Metadata.php
+
+		-
+			message: '#^Instanceof between array and Illuminate\\Contracts\\Support\\Arrayable will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: src/Folklore/Mediatheque/Services/PathFormatter.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$path$#'
+			identifier: parameter.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Services/PathFormatter.php
+
+		-
+			message: '#^Call to function is_null\(\) with string will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: src/Folklore/Mediatheque/SourceManager.php
+
+		-
+			message: '#^Instantiated class Folklore\\Mediatheque\\Exception\\InvalidSourceException not found\.$#'
+			identifier: class.notFound
+			count: 2
+			path: src/Folklore/Mediatheque/SourceManager.php
+
+		-
+			message: '#^Instantiated class Folklore\\Mediatheque\\InvalidArgumentException not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/SourceManager.php
+
+		-
+			message: '#^PHPDoc tag @param for parameter \$callback with type Closure is not subtype of native type Folklore\\Mediatheque\\Closure\.$#'
+			identifier: parameter.phpDocType
+			count: 1
+			path: src/Folklore/Mediatheque/SourceManager.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$driver$#'
+			identifier: parameter.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/SourceManager.php
+
+		-
+			message: '#^PHPDoc tag @return with type mixed is not subtype of native type Folklore\\Mediatheque\\Contracts\\Source\\Source\.$#'
+			identifier: return.phpDocType
+			count: 1
+			path: src/Folklore/Mediatheque/SourceManager.php
+
+		-
+			message: '#^Parameter \$callback of method Folklore\\Mediatheque\\SourceManager\:\:extend\(\) has invalid type Folklore\\Mediatheque\\Closure\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/SourceManager.php
+
+		-
+			message: '#^Throwing object of an unknown class Folklore\\Mediatheque\\Exception\\InvalidSourceException\.$#'
+			identifier: class.notFound
+			count: 2
+			path: src/Folklore/Mediatheque/SourceManager.php
+
+		-
+			message: '#^Throwing object of an unknown class Folklore\\Mediatheque\\InvalidArgumentException\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/SourceManager.php
+
+		-
+			message: '#^Access to an undefined property Folklore\\Mediatheque\\Sources\\LocalSource\:\:\$config\.$#'
+			identifier: property.notFound
+			count: 3
+			path: src/Folklore/Mediatheque/Sources/LocalSource.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: src/Folklore/Mediatheque/Support/Pipeline.php
+
+		-
+			message: '#^Trait Folklore\\Mediatheque\\Support\\Traits\\HasMedias is used zero times and is not analysed\.$#'
+			identifier: trait.unused
+			count: 1
+			path: src/Folklore/Mediatheque/Support/Traits/HasMedias.php
+
+		-
+			message: '#^Call to an undefined method Folklore\\Mediatheque\\Contracts\\Models\\Media\:\:getTypeName\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Support/Type.php
+
+		-
+			message: '#^Call to an undefined method Folklore\\Mediatheque\\Contracts\\Models\\Media\:\:newQuery\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/Support/Type.php
+
+		-
+			message: '#^Class Folklore\\Mediatheque\\Closure not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/TypeManager.php
+
+		-
+			message: '#^Instantiated class Folklore\\Mediatheque\\InvalidArgumentException not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/TypeManager.php
+
+		-
+			message: '#^Invoking callable on an unknown class Folklore\\Mediatheque\\Closure\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/TypeManager.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$name$#'
+			identifier: parameter.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/TypeManager.php
+
+		-
+			message: '#^PHPDoc tag @return with type mixed is not subtype of native type Folklore\\Mediatheque\\Contracts\\Type\\Type\.$#'
+			identifier: return.phpDocType
+			count: 2
+			path: src/Folklore/Mediatheque/TypeManager.php
+
+		-
+			message: '#^PHPDoc tag @return with type mixed is not subtype of native type Illuminate\\Support\\Collection\.$#'
+			identifier: return.phpDocType
+			count: 1
+			path: src/Folklore/Mediatheque/TypeManager.php
+
+		-
+			message: '#^PHPDoc tag @return with type string is incompatible with native type Folklore\\Mediatheque\\Contracts\\Type\\Type\|null\.$#'
+			identifier: return.phpDocType
+			count: 1
+			path: src/Folklore/Mediatheque/TypeManager.php
+
+		-
+			message: '#^Throwing object of an unknown class Folklore\\Mediatheque\\InvalidArgumentException\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Folklore/Mediatheque/TypeManager.php
+
+		-
+			message: '#^Function media\(\) should return Folklore\\Mediatheque\\Mediatheque but returns null\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Folklore/Mediatheque/helpers.php
+
+		-
+			message: '#^Method Illuminate\\Database\\Schema\\Blueprint\:\:float\(\) invoked with 3 parameters, 1\-2 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: src/migrations/2017_07_25_100000_create_mediatheque_metadatas_table.php
+
+		-
+			message: '#^Method Illuminate\\Database\\Schema\\Blueprint\:\:float\(\) invoked with 3 parameters, 1\-2 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: src/migrations/2018_02_05_100060_create_mediatheque_pipelines_table.php
+
+		-
+			message: '#^Method Illuminate\\Database\\Schema\\Blueprint\:\:float\(\) invoked with 3 parameters, 1\-2 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: src/migrations/2018_02_05_100061_create_mediatheque_pipelines_jobs_table.php
+
+		-
+			message: '#^Call to an undefined static method Illuminate\\Support\\Facades\\Route\:\:mediatheque\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: src/routes.php

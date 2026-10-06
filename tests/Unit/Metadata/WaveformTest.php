@@ -6,16 +6,10 @@ use Folklore\Mediatheque\Tests\TestCase;
 use Folklore\Mediatheque\Metadata\Waveform;
 use Folklore\Mediatheque\Contracts\Metadata\Value as ValueContract;
 
-/**
- * @coversDefaultClass Folklore\Mediatheque\Metadata\Waveform
- */
 class WaveformTest extends TestCase
 {
     /**
      * Test getting a pipeline
-     *
-     * @test
-     * @covers ::handle
      */
     public function testGetValue()
     {

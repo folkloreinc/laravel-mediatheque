@@ -1,0 +1,14 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+    paths:
+        - src
+    tmpDir: build/phpstan
+    ignoreErrors:
+        # The package config file is a config file: env() is expected there.
+        -
+            identifier: larastan.noEnvCallsOutsideOfConfig
+            path: src/config/config.php
