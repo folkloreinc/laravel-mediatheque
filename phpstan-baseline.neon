@@ -145,12 +145,6 @@ parameters:
 			path: src/Folklore/Mediatheque/Models/File.php
 
 		-
-			message: '#^Method Folklore\\Mediatheque\\Models\\File\:\:getSource\(\) invoked with 1 parameter, 0 required\.$#'
-			identifier: arguments.count
-			count: 2
-			path: src/Folklore/Mediatheque/Models/File.php
-
-		-
 			message: '#^Parameter \#1 \$related of method Illuminate\\Database\\Eloquent\\Model\:\:morphMany\(\) expects class\-string\<Illuminate\\Database\\Eloquent\\Model\>, class\-string\<Folklore\\Mediatheque\\Contracts\\Models\\Metadata\> given\.$#'
 			identifier: argument.type
 			count: 1
@@ -304,18 +298,6 @@ parameters:
 			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Pipeline\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 2
-			path: src/Folklore/Mediatheque/Models/Pipeline.php
-
-		-
-			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Pipeline\:\:\$pipelinable_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Folklore/Mediatheque/Models/Pipeline.php
-
-		-
-			message: '#^Access to an undefined property Folklore\\Mediatheque\\Models\\Pipeline\:\:\$pipelinable_type\.$#'
-			identifier: property.notFound
-			count: 1
 			path: src/Folklore/Mediatheque/Models/Pipeline.php
 
 		-
