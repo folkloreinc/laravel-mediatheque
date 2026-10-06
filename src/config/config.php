@@ -159,7 +159,7 @@ return [
     'pipelines' => [
         'video' => [
             'queue' => true,
-            'jobs' => [
+            'jobs' => array_filter([
                 'h264' => \Folklore\Mediatheque\Jobs\Video\H264::class,
                 'webm' => \Folklore\Mediatheque\Jobs\Video\WebM::class,
                 'hevc' => \Folklore\Mediatheque\Jobs\Video\HEVC::class,
@@ -168,14 +168,16 @@ return [
                     'count' => 5,
                     'in_middle' => true,
                 ],
-                'media_convert' => [
+                // MediaConvert only runs when it is configured: without a role,
+                // the AWS client cannot be created and the job fails.
+                'media_convert' => env('AWS_MEDIACONVERT_ROLE') ? [
                     'job' => \Folklore\Mediatheque\Jobs\Video\MediaConvert::class,
                     'outputs' => ['webm', 'h264'],
                     'max_width' => 1080,
                     'max_height' => 1080,
                     'bitrate' => 4000,
-                ],
-            ],
+                ] : null,
+            ]),
         ],
 
         'audio' => [
