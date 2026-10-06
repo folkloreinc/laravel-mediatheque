@@ -37,7 +37,7 @@ class ColorExtractor implements ColorService, PaletteService
     public function getColors(string $path, int $count = 1): ?array
     {
         try {
-            $this->getPalette($path, $count);
+            return $this->getPalette($path, $count);
         } catch (Exception $e) {
             return null;
         }
