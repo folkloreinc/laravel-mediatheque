@@ -4,6 +4,8 @@ includes:
 
 parameters:
     level: 5
+    # Analyse against the lowest supported PHP version, whatever PHP runs it
+    phpVersion: 80200
     paths:
         - src
     tmpDir: build/phpstan
