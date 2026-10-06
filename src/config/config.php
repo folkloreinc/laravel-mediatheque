@@ -275,6 +275,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Pipeline jobs
+    |--------------------------------------------------------------------------
+    |
+    | Queue settings of each pipeline job. Leave them null to use the worker's
+    | settings. The timeout, in seconds, must stay below the retry_after of the
+    | queue connection, otherwise a job still running is released and run a
+    | second time. A job that times out fails without being retried. A job of
+    | a pipeline can override them with its own "timeout" and "tries" options.
+    |
+    */
+    'jobs' => [
+        'timeout' => env('MEDIATHEQUE_JOB_TIMEOUT'),
+        'tries' => env('MEDIATHEQUE_JOB_TRIES'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Services
     |--------------------------------------------------------------------------
     |

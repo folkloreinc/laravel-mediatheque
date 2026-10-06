@@ -160,7 +160,7 @@ class Pipeline extends Model implements PipelineContract
         $this->failed = true;
         $this->ended_at = Carbon::now();
         if (! is_null($e)) {
-            $this->failed_exception = $e;
+            $this->failed_exception = $this->failureToString($e);
         }
         $this->save();
     }

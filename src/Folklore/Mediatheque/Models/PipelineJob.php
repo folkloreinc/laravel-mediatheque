@@ -76,6 +76,12 @@ class PipelineJob extends Model implements PipelineJobContract
             return;
         }
 
+        // Claim the job so the file events and the end of the previous job
+        // cannot dispatch it a second time before a worker starts it.
+        if (! $this->claim()) {
+            return;
+        }
+
         if ($queue === true) {
             RunPipelineJob::dispatch($this, $model);
         } elseif (is_string($queue)) {
@@ -83,6 +89,31 @@ class PipelineJob extends Model implements PipelineJobContract
         } else {
             RunPipelineJob::dispatchSync($this, $model);
         }
+    }
+
+    protected function claim(): bool
+    {
+        $startedAt = Carbon::now();
+        $claimed = $this->newQuery()
+            ->whereKey($this->getKey())
+            ->where('started', false)
+            ->where('ended', false)
+            ->where('failed', false)
+            ->update([
+                'started' => true,
+                'started_at' => $startedAt,
+            ]);
+
+        if ($claimed === 0) {
+            return false;
+        }
+
+        $this->forceFill([
+            'started' => true,
+            'started_at' => $startedAt,
+        ])->syncOriginalAttributes(['started', 'started_at']);
+
+        return true;
     }
 
     public function markStarted(): void
@@ -106,7 +137,7 @@ class PipelineJob extends Model implements PipelineJobContract
         $this->failed = true;
         $this->ended_at = Carbon::now();
         if (! is_null($e)) {
-            $this->failed_exception = $e;
+            $this->failed_exception = $this->failureToString($e);
         }
         $this->save();
     }

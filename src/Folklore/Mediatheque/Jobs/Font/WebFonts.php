@@ -20,6 +20,7 @@ class WebFonts extends ShellJob
         $path = parent::getLocalFilePath($file);
         $destinationPath = $this->formatDestinationPath($path);
         app('files')->copy($path, $destinationPath);
+        $this->addTemporaryFile($destinationPath);
         $this->localFilePath = $destinationPath;
 
         return $this->localFilePath;

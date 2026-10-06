@@ -11,4 +11,12 @@ class Model extends Eloquent
         $this->table = config('mediatheque.table_prefix').$this->table;
         parent::__construct($attributes);
     }
+
+    /**
+     * Convert a failure (exception or message) to text that fits a text column
+     */
+    protected function failureToString($failure): string
+    {
+        return mb_strcut((string) $failure, 0, 60000);
+    }
 }
