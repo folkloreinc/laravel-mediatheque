@@ -92,11 +92,18 @@ class Pipeline extends Model implements PipelineContract
         $this->jobs()->save($job);
     }
 
+    public function pipelinable()
+    {
+        return $this->morphTo();
+    }
+
     public function getModelToProcess(): HasPipelinesContract
     {
-        $model = app($this->pipelinable_type)->find($this->pipelinable_id);
-
-        return $model;
+        // Through the relation, so the morph map applies, and without global scopes,
+        // which may depend on a context (a tenant, a user) that a queue worker doesn't have
+        return $this->pipelinable()
+            ->withoutGlobalScopes()
+            ->firstOrFail();
     }
 
     public function allJobsEnded(): bool
