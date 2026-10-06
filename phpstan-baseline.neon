@@ -439,12 +439,6 @@ parameters:
 			path: src/Folklore/Mediatheque/PipelineManager.php
 
 		-
-			message: '#^Access to an undefined property Folklore\\Mediatheque\\Router\:\:\$mediatheque\.$#'
-			identifier: property.notFound
-			count: 3
-			path: src/Folklore/Mediatheque/Router.php
-
-		-
 			message: '#^Call to an undefined method FFMpeg\\Media\\Audio\:\:frame\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -509,12 +503,6 @@ parameters:
 			identifier: return.phpDocType
 			count: 1
 			path: src/Folklore/Mediatheque/SourceManager.php
-
-		-
-			message: '#^Access to an undefined property Folklore\\Mediatheque\\Sources\\LocalSource\:\:\$config\.$#'
-			identifier: property.notFound
-			count: 3
-			path: src/Folklore/Mediatheque/Sources/LocalSource.php
 
 		-
 			message: '#^Unsafe usage of new static\(\)\.$#'

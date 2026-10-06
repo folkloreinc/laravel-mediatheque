@@ -11,6 +11,8 @@ class Router
 {
     protected $router;
 
+    protected $mediatheque;
+
     protected $namePrefix = 'mediatheque.';
 
     protected $prefix = 'mediatheque';
@@ -110,7 +112,7 @@ class Router
                         (is_null($allowedTypes) || in_array($name, $allowedTypes))
                     ) {
                         $this->router->post($name, [
-                            'as' => $this->namePrefix.'.upload.'.$name,
+                            'as' => $this->namePrefix.'upload.'.$name,
                             'uses' => $controller.'@'.$name,
                         ]);
                     }
