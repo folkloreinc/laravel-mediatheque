@@ -45,6 +45,7 @@ abstract class Definition implements JsonSerializable, Arrayable, Jsonable
 
     abstract public function toArray();
 
+    #[\ReturnTypeWillChange]
     public function jsonSerialize()
     {
         return $this->toArray();
