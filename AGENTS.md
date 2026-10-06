@@ -61,7 +61,8 @@ tests/
 
 ## Style
 
-- Code must keep running on the PHP and Laravel versions declared in `composer.json` for 1.x. Don't use language features newer than the minimum PHP version.
+- Code must keep running on the PHP and Laravel versions declared in `composer.json` for 1.x. The minimum is PHP 8.2: don't use language features newer than 8.2.
+- Raising the minimum PHP or Laravel version on `v1.1` breaks every consuming project that still runs an older one. Do it only after the maintainers confirm that all active consumers already run the new minimum.
 - Typehint parameters and return values when it doesn't break subclasses in consuming projects.
 - Format with Prettier and its PHP plugin (`.prettierrc.json`, `package.json`): 4 spaces, single quotes, 100 columns. `phpcs.xml` applies PSR-2 to `src`.
 
