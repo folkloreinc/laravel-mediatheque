@@ -13,7 +13,7 @@
 - `folklore/laravel-folklore`, and through it many client projects. It extends the `Media` and `File` models, uses the `HasMedias` trait on its own models and wraps media in entities that rely on file handles (`original`, `thumbnail…`).
 - Other applications built on the package, which may also extend the models.
 
-These projects require the `v1.1.x-dev` branch. Until releases are tagged, **every push to `v1.1` reaches them on their next `composer update`**.
+`v1.1.0` is the first tagged 1.x release. `laravel-folklore` requires `^1.1` from its own `v1.1.3` release on, so projects on it with `prefer-stable` get the latest `1.1.x` tag: a fix reaches them only once it is tagged. Projects that still require the `v1.1.x-dev` branch, directly or through an earlier `laravel-folklore` release, **get every push to `v1.1` on their next `composer update`**.
 
 ## Non-negotiable rules
 
