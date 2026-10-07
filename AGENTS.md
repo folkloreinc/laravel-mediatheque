@@ -83,5 +83,5 @@ FFMPEG_BIN=$(which ffmpeg) FFPROBE_BIN=$(which ffprobe) composer test
 
 - `v1.1` is the maintenance branch for 1.x. Older branches (`master`, `develop`, `v1`) are not maintained.
 - Open a pull request for anything with a runtime effect: it is the only review before the change reaches client projects.
-- GitHub Actions (`.github/workflows/ci.yml`) runs Pint, Larastan and the test suite (PHP 8.2–8.5 × Laravel 11–13) on every pull request and on `v1.1`. **Merge only when CI is green.** Never skip, disable or weaken a test to get there.
+- GitHub Actions (`.github/workflows/ci.yml`) runs Pint, Larastan and the test suite (PHP 8.2–8.5 × Laravel 9–13; Laravel 9 and 10 on PHP 8.2 and 8.3 only) on every pull request and on `v1.1`. **Merge only when CI is green.** Never skip, disable or weaken a test to get there.
 - Commit messages follow Conventional Commits (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`…).

@@ -44,8 +44,17 @@ jobs:
             fail-fast: false
             matrix:
                 php: ['8.2', '8.3', '8.4', '8.5']
-                laravel: ['11.*', '12.*', '13.*']
+                laravel: ['9.*', '10.*', '11.*', '12.*', '13.*']
                 exclude:
+                    # Laravel 9 and 10 predate PHP 8.4
+                    - php: '8.4'
+                      laravel: '9.*'
+                    - php: '8.5'
+                      laravel: '9.*'
+                    - php: '8.4'
+                      laravel: '10.*'
+                    - php: '8.5'
+                      laravel: '10.*'
                     # Laravel 13 requires PHP 8.3
                     - php: '8.2'
                       laravel: '13.*'
@@ -70,10 +79,27 @@ jobs:
                   extensions: imagick
                   coverage: none
 
+            # Every Laravel 9–11 release has a security advisory, so recent Composer versions refuse
+            # to install them and fall back to the x.x-dev branch (minimum-stability is dev).
+            # Consumers run tagged releases, so the test jobs (only) disable the blocking.
+            - name: Allow framework releases with security advisories
+              run: |
+                  composer config --global policy.advisories.block false \
+                      || composer config --global audit.block-insecure false \
+                      || true
+
             - name: Install dependencies
+              env:
+                  COMPOSER_NO_SECURITY_BLOCKING: 1
               run: |
                   composer require "illuminate/support:${{ matrix.laravel }}" --no-update --no-interaction
                   composer update --prefer-dist --no-interaction --no-progress --with-all-dependencies
+
+            - name: Show installed versions
+              run: |
+                  for package in laravel/framework orchestra/testbench phpunit/phpunit; do
+                      composer show "$package" | grep -E '^(name|versions)'
+                  done
 
             - name: Run tests
               run: vendor/bin/phpunit

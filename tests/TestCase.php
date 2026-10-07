@@ -25,7 +25,12 @@ class TestCase extends BaseTestCase
             'prefix' => '',
         ]);
 
-        $app->usePublicPath(__DIR__.'/fixture');
+        // usePublicPath() only exists since Laravel 10
+        if (method_exists($app, 'usePublicPath')) {
+            $app->usePublicPath(__DIR__.'/fixture');
+        } else {
+            $app->instance('path.public', __DIR__.'/fixture');
+        }
     }
 
     protected function getPackageProviders($app)
