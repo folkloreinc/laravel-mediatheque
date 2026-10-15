@@ -30,7 +30,8 @@
         "symfony/mime": "^6.0|^7.0|^8.0",
         "contao/imagine-svg": "^1.0",
         "aminyazdanpanah/php-ffmpeg-video-streaming": "^1.2",
-        "aws/aws-sdk-php": "^3.0"
+        "aws/aws-sdk-php": "^3.0",
+        "rhukster/dom-sanitizer": "^1.0.7"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

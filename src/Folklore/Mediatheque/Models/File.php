@@ -7,11 +7,13 @@ use Folklore\Mediatheque\Contracts\Services\Extension as ExtensionService;
 use Folklore\Mediatheque\Contracts\Services\Metadata as MetadataService;
 use Folklore\Mediatheque\Contracts\Services\Mime as MimeService;
 use Folklore\Mediatheque\Contracts\Services\PathFormatter as PathFormatterService;
+use Folklore\Mediatheque\Contracts\Services\SvgSanitizer;
 use Folklore\Mediatheque\Contracts\Source\Factory as SourceFactory;
 use Folklore\Mediatheque\Contracts\Source\Source as SourceContract;
 use Folklore\Mediatheque\Contracts\Support\HasMetadatas as HasMetadatasInterface;
 use Folklore\Mediatheque\Contracts\Support\HasUrl as HasUrlInterface;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
+use Folklore\Mediatheque\Exception\InvalidFileException;
 use Folklore\Mediatheque\Observers\FileObserver;
 use Folklore\Mediatheque\Support\Traits\HasMetadatas;
 use Folklore\Mediatheque\Support\Traits\HasUrl;
@@ -79,10 +81,8 @@ class File extends Model implements FileContract, HasMetadatasInterface, HasUrlI
                 $file instanceof SymfonyUploadedFile
                     ? $file->getClientOriginalName()
                     : $file->getFilename();
-            $extension =
-                $file instanceof SymfonyUploadedFile
-                    ? $file->guessClientExtension()
-                    : $file->guessExtension();
+            // Guessed from the content: the client's mime type can't be trusted
+            $extension = $file->guessExtension();
         }
 
         if (! isset($data['name'])) {
@@ -101,6 +101,15 @@ class File extends Model implements FileContract, HasMetadatasInterface, HasUrlI
             $defaultExtension = $extension;
             $extension = app(ExtensionService::class)->getExtension($localPath, $data['name']);
             $data['extension'] = ! empty($extension) ? $extension : $defaultExtension;
+        }
+
+        $sanitizedPath = null;
+        if (! is_null($file) && $this->shouldSanitizeSvg($data)) {
+            $sanitizedPath = $this->sanitizeSvg($localPath);
+            $localPath = $sanitizedPath;
+            if (! isset($data['size'])) {
+                $data['size'] = filesize($sanitizedPath);
+            }
         }
 
         if (! isset($data['size']) && ! is_null($file)) {
@@ -127,10 +136,16 @@ class File extends Model implements FileContract, HasMetadatasInterface, HasUrlI
         $data['source'] = data_get($data, 'source', $this->getAttribute('source')) ?: config('mediatheque.source');
         $source = app(SourceFactory::class)->source($data['source']);
         $originalPath = data_get($data, 'original_path', null);
-        if (! is_null($file)) {
-            $source->putFromLocalPath($data['path'], $localPath);
-        } elseif (isset($originalPath)) {
-            $source->move($originalPath, $data['path']);
+        try {
+            if (! is_null($file)) {
+                $source->putFromLocalPath($data['path'], $localPath);
+            } elseif (isset($originalPath)) {
+                $source->move($originalPath, $data['path']);
+            }
+        } finally {
+            if (! is_null($sanitizedPath)) {
+                @unlink($sanitizedPath);
+            }
         }
 
         $metadata = data_get($data, 'metadata', []);
@@ -138,6 +153,35 @@ class File extends Model implements FileContract, HasMetadatasInterface, HasUrlI
         $this->fill(Arr::only($data, $this->fillable))
             ->setMetadatas(is_array($metadata) ? collect($metadata) : $metadata)
             ->save();
+    }
+
+    protected function shouldSanitizeSvg(array $data): bool
+    {
+        if (! config('mediatheque.uploads.sanitize_svg', true)) {
+            return false;
+        }
+
+        return in_array(data_get($data, 'mime'), SvgSanitizer::MIMES, true)
+            || strtolower((string) data_get($data, 'extension')) === 'svg';
+    }
+
+    /**
+     * Write a sanitized copy of an SVG file and return its path
+     *
+     * @throws InvalidFileException
+     */
+    protected function sanitizeSvg(string $path): string
+    {
+        $contents = file_get_contents($path);
+        $sanitized = $contents !== false ? app(SvgSanitizer::class)->sanitize($contents) : null;
+        if (is_null($sanitized)) {
+            throw new InvalidFileException('The SVG file is invalid and could not be sanitized.');
+        }
+
+        $sanitizedPath = tempnam(sys_get_temp_dir(), 'mediatheque-svg-');
+        file_put_contents($sanitizedPath, $sanitized);
+
+        return $sanitizedPath;
     }
 
     public function setFileFromSource(string $path, array $data = [])

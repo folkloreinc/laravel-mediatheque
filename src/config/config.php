@@ -238,8 +238,44 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Uploads
+    |--------------------------------------------------------------------------
+    |
+    | Files are stored with an extension derived from their content. The
+    | client's extension is only kept when it matches the content, or when the
+    | content is generic (text/plain, application/octet-stream) and the
+    | extension is not blocked. When these keys are missing, the same defaults
+    | apply.
+    |
+    */
+    'uploads' => [
+        // Maximum size of a file sent to the upload routes, in kilobytes. Null
+        // only applies PHP's own limits (upload_max_filesize, post_max_size).
+        'max_size' => null,
+
+        // Allow the upload routes to replace the original file of an existing
+        // media with the "id" parameter. Defining a "mediatheque.replace" gate,
+        // which receives the media, authorizes each replacement instead.
+        'allow_replace' => false,
+
+        // Remove scripts, event handlers and external references from SVG files
+        // before they are stored.
+        'sanitize_svg' => true,
+
+        // Extensions that are never kept from the client's file name, unless a
+        // type maps the detected mime to it. Null uses the default list in
+        // Folklore\Mediatheque\Services\Metadata::BLOCKED_EXTENSIONS.
+        'blocked_extensions' => null,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Routes
     |--------------------------------------------------------------------------
+    |
+    | The upload routes accept files from anyone who can reach them. Add the
+    | middleware your application needs (authentication, throttling), define a
+    | "mediatheque.upload" gate, or set "map" to null if you don't use them.
     |
     */
     'routes' => [

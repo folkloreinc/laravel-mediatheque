@@ -15,6 +15,7 @@ use Folklore\Mediatheque\Contracts\Services\ImageThumbnail;
 use Folklore\Mediatheque\Contracts\Services\Metadata as MetadataService;
 use Folklore\Mediatheque\Contracts\Services\Mime as MimeService;
 use Folklore\Mediatheque\Contracts\Services\Svg;
+use Folklore\Mediatheque\Contracts\Services\SvgSanitizer;
 use Folklore\Mediatheque\Contracts\Services\Thumbnail as ThumbnailService;
 use Folklore\Mediatheque\Contracts\Services\VideoDimension;
 use Folklore\Mediatheque\Contracts\Services\VideoDuration;
@@ -25,9 +26,29 @@ use Folklore\Mediatheque\Metadata\ValuesCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Mime\MimeTypeGuesserInterface;
+use Symfony\Component\Mime\MimeTypes;
+use Symfony\Component\Mime\MimeTypesInterface;
 
 class Metadata implements DimensionService, DurationService, ExtensionService, MetadataService, MimeService, ThumbnailService
 {
+    /**
+     * Extensions that a web server may execute or a browser may render as an
+     * active document
+     */
+    public const BLOCKED_EXTENSIONS = [
+        'php', 'php2', 'php3', 'php4', 'php5', 'php6', 'php7', 'php8', 'pht', 'phtm', 'phtml',
+        'phar', 'phps', 'pgif', 'inc', 'cgi', 'fcgi', 'pl', 'py', 'pyc', 'rb', 'sh', 'bash',
+        'asp', 'aspx', 'asa', 'ascx', 'ashx', 'asmx', 'axd', 'cer', 'config', 'jsp', 'jspx',
+        'jsw', 'jsv', 'jspf', 'cfm', 'cfml', 'htaccess', 'htpasswd', 'html', 'htm', 'xhtml',
+        'xht', 'shtml', 'shtm', 'stm', 'mht', 'mhtml', 'hta', 'xml', 'xsl', 'xslt', 'svg',
+        'svgz', 'js', 'mjs', 'swf',
+    ];
+
+    /**
+     * Mimes of files that are not identified by their content
+     */
+    public const GENERIC_MIMES = ['application/octet-stream', 'text/plain'];
+
     protected $mimeTypes;
 
     public function __construct(MimeTypeGuesserInterface $mimeTypes)
@@ -92,22 +113,80 @@ class Metadata implements DimensionService, DurationService, ExtensionService, M
 
     /**
      * Get extension of a file
+     *
+     * The extension comes from the file's content. The extension of the file
+     * name, which a client controls, is only kept when it matches the content,
+     * or when the content is generic and the extension is not blocked.
      */
     public function getExtension(string $path, ?string $filename = null): ?string
     {
         $mime = app(MimeService::class)->getMime($path);
         $types = array_values(config('mediatheque.types'));
-        $fileExtension = pathinfo(! empty($filename) ? $filename : $path, PATHINFO_EXTENSION);
+        $fileExtension = strtolower(pathinfo(! empty($filename) ? $filename : $path, PATHINFO_EXTENSION));
 
-        return array_reduce(
+        // An extension mapped to the mime in the types config is trusted
+        $typeExtension = array_reduce(
             $types,
             function ($extension, $type) use ($mime) {
                 $mimes = data_get($type, 'mimes', []);
 
                 return isset($mimes[$mime]) && $mimes[$mime] !== '*' ? $mimes[$mime] : $extension;
             },
-            $fileExtension
+            null
         );
+        if (! is_null($typeExtension)) {
+            return $typeExtension;
+        }
+
+        // SVG files are sanitized before they are stored
+        if (in_array($mime, SvgSanitizer::MIMES, true)) {
+            return 'svg';
+        }
+
+        $mimeExtensions = ! is_null($mime) ? $this->getMimeTypes()->getExtensions($mime) : [];
+        $safeMimeExtensions = array_values(array_filter($mimeExtensions, function ($extension) {
+            return ! $this->isBlockedExtension($extension);
+        }));
+        if (in_array($fileExtension, $safeMimeExtensions, true)) {
+            return $fileExtension;
+        }
+
+        $isGenericMime = is_null($mime) || in_array($mime, self::GENERIC_MIMES, true) || empty($mimeExtensions);
+        if (! $isGenericMime && count($safeMimeExtensions) > 0) {
+            return $safeMimeExtensions[0];
+        }
+
+        if (! $this->isBlockedExtension($fileExtension)) {
+            return $fileExtension;
+        }
+
+        return count($safeMimeExtensions) > 0 ? $safeMimeExtensions[0] : 'bin';
+    }
+
+    /**
+     * Check if an extension must not be kept from a client's file name
+     */
+    public function isBlockedExtension(string $extension): bool
+    {
+        $extension = strtolower($extension);
+        if (preg_match('/^[a-z0-9]{1,16}$/', $extension) !== 1) {
+            return true;
+        }
+
+        $blockedExtensions = config('mediatheque.uploads.blocked_extensions');
+
+        return in_array(
+            $extension,
+            is_array($blockedExtensions) ? $blockedExtensions : self::BLOCKED_EXTENSIONS,
+            true
+        );
+    }
+
+    protected function getMimeTypes(): MimeTypesInterface
+    {
+        return $this->mimeTypes instanceof MimeTypesInterface
+            ? $this->mimeTypes
+            : MimeTypes::getDefault();
     }
 
     /**
