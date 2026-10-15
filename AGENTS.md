@@ -6,6 +6,8 @@
 
 **Roadmap.** The stabilization and modernization plan is tracked in [#1](https://github.com/folkloreinc/laravel-mediatheque/issues/1). Create a sub-issue of #1 when starting one of its items, and check the item when the sub-issue is closed.
 
+**Branch `v2.x`.** 2.0 is developed on `v2.x`. Read [`docs/`](docs/README.md) first: its architecture and decisions override the 1.x rules below wherever they differ. Until the 2.0 tooling lands (see [`docs/roadmap.md`](docs/roadmap.md), phase 0), the rest of this file describes 1.x.
+
 ---
 
 ## Who depends on this package
