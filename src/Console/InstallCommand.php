@@ -104,6 +104,7 @@ class InstallCommand extends Command
     {
         return array_map(fn (string $name) => self::packagePath('database/migrations/'.$name), [
             'create_mediatheque_tables.php',
+            'create_mediatheque_uploads_table.php',
         ]);
     }
 

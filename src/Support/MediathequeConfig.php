@@ -44,7 +44,7 @@ final class MediathequeConfig
     {
         $class = $this->config->get('mediatheque.models.'.$key);
 
-        if (! is_string($class) || ! is_subclass_of($class, Model::class) || ! is_subclass_of($class, $contract)) {
+        if (! is_string($class) || ! is_subclass_of($class, Model::class) || ! is_a($class, $contract, true)) {
             throw InvalidConfig::at('models.'.$key, sprintf('expected an Eloquent model that implements %s', $contract));
         }
 
@@ -134,6 +134,59 @@ final class MediathequeConfig
         }
 
         return $format;
+    }
+
+    /**
+     * The disk that receives presigned multipart uploads.
+     */
+    public function uploadsDisk(): string
+    {
+        return $this->disk('uploads.disk', $this->config->get('mediatheque.uploads.disk'));
+    }
+
+    /**
+     * The directory of uploads on their disk.
+     */
+    public function uploadsPath(): string
+    {
+        $path = $this->config->get('mediatheque.uploads.path', 'mediatheque-uploads');
+
+        return is_string($path) && $path !== '' && ! str_contains($path, '..') ? trim($path, '/') : throw InvalidConfig::at('uploads.path', 'expected a directory');
+    }
+
+    /**
+     * Seconds an upload can take before it expires.
+     */
+    public function uploadsExpireAfter(): int
+    {
+        return $this->positiveInt('uploads.expires_after', 86400);
+    }
+
+    /**
+     * Seconds a signed part URL lives.
+     */
+    public function uploadsUrlTtl(): int
+    {
+        return $this->positiveInt('uploads.url_ttl', 3600);
+    }
+
+    /**
+     * The largest file any type accepts, in bytes: the limit of an upload
+     * before its type is known. Null for no limit.
+     */
+    public function largestSize(): ?int
+    {
+        $sizes = [];
+
+        foreach ($this->types() as $type) {
+            $size = $this->maxSize($type);
+            if ($size === null) {
+                return null;
+            }
+            $sizes[] = $size;
+        }
+
+        return $sizes === [] ? null : max($sizes);
     }
 
     /**

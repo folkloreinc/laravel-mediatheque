@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque;
 
+use Closure;
 use Folklore\Mediatheque\Contracts\Ingestor;
 use Folklore\Mediatheque\Contracts\Mediatheque;
 use Folklore\Mediatheque\Contracts\Models\Media;
@@ -9,11 +10,14 @@ use Folklore\Mediatheque\Contracts\Models\PipelineRun;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
+use Folklore\Mediatheque\Models\Upload;
 use Folklore\Mediatheque\Pipelines\PipelineRunner;
 use Folklore\Mediatheque\References\MediaReference;
 use Folklore\Mediatheque\Support\Models;
 use Folklore\Mediatheque\Support\Uid;
+use Folklore\Mediatheque\Uploads\UploadOptions;
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
 /**
@@ -41,6 +45,18 @@ class MediathequeManager implements Mediatheque
             data: $data,
             attributes: $attributes,
         ));
+    }
+
+    /**
+     * Set the options of the media that uploads create, from the
+     * application's own context (docs/decisions/0015): a tenant id, a
+     * visibility, a pipeline.
+     *
+     * @param  Closure(Request, Upload): (IngestOptions|null)  $resolver
+     */
+    public function uploadsUsing(Closure $resolver): void
+    {
+        app(UploadOptions::class)->using($resolver);
     }
 
     public function resolve(MediaReference|string $reference): ?Media
