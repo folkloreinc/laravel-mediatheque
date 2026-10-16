@@ -3,9 +3,9 @@ includes:
     - phpstan-baseline.neon
 
 parameters:
-    level: 5
+    level: max
     # Analyse against the lowest supported PHP version, whatever PHP runs it
-    phpVersion: 80200
+    phpVersion: 80300
     paths:
         - src
     tmpDir: build/phpstan

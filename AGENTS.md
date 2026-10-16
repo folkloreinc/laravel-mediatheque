@@ -6,7 +6,7 @@
 
 **Roadmap.** The stabilization and modernization plan is tracked in [#1](https://github.com/folkloreinc/laravel-mediatheque/issues/1). Create a sub-issue of #1 when starting one of its items, and check the item when the sub-issue is closed.
 
-**Branch `v2.x`.** 2.0 is developed on `v2.x`. Read [`docs/`](docs/README.md) first: its architecture and decisions override the 1.x rules below wherever they differ. Until the 2.0 tooling lands (see [`docs/roadmap.md`](docs/roadmap.md), phase 0), the rest of this file describes 1.x.
+**Branch `v2.x`.** 2.0 is developed on `v2.x`. Read [`docs/`](docs/README.md) first: its architecture and decisions override the 1.x rules below wherever they differ. The tooling below (PHP and Laravel versions, Pint, Larastan, CI) is the 2.x tooling. Until the 1.x code is removed from `v2.x` ([#29](https://github.com/folkloreinc/laravel-mediatheque/issues/29)), the rest of this file describes 1.x.
 
 ---
 
@@ -63,11 +63,11 @@ tests/
 
 ## Style
 
-- Code must keep running on the PHP and Laravel versions declared in `composer.json` for 1.x. The minimum is PHP 8.2: don't use language features newer than 8.2.
+- 2.x requires PHP 8.3+ and Laravel 12+ ([decisions/0001](docs/decisions/0001-supported-versions.md)): don't use language features newer than PHP 8.3. On `v1.1`, the minimum stays PHP 8.2 and Laravel 9.
 - Raising the minimum PHP or Laravel version on `v1.1` breaks every consuming project that still runs an older one. Do it only after the maintainers confirm that all active consumers already run the new minimum.
 - Typehint parameters and return values when it doesn't break subclasses in consuming projects.
 - Format with [Laravel Pint](https://laravel.com/docs/pint) (`pint.json`, `laravel` preset): run `composer format` before committing. CI runs `composer lint` (`pint --test`).
-- Static analysis runs with [Larastan](https://github.com/larastan/larastan) (`phpstan.neon.dist`): `composer analyse`. Existing errors are listed in `phpstan-baseline.neon`; never add new ones to it. When a fix removes an error, regenerate the baseline (`vendor/bin/phpstan analyse --generate-baseline`) so it only shrinks.
+- Static analysis runs with [Larastan](https://github.com/larastan/larastan) at the maximum level (`phpstan.neon.dist`): `composer analyse`. New code has no baseline: fix every error it reports. `phpstan-baseline.neon` lists the errors of the 1.x code only, and goes away with it (#29); never add to it.
 
 ## Tests
 
@@ -85,5 +85,5 @@ FFMPEG_BIN=$(which ffmpeg) FFPROBE_BIN=$(which ffprobe) composer test
 
 - `v1.1` is the maintenance branch for 1.x. Older branches (`master`, `develop`, `v1`) are not maintained.
 - Open a pull request for anything with a runtime effect: it is the only review before the change reaches client projects.
-- GitHub Actions (`.github/workflows/ci.yml`) runs Pint, Larastan and the test suite (PHP 8.2–8.5 × Laravel 9–13; Laravel 9 and 10 on PHP 8.2 and 8.3 only) on every pull request and on `v1.1`. **Merge only when CI is green.** Never skip, disable or weaken a test to get there.
+- GitHub Actions (`.github/workflows/ci.yml`) runs Pint, Larastan and the test suite on every pull request and on `v2.x` (PHP 8.3–8.5 × Laravel 12 and 13), and on `v1.1` (PHP 8.2–8.5 × Laravel 9–13; Laravel 9 and 10 on PHP 8.2 and 8.3 only). **Merge only when CI is green.** Never skip, disable or weaken a test to get there.
 - Commit messages follow Conventional Commits (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`…).

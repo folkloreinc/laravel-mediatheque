@@ -2,7 +2,7 @@ name: CI
 
 on:
     push:
-        branches: [v1.1]
+        branches: [v2.x]
     pull_request:
 
 concurrency:
@@ -11,6 +11,10 @@ concurrency:
 
 permissions:
     contents: read
+
+env:
+    # Authenticated downloads from GitHub have a higher rate limit
+    COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ github.token }}"}}'
 
 jobs:
     lint:
@@ -28,14 +32,21 @@ jobs:
             - name: Validate composer.json
               run: composer validate --strict
 
+            - name: Cache Composer downloads
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/composer/files
+                  key: composer-${{ runner.os }}-lint-${{ hashFiles('composer.json') }}
+                  restore-keys: composer-${{ runner.os }}-lint-
+
             - name: Install dependencies
               run: composer update --prefer-dist --no-interaction --no-progress
 
             - name: Check code style
-              run: vendor/bin/pint --test
+              run: composer lint
 
             - name: Run static analysis
-              run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+              run: composer analyse -- --no-progress
 
     tests:
         name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }}
@@ -43,21 +54,8 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                php: ['8.2', '8.3', '8.4', '8.5']
-                laravel: ['9.*', '10.*', '11.*', '12.*', '13.*']
-                exclude:
-                    # Laravel 9 and 10 predate PHP 8.4
-                    - php: '8.4'
-                      laravel: '9.*'
-                    - php: '8.5'
-                      laravel: '9.*'
-                    - php: '8.4'
-                      laravel: '10.*'
-                    - php: '8.5'
-                      laravel: '10.*'
-                    # Laravel 13 requires PHP 8.3
-                    - php: '8.2'
-                      laravel: '13.*'
+                php: ['8.3', '8.4', '8.5']
+                laravel: ['12.*', '13.*']
         env:
             FFMPEG_BIN: /usr/bin/ffmpeg
             FFPROBE_BIN: /usr/bin/ffprobe
@@ -67,6 +65,7 @@ jobs:
         steps:
             - uses: actions/checkout@v5
 
+            # Needed by the 1.x test suite until it is removed from v2.x (#29)
             - name: Install media tools
               run: |
                   sudo add-apt-repository --yes ppa:chris-needham/ppa
@@ -79,18 +78,14 @@ jobs:
                   extensions: imagick
                   coverage: none
 
-            # Every Laravel 9–11 release has a security advisory, so recent Composer versions refuse
-            # to install them and fall back to the x.x-dev branch (minimum-stability is dev).
-            # Consumers run tagged releases, so the test jobs (only) disable the blocking.
-            - name: Allow framework releases with security advisories
-              run: |
-                  composer config --global policy.advisories.block false \
-                      || composer config --global audit.block-insecure false \
-                      || true
+            - name: Cache Composer downloads
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/composer/files
+                  key: composer-${{ runner.os }}-${{ matrix.php }}-${{ matrix.laravel }}-${{ hashFiles('composer.json') }}
+                  restore-keys: composer-${{ runner.os }}-${{ matrix.php }}-${{ matrix.laravel }}-
 
             - name: Install dependencies
-              env:
-                  COMPOSER_NO_SECURITY_BLOCKING: 1
               run: |
                   composer require "illuminate/support:${{ matrix.laravel }}" --no-update --no-interaction
                   composer update --prefer-dist --no-interaction --no-progress --with-all-dependencies
@@ -102,4 +97,4 @@ jobs:
                   done
 
             - name: Run tests
-              run: vendor/bin/phpunit
+              run: composer test

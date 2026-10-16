@@ -15,7 +15,7 @@ Tracking issues: [#1](https://github.com/folkloreinc/laravel-mediatheque/issues/
 
 - [x] `v2.x` branch, created from `v1.1`
 - [x] `docs/`: current state, architecture, decisions, this roadmap, upgrade guide
-- [ ] Tooling: PSR-4, PHP 8.3+, Laravel 12+, CI matrix (PHP 8.3 to 8.5 × Laravel 12 and 13), Pint, Larastan at the maximum level without a baseline for new code
+- [x] Tooling: PSR-4, PHP 8.3+, Laravel 12+, CI matrix (PHP 8.3 to 8.5 × Laravel 12 and 13), Pint, Larastan at the maximum level without a baseline for new code ([#28](https://github.com/folkloreinc/laravel-mediatheque/issues/28))
 - [ ] Remove the 1.x code from `v2.x` and start the new layout; keep 1.x fixtures for the compatibility tests
 - [ ] Release process: changelog, `v2.0.0-alpha.N` tags from green CI
 - [ ] Contracts and their tests: `Media`, `File`, `uid` and references, `Ingest`, `Prober` (asynchronous), `Transcoder` and `Recorder`, `UrlGenerator`, events, `Mediatheque::fake()`
