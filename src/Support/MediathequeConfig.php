@@ -137,6 +137,53 @@ final class MediathequeConfig
     }
 
     /**
+     * The command of a binary: `ffmpeg`, `ffprobe`.
+     */
+    public function binary(string $name): string
+    {
+        $binary = $this->config->get('mediatheque.binaries.'.$name);
+
+        return is_string($binary) && $binary !== '' ? $binary : throw InvalidConfig::at('binaries.'.$name, 'expected a command or an absolute path');
+    }
+
+    /**
+     * Seconds the probe of one file can take.
+     */
+    public function probeTimeout(): int
+    {
+        return $this->positiveInt('probe.timeout', 120);
+    }
+
+    /**
+     * The queue connection of the package's jobs; null for the default.
+     */
+    public function jobsConnection(): ?string
+    {
+        return $this->optionalString('jobs.connection');
+    }
+
+    /**
+     * The queue of the package's jobs; null for the connection's default.
+     */
+    public function jobsQueue(): ?string
+    {
+        return $this->optionalString('jobs.queue');
+    }
+
+    public function jobsTries(): int
+    {
+        return $this->positiveInt('jobs.tries', 3);
+    }
+
+    /**
+     * Seconds a job, and each process it runs, can take.
+     */
+    public function jobsTimeout(): int
+    {
+        return $this->positiveInt('jobs.timeout', 3600);
+    }
+
+    /**
      * Seconds a temporary URL lives when url() returns one.
      */
     public function temporaryTtl(): int
@@ -250,6 +297,13 @@ final class MediathequeConfig
         $this->runPathFormat();
         $this->maxSize();
         $this->temporaryTtl();
+        $this->binary('ffmpeg');
+        $this->binary('ffprobe');
+        $this->probeTimeout();
+        $this->jobsConnection();
+        $this->jobsQueue();
+        $this->jobsTries();
+        $this->jobsTimeout();
         $this->types();
         $this->pipelines();
     }
@@ -342,6 +396,20 @@ final class MediathequeConfig
         }
 
         return $pipeline;
+    }
+
+    private function positiveInt(string $key, int $default): int
+    {
+        $value = $this->config->get('mediatheque.'.$key, $default);
+
+        return is_int($value) && $value > 0 ? $value : throw InvalidConfig::at($key, 'expected a positive integer');
+    }
+
+    private function optionalString(string $key): ?string
+    {
+        $value = $this->config->get('mediatheque.'.$key);
+
+        return $value === null || $value === '' ? null : (is_string($value) ? $value : throw InvalidConfig::at($key, 'expected a name, or null for the default'));
     }
 
     /**

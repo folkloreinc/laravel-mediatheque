@@ -171,6 +171,50 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Binaries
+    |--------------------------------------------------------------------------
+    |
+    | The tools the local prober and the ffmpeg transcoder run: a name found
+    | in the PATH, or an absolute path.
+    |
+    */
+    'binaries' => [
+        'ffmpeg' => env('MEDIATHEQUE_FFMPEG', 'ffmpeg'),
+        'ffprobe' => env('MEDIATHEQUE_FFPROBE', 'ffprobe'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Probe
+    |--------------------------------------------------------------------------
+    |
+    | The probe reads the technical metadata of each original, in a queued
+    | job, before its pipeline starts. `timeout` is in seconds.
+    |
+    */
+    'probe' => [
+        'timeout' => 120,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Jobs
+    |--------------------------------------------------------------------------
+    |
+    | The queue of the package's jobs: the probe, and the renditions of the
+    | ffmpeg transcoder. `timeout` is in seconds: keep your queue's
+    | `retry_after` longer than it.
+    |
+    */
+    'jobs' => [
+        'connection' => env('MEDIATHEQUE_QUEUE_CONNECTION'),
+        'queue' => env('MEDIATHEQUE_QUEUE'),
+        'tries' => 3,
+        'timeout' => 3600,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | URLs
     |--------------------------------------------------------------------------
     |
