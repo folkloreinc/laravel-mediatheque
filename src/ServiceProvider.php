@@ -85,7 +85,9 @@ class ServiceProvider extends BaseServiceProvider
 
     /**
      * When `laravel-image` 2 is installed, register the `media` resolver
-     * (docs/decisions/0013) in its resolvers, once they are built.
+     * (docs/decisions/0013) in its resolvers: once they are built, or now if
+     * another provider already built them. Registering twice changes
+     * nothing: resolvers are keyed by name.
      */
     private function registerImageResolver(): void
     {
@@ -95,7 +97,7 @@ class ServiceProvider extends BaseServiceProvider
             return;
         }
 
-        $this->app->afterResolving($registry, function (object $resolvers) {
+        $this->callAfterResolving($registry, function (object $resolvers) {
             if (method_exists($resolvers, 'register')) {
                 $resolvers->register($this->app->make(MediaResolver::class));
             }
