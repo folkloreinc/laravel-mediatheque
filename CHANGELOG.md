@@ -6,6 +6,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+## [2.0.0-alpha.2] - 2026-10-16
+
+Image URLs for media, with `laravel-image` 2 (v2.0.0-alpha.1 or later).
+
 ### Added
 
 - The `media` resolver of `laravel-image` 2, registered when `laravel-image` is installed, even when another provider built its resolvers first (#60): `med_…`, `med_…/{handle}` and `med_…/{handle}/{index}` resolve to the media's image files, with the first 8 hex characters of the file's checksum as version and its source as disk; deleted media don't resolve; private media are private sources ([decisions/0013](docs/decisions/0013-media-resolver-for-laravel-image.md), #56).
@@ -44,5 +48,6 @@ The first alpha of 2.0, for new projects: upload and play a video. The [README](
 - Presigned multipart uploads to an S3-compatible disk, for Uppy's `AwsS3` plugin: `Route::mediatheque()` registers routes to create an upload, sign its parts, list them, complete and abort it, inside the application's own middleware. A fresh install still exposes no route. Each step is authorized with the `create` ability of the media policy (denied without a policy); an upload belongs to the user who created it, and guests can't upload. Completing an upload ingests the file from the disk with the options of `Mediatheque::uploadsUsing()` (the application's attributes, such as a tenant id, chosen on the server); a rejected file is deleted. Errors are `application/problem+json`. New: the `uploads` table (published by `mediatheque:install`), the `Upload` model, and the `uploads` config (`disk`, `path`, `expires_after`, `url_ttl`) ([decisions/0015](docs/decisions/0015-new-install-schema-attributes-and-uploads.md), #54).
 - Releases are tagged by CI, from a commit of `v2.x` whose lint and test jobs passed, when `CHANGELOG.md` gets a dated section for a new version (#30).
 
-[Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.1...v2.x
+[Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.2...v2.x
+[2.0.0-alpha.2]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.1...v2.0.0-alpha.2
 [2.0.0-alpha.1]: https://github.com/folkloreinc/laravel-mediatheque/compare/v1.1.3...v2.0.0-alpha.1
