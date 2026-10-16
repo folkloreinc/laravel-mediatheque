@@ -2,6 +2,12 @@
 
 All notable changes to `folklore/laravel-mediatheque` 1.x are documented here.
 
+## 1.1.3
+
+### Changed
+
+- The package no longer requires `guzzlehttp/guzzle`, which it never used (#21). Applications on Laravel 13 can install Guzzle 8. Guzzle is still installed through `aws/aws-sdk-php` and `laravel/framework`. If your application uses Guzzle directly, require it in its own `composer.json`.
+
 ## 1.1.2
 
 ### Security
