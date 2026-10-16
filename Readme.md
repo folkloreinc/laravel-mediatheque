@@ -8,9 +8,9 @@
 
 `folklore/laravel-mediatheque` stores media (video, audio, images, documents, fonts), probes them, produces their renditions in your queue, and serves them through public or temporary URLs.
 
-## 2.0.0-alpha.1: upload and play a video
+## The alphas: upload and play a video, images through laravel-image
 
-This alpha is for new projects; the upgrade from 1.x comes in the beta.
+The alphas are for new projects; the upgrade from 1.x comes in the beta. 2.0.0-alpha.1 uploads and plays videos; 2.0.0-alpha.2 adds image URLs through `laravel-image` 2.
 
 ### Requirements
 
@@ -83,6 +83,10 @@ Mediatheque::uploadsUsing(fn (Request $request, Upload $upload) => new IngestOpt
 ```
 
 With Uppy's `AwsS3` plugin, each of its functions calls one route ([architecture.md](docs/architecture.md#http)). The bucket's CORS rules must allow `PUT` from your origin and expose the `ETag` header.
+
+### Images with laravel-image
+
+With `folklore/laravel-image` 2 installed, the package registers its `media` resolver: image URLs name a media, never a storage path. `med_…` is an image's original, or the poster of a video; `med_…/thumbnails/2` is one of its files. Each URL's version is the file's checksum, so new content gets new URLs, and private media get signed URLs. See [decisions/0013](docs/decisions/0013-media-resolver-for-laravel-image.md).
 
 ### Testing
 
