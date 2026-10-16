@@ -1,6 +1,6 @@
 <?php
 
-namespace Folklore\Mediatheque\Tests\Fixtures;
+namespace Folklore\Mediatheque\Tests\Support;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;

@@ -1,6 +1,6 @@
 <?php
 
-namespace Folklore\Mediatheque\Tests\Fixtures;
+namespace Folklore\Mediatheque\Tests\Support;
 
 /**
  * An application's policy for media: only users who may upload can create
