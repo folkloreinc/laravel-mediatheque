@@ -30,7 +30,9 @@ return [
     | Source
     |--------------------------------------------------------------------------
     |
-    | Where originals and renditions are stored by default.
+    | The disk of config/filesystems.php where originals are stored by
+    | default. A pipeline writes its renditions to the original's disk,
+    | unless it sets its own `source`.
     |
     */
     'source' => env('MEDIATHEQUE_SOURCE', 'public'),
@@ -41,7 +43,12 @@ return [
     |--------------------------------------------------------------------------
     */
     'ingest' => [
+        // `public`, or `private` for media served only through temporary URLs
         'visibility' => 'public',
+
+        // The largest file ingest accepts, for types that don't set their
+        // own `max_size`: bytes, or a string such as "500M" or "2G"
+        'max_size' => '2G',
     ],
 
     /*
@@ -51,29 +58,39 @@ return [
     |
     | A type is detected from the mime sniffed from the content: the first
     | type with a matching pattern wins, and a file that matches none is
-    | rejected. Each type runs the pipeline of the same name by default.
+    | rejected. Each type runs the pipeline of the same name by default, and
+    | can set its own `max_size`. Set a type to false to remove it.
+    |
+    | Your config is merged with these defaults: a published config only
+    | needs its overrides. Lists, such as `mimes`, replace the default list.
     |
     */
     'types' => [
         'video' => [
             'mimes' => ['video/*'],
+            'max_size' => '10G',
         ],
         'audio' => [
             'mimes' => ['audio/*'],
+            'max_size' => '1G',
         ],
         'image' => [
             'mimes' => ['image/*'],
+            'max_size' => '50M',
             // Image renditions come from laravel-image, on the fly
             'pipeline' => null,
         ],
         'document' => [
             'mimes' => ['application/pdf'],
+            'max_size' => '200M',
         ],
         'font' => [
             'mimes' => ['font/*', 'application/font-*', 'application/x-font-*', 'application/vnd.ms-opentype'],
+            'max_size' => '20M',
         ],
         'captions' => [
             'mimes' => ['text/vtt', 'application/x-subrip', 'text/srt'],
+            'max_size' => '10M',
         ],
     ],
 
@@ -86,6 +103,9 @@ return [
     | has an operation (`op`) and its options, and can set `from`, `when`,
     | `keep`, `queue` and `role`. Rendition names start with a letter, then
     | letters, digits, "_" and "-", 64 characters at most.
+    |
+    | A pipeline's `renditions` replace the default renditions as a whole.
+    | Set a pipeline to false to remove it.
     |
     */
     'pipelines' => [
