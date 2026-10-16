@@ -20,7 +20,7 @@ Tracking issues: [#1](https://github.com/folkloreinc/laravel-mediatheque/issues/
 - [x] Release process: changelog, `v2.0.0-alpha.N` tags from green CI ([#30](https://github.com/folkloreinc/laravel-mediatheque/issues/30))
 - [x] Contracts and their tests: `Media`, `File`, `uid` and references, `Ingest`, `Prober` (asynchronous), `Transcoder` and `Recorder`, `UrlGenerator`, events, `Mediatheque::fake()` ([#31](https://github.com/folkloreinc/laravel-mediatheque/issues/31))
 - [x] Review the `Transcoder` contract with Eclair ([urbania-media/eclair#13](https://github.com/urbania-media/eclair/issues/13), [review](https://github.com/folkloreinc/laravel-mediatheque/pull/24#issuecomment-6204765550)); answered in [decisions/0011](decisions/0011-renditions-on-remote-transcoders.md) and [0012](decisions/0012-pipeline-runs-recorder-and-probe.md)
-- [ ] Review the image resolver with `laravel-image` 2 ([laravel-image#59](https://github.com/folkloreinc/laravel-image/issues/59))
+- [x] Review the image resolver with `laravel-image` 2 ([laravel-image#59](https://github.com/folkloreinc/laravel-image/issues/59), [review](https://github.com/folkloreinc/laravel-image/issues/59#issuecomment-6219674071), #32); the points it raised are settled before alpha 1 ships the resolver
 
 ## Alpha 1: upload and play a video
 

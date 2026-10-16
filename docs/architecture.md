@@ -352,7 +352,17 @@ $media->file('h264')->url();
 
 ### Images and `laravel-image`
 
-Image renditions (sizes, crops, formats) are not stored by the mediatheque: `laravel-image` 2 renders them on the fly from the original. The mediatheque provides the `laravel-image` source resolver, which turns `med_…` into a source and a path, so image URLs never expose storage paths. Video posters and thumbnails, which come out of a pipeline, are files of the media and go through `laravel-image` the same way.
+Image renditions (sizes, crops, formats) are not stored by the mediatheque: `laravel-image` 2 renders them on the fly from the original. The mediatheque provides the `media` resolver of `laravel-image` (its `SourceResolver` contract), registered when `laravel-image` is installed, so image URLs never expose storage paths. Video posters and thumbnails, which come out of a pipeline, are files of the media and go through `laravel-image` the same way.
+
+The resolver turns a media (its contract), a `MediaReference`, `media://med_…` or a uid into an `ImageSource`: the `uid` as the URL key, a version, the disk and path of the file, its metadata (`width`, `height`, `mime`…) and whether it is private. The [review with `laravel-image`](https://github.com/folkloreinc/laravel-image/issues/59#issuecomment-6219674071) left these points to settle in both repositories before alpha 1:
+
+- the version: a prefix of the resolved file's `checksum`;
+- which file a key resolves to: the original of an image, the `thumbnail()` of other types, or a file named by handle and index (`med_…/thumbnails/2`);
+- a source is a Laravel disk name;
+- `orientation`, a ThumbHash placeholder instead of `blurhash`, and the dominant color in the canonical keys;
+- where the focal point and `transform` live (alpha 2);
+- clearing derivatives on `MediaVisibilityChanged` and `OriginalReplaced`;
+- what deleted, pending and failed media resolve to.
 
 ## JSON resource
 
