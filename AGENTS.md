@@ -34,6 +34,7 @@ config/              mediatheque.php, the package defaults
 database/migrations/ Published by mediatheque:install; the package doesn't load them
 docs/                Current state of 1.x, architecture, decisions, roadmap, upgrade guide
 tests/
+  Contracts/         Contract tests (traits): every implementation of a contract runs them
   Feature/           Orchestra Testbench (SQLite in memory)
   Unit/
   fixtures/          Sample media, and the 1.x schema and config for the upgrade tests
@@ -44,7 +45,7 @@ tests/
 - PHP 8.3+ and Laravel 12+ ([decisions/0001](docs/decisions/0001-supported-versions.md)): don't use language features newer than PHP 8.3. Declare every `illuminate/*` component the code uses.
 - Typehint every parameter, return value and property. Prefer enums and readonly value objects to strings and arrays.
 - Format with [Laravel Pint](https://laravel.com/docs/pint) (`pint.json`, `laravel` preset): run `composer format` before committing. CI runs `composer lint` (`pint --test`).
-- Static analysis runs with [Larastan](https://github.com/larastan/larastan) at the maximum level (`phpstan.neon.dist`): `composer analyse`. There is no baseline: fix every error. Ignore an error only with a comment that says why, scoped to its identifier and path.
+- Static analysis runs with [Larastan](https://github.com/larastan/larastan) at the maximum level on `src`, `config` and `tests` (`phpstan.neon.dist`): `composer analyse`. There is no baseline: fix every error. Ignore an error only with a comment that says why, scoped to its identifier and path.
 
 ## Tests
 
@@ -53,7 +54,7 @@ composer install
 composer test
 ```
 
-- **Every change comes with tests**: contract tests for each contract, a regression test for each bug fix, a feature test on a fixture for each operation of a transcoder.
+- **Every change comes with tests**: contract tests for each contract (a trait in `tests/Contracts/`, used by a test of each implementation, the fake's included), a regression test for each bug fix, a feature test on a fixture for each operation of a transcoder.
 - Tests that need a binary (ffmpeg, Imagick…) or an external service are skipped when it is not available, and CI installs what they need.
 - The `tests/fixtures/v1/` files are the 1.x schema and config as they are on `v1.1`. Don't edit them to make a test pass.
 - Before pushing, run `composer lint`, `composer analyse` and `composer test`, and say in the PR what you ran and what could not run.

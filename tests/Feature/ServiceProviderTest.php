@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque\Tests\Feature;
 
 use Folklore\Mediatheque\Tests\TestCase;
 use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route as Router;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -18,8 +19,7 @@ class ServiceProviderTest extends TestCase
     #[Test]
     public function it_publishes_the_config(): void
     {
-        $this->artisan('vendor:publish', ['--tag' => 'mediatheque-config', '--force' => true])
-            ->assertSuccessful();
+        $this->assertSame(0, Artisan::call('vendor:publish', ['--tag' => 'mediatheque-config', '--force' => true]));
 
         $this->assertFileExists(config_path('mediatheque.php'));
 

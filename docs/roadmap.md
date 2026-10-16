@@ -18,7 +18,7 @@ Tracking issues: [#1](https://github.com/folkloreinc/laravel-mediatheque/issues/
 - [x] Tooling: PSR-4, PHP 8.3+, Laravel 12+, CI matrix (PHP 8.3 to 8.5 × Laravel 12 and 13), Pint, Larastan at the maximum level without a baseline for new code ([#28](https://github.com/folkloreinc/laravel-mediatheque/issues/28))
 - [x] Remove the 1.x code from `v2.x` and start the new layout; keep 1.x fixtures for the compatibility tests ([#29](https://github.com/folkloreinc/laravel-mediatheque/issues/29))
 - [x] Release process: changelog, `v2.0.0-alpha.N` tags from green CI ([#30](https://github.com/folkloreinc/laravel-mediatheque/issues/30))
-- [ ] Contracts and their tests: `Media`, `File`, `uid` and references, `Ingest`, `Prober` (asynchronous), `Transcoder` and `Recorder`, `UrlGenerator`, events, `Mediatheque::fake()`
+- [x] Contracts and their tests: `Media`, `File`, `uid` and references, `Ingest`, `Prober` (asynchronous), `Transcoder` and `Recorder`, `UrlGenerator`, events, `Mediatheque::fake()` ([#31](https://github.com/folkloreinc/laravel-mediatheque/issues/31))
 - [x] Review the `Transcoder` contract with Eclair ([urbania-media/eclair#13](https://github.com/urbania-media/eclair/issues/13), [review](https://github.com/folkloreinc/laravel-mediatheque/pull/24#issuecomment-6204765550)); answered in [decisions/0011](decisions/0011-renditions-on-remote-transcoders.md) and [0012](decisions/0012-pipeline-runs-recorder-and-probe.md)
 - [ ] Review the image resolver with `laravel-image` 2 ([laravel-image#59](https://github.com/folkloreinc/laravel-image/issues/59))
 
