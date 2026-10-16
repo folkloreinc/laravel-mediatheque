@@ -59,7 +59,7 @@ A media is one piece of content: a video, an audio file, an image, a document, a
 | `name` | Display name, from the upload's file name by default |
 | `status` | `MediaStatus` enum: `pending`, `processing`, `ready`, `failed` |
 | `visibility` | `Visibility` enum: `public` or `private` ([decisions/0007](decisions/0007-visibility-and-urls.md)) |
-| `metadata` | JSON, with the [canonical keys](#metadata-keys): `width`, `height`, `duration`, `frame_rate`, `video_codec`, `pages_count`, `font_names`, `palette`, `blurhash`, `locale`… |
+| `metadata` | JSON, with the [canonical keys](#metadata-keys): `width`, `height`, `duration`, `frame_rate`, `video_codec`, `pages_count`, `font_names`, `palette`, `thumbhash`, `locale`… |
 | `data` | JSON for the application (kept from 1.x) |
 | `derived_from_id` | The media it was derived from (a clip, a caption track) |
 | `deleted_at` | Soft deletes |
@@ -93,7 +93,7 @@ A file belongs to one media. Its **handle** says what it is: `original` for the 
 | `pipeline_job_id` | The job that produced it |
 | `provider`, `provider_ref` | For a remote rendition, played from a provider's URL instead of a file on a source (prepared in 2.0, used by a later Cloudflare Stream driver) |
 
-Outputs that are not files (palette, blurhash, scenes, a transcript's words) are written to `metadata`: the media's for a rendition without files, its main file's for a rendition with files (index 0 for a group).
+Outputs that are not files (palette, thumbhash, scenes, a transcript's words) are written to `metadata`: the media's for a rendition without files, its main file's for a rendition with files (index 0 for a group).
 
 ### Metadata keys
 
@@ -111,7 +111,8 @@ Metadata keys are snake_case and come from one list, so every prober and transco
 | `font_names` | Fonts |
 | `animated` | Animated GIF and WebP |
 | `exif` | A summary, never GPS data |
-| `palette`, `blurhash`, `scenes` | Metadata outputs of renditions |
+| `palette`, `scenes` | Metadata outputs of renditions |
+| `thumbhash` | An image placeholder, a [ThumbHash](https://evanw.github.io/thumbhash/) in base64, from `laravel-image`'s `Image::analyze()` when it is installed ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)) |
 | `locale` | Caption tracks |
 
 `mediatheque:upgrade` maps the 1.x names to these keys (`font_family_name` → `font_names`, `colors` → `palette`).
@@ -181,7 +182,10 @@ $media = Mediatheque::ingest($request->file('file'));
 $media = Mediatheque::ingest(Source::disk('s3', 'uploads/abc.mov'));
 $media = Mediatheque::ingest(Source::url('https://example.com/video.mp4'));
 $media = Mediatheque::ingest($file, visibility: Visibility::Private, pipeline: 'video', name: 'Episode 1');
+$media = Mediatheque::ingest($file, attributes: ['tenant_id' => $tenant->id]);   // the application's columns
 ```
+
+`attributes` sets the application's own columns on the media before its path is built, so the path formatter can use them ([decisions/0015](decisions/0015-new-install-schema-attributes-and-uploads.md)).
 
 | Source | Notes |
 |---|---|
@@ -206,7 +210,7 @@ Large files should not go through PHP. The package provides, as opt-in HTTP endp
 - **Presigned multipart uploads** to an S3-compatible disk, for Uppy's `AwsS3` plugin: create an upload (`upl_…`), sign its parts, complete it, then ingest from the disk. Interrupted uploads resume from the last part.
 - **A TUS adapter** (later alpha), for clients that need the TUS protocol. It writes to a disk and ends with the same ingest step.
 
-Uploads are tracked in an `uploads` table (status, disk, path, expected size, expiry). `mediatheque:prune` removes abandoned ones.
+Uploads are tracked in an `uploads` table (status, disk, path, expected size, creator, expiry). Each step is authorized by the `Media` policy's `create` ability, and only the user who created an upload can continue it. The application sets the options of the media an upload creates (its attributes, such as a tenant id) with `Mediatheque::uploadsUsing()`, from its own context ([decisions/0015](decisions/0015-new-install-schema-attributes-and-uploads.md)). `mediatheque:prune` removes abandoned uploads.
 
 ## Probe
 
@@ -318,7 +322,7 @@ The rules below are in [decisions/0012](decisions/0012-pipeline-runs-recorder-an
 
 - **Idempotent and forward only.** A duplicated webhook or a retried queue job changes nothing the second time. Statuses only move forward (`queued` → `running` → `completed`, `failed`, `skipped` or `canceled`): a call that would move a rendition back, or change a final status, is ignored, and progress never goes down. A driver that receives the whole job on every webhook reports every rendition each time, in whatever order deliveries arrive.
 - **Dependencies.** A failed rendition fails the renditions that read from it (`dependency_failed`), a skipped one skips them, a canceled one cancels them; independent renditions continue.
-- **End of a run.** A run ends when every rendition has a final status: `failed` if one failed, else `canceled` if one was canceled, else `completed` (skipped renditions are a normal outcome). After a run of its pipeline, the media is `ready` if its main rendition completed, `failed` otherwise. The main rendition is the first one with the `main` role (the default role) that keeps its output.
+- **End of a run.** A run ends when every rendition has a final status: `failed` if one failed, else `canceled` if one was canceled, else `completed` (skipped renditions are a normal outcome). After a run that includes its main rendition, the media is `ready` if the main rendition completed, `failed` otherwise; a `ready` media that still has a file for it stays `ready` when a rerun fails. The main rendition is the first one with the `main` role (the default role) that keeps its output ([decisions/0014](decisions/0014-run-outcomes-and-model-contracts.md)).
 - **Progress** is a number from 0 to 1. Reporting progress moves a queued rendition to `running`.
 - **Errors.** `TranscoderError` has a `code` from the `TranscoderErrorCode` enum (`input_unreadable`, `unsupported_input`, `timeout`, `limit_exceeded`, `operation_failed`, `storage_failed`, `provider_failed`, `dependency_failed`, the same as Eclair's) and a message for humans. An unknown code is read as `operation_failed`.
 - **Refresh.** `mediatheque:refresh`, scheduled by the application, calls `refresh()` for runs that have been running too long (a lost webhook) and for every running run of a driver that reports progress only by polling. The MediaConvert poller is this command.
@@ -354,15 +358,14 @@ $media->file('h264')->url();
 
 Image renditions (sizes, crops, formats) are not stored by the mediatheque: `laravel-image` 2 renders them on the fly from the original. The mediatheque provides the `media` resolver of `laravel-image` (its `SourceResolver` contract), registered when `laravel-image` is installed, so image URLs never expose storage paths. Video posters and thumbnails, which come out of a pipeline, are files of the media and go through `laravel-image` the same way.
 
-The resolver turns a media (its contract), a `MediaReference`, `media://med_…` or a uid into an `ImageSource`: the `uid` as the URL key, a version, the disk and path of the file, its metadata (`width`, `height`, `mime`…) and whether it is private. The [review with `laravel-image`](https://github.com/folkloreinc/laravel-image/issues/59#issuecomment-6219674071) left these points to settle in both repositories before alpha 1:
+The resolver turns a media (its contract), a `MediaReference`, `media://med_…`, a uid or a key with a handle (`med_…/poster`) into an `ImageSource`: the key, a version, the disk and path of the file, its metadata (`width`, `height`, `mime`, `thumbhash`) and whether it is private. [decisions/0013](decisions/0013-media-resolver-for-laravel-image.md) has the rules, agreed with `laravel-image` ([its decision 0010](https://github.com/folkloreinc/laravel-image/blob/v2.x/docs/decisions/0010-media-resolver.md)):
 
-- the version: a prefix of the resolved file's `checksum`;
-- which file a key resolves to: the original of an image, the `thumbnail()` of other types, or a file named by handle and index (`med_…/thumbnails/2`);
+- the version is the first 8 hex characters of the resolved file's `checksum`;
+- `med_…` resolves to the original of an image and the `thumbnail()` of other types; `med_…/{handle}` and `med_…/{handle}/{index}` to a file of the media (`med_…/thumbnails/2`); only image files resolve;
 - a source is a Laravel disk name;
-- `orientation`, a ThumbHash placeholder instead of `blurhash`, and the dominant color in the canonical keys;
-- where the focal point and `transform` live (alpha 2);
-- clearing derivatives on `MediaVisibilityChanged` and `OriginalReplaced`;
-- what deleted, pending and failed media resolve to.
+- deleted media don't resolve; pending and failed media resolve to the image files they have.
+
+Settled with `laravel-image` before alpha 2: `orientation` and the dominant color in the canonical keys, where the focal point and `transform` live, and clearing derivatives on `MediaVisibilityChanged` and `OriginalReplaced`.
 
 ## JSON resource
 
@@ -442,8 +445,8 @@ The fake stores files on fake disks, returns probe fixtures, and completes rendi
 
 ## Extension
 
-- **Models.** `Media`, `File`, `PipelineRun` and `PipelineJob` are bound to contracts and set in the config (`models.media`…). Applications extend them to add columns, scopes and relations.
-- **Migrations.** `mediatheque:install` publishes the migrations; the package does not load them itself. The application owns its schema and can add its own columns (a tenant id, for example) in the same migration.
+- **Models.** `Media`, `File`, `PipelineRun` and `PipelineJob` are bound to contracts and set in the config (`models.media`…). Applications extend them to add columns, scopes and relations. The contracts are methods; the Eloquent relations have other names (`mediaFiles()`, `pipelineJobs()`…, [decisions/0014](decisions/0014-run-outcomes-and-model-contracts.md)).
+- **Migrations.** `mediatheque:install` publishes the migrations; the package does not load them itself. The application owns its schema and can add its own columns (a tenant id, for example) in the same migration ([decisions/0015](decisions/0015-new-install-schema-attributes-and-uploads.md)).
 - **Global scopes.** Package workers load models through the morph map and without global scopes, so a tenant scope that depends on the current request does not hide media from queued jobs.
 - **Path formatter.** Receives the media and the file: `{media.uid}`, `{media.tenant_id}`, `{type}`, `{handle}`, `{index}`, `{extension}`, `{date(Y/m)}`. It builds originals and the `ffmpeg` driver's files with `file_path_format`, and each run's prefix with `run_path_format` (the media's placeholders and `{run}`), under which remote transcoders name their own files. Paths are recorded, so consumers never rebuild them.
 - **Types, renditions, transcoders, probers, URL signers and sources** register through the config or `Mediatheque::extend*()`.
@@ -467,7 +470,7 @@ The fake stores files on fake disks, returns probe fixtures, and completes rendi
 
 ## Configuration
 
-The 1.x keys keep their meaning where the concept is unchanged (`table_prefix`, `source`, `sources`, `file_path_format`, `types`, `pipelines`, `routes`, `jobs`). New keys: `models`, `ingest`, `urls`, `transcoders`, `probe`, `uploads`, `prune`, `run_path_format`.
+The 1.x keys keep their meaning where the concept is unchanged (`table_prefix`, `source`, `file_path_format`, `types`, `pipelines`, `routes`, `jobs`). A source is a Laravel disk name, so 2.0 has no `sources` key: `mediatheque:upgrade --config` turns 1.x sources into disks ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)). New keys: `models`, `ingest`, `urls`, `transcoders`, `probe`, `uploads`, `prune`, `run_path_format`.
 
 The package merges its defaults deeply with the application's file, so a published config only needs its overrides. The 1.x shapes of `types` and `pipelines` are read with deprecation warnings (see [upgrade.md](upgrade.md)).
 

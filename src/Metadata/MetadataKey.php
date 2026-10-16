@@ -55,7 +55,10 @@ enum MetadataKey: string
     case Exif = 'exif';
 
     case Palette = 'palette';
-    case Blurhash = 'blurhash';
+
+    /** A ThumbHash image placeholder, in base64. */
+    case Thumbhash = 'thumbhash';
+
     case Scenes = 'scenes';
     case Locale = 'locale';
 
