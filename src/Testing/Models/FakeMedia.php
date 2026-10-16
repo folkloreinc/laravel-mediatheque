@@ -22,6 +22,7 @@ class FakeMedia implements Media
     /**
      * @param  array<string, mixed>  $metadata
      * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $attributes  The application's columns, given to ingest
      */
     public function __construct(
         public int $id,
@@ -33,6 +34,7 @@ class FakeMedia implements Media
         public array $metadata = [],
         public array $data = [],
         public ?string $mainRendition = null,
+        public array $attributes = [],
     ) {}
 
     public function uid(): string

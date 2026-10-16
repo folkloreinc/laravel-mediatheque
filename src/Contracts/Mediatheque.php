@@ -22,6 +22,7 @@ interface Mediatheque
      *
      * @param  UploadedFile|Source|string|resource  $source
      * @param  array<string, mixed>  $data  The media's application data
+     * @param  array<string, mixed>  $attributes  Columns of the application's media model, such as a tenant id, set before the path is built
      *
      * @throws FileRejected
      */
@@ -31,6 +32,7 @@ interface Mediatheque
         ?string $pipeline = null,
         ?string $name = null,
         array $data = [],
+        array $attributes = [],
     ): Media;
 
     /**
