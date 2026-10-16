@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque\Tests\Feature\Images;
 
 use Folklore\Image\Contracts\SourceResolver;
 use Folklore\Image\Exceptions\SourceNotFound;
+use Folklore\Image\Sources\SourceResolvers;
 use Folklore\Image\Testing\Contracts\SourceResolverContractTests;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\Visibility;
@@ -180,16 +181,8 @@ class MediaResolverTest extends DatabaseTestCase
     }
 
     #[Test]
-    public function it_is_registered_in_laravel_image_resolvers_when_they_exist(): void
+    public function it_is_registered_in_laravel_image_resolvers(): void
     {
-        if (! class_exists('Folklore\Image\Sources\SourceResolvers')) {
-            $this->markTestSkipped('This laravel-image has no SourceResolvers registry yet (laravel-image alpha 1).');
-        }
-
-        $resolvers = app()->make('Folklore\Image\Sources\SourceResolvers');
-        $this->assertIsObject($resolvers);
-        $named = [$resolvers, 'named'];
-        $this->assertIsCallable($named);
-        $this->assertInstanceOf(MediaResolver::class, $named('media'));
+        $this->assertInstanceOf(MediaResolver::class, app(SourceResolvers::class)->named('media'));
     }
 }
