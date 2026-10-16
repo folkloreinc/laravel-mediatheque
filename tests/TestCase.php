@@ -2,48 +2,36 @@
 
 namespace Folklore\Mediatheque\Tests;
 
-use Folklore\Mediatheque\Facade;
 use Folklore\Mediatheque\ServiceProvider;
 use Illuminate\Foundation\Application;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 
-class TestCase extends BaseTestCase
+abstract class TestCase extends BaseTestCase
 {
     /**
-     * Define environment setup.
-     *
      * @param  Application  $app
-     * @return void
+     * @return array<int, class-string>
      */
-    protected function getEnvironmentSetUp($app)
-    {
-        // Setup default database to use sqlite :memory:
-        $app['config']->set('database.default', 'testbench');
-        $app['config']->set('database.connections.testbench', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-            'prefix' => '',
-        ]);
-
-        // usePublicPath() only exists since Laravel 10
-        if (method_exists($app, 'usePublicPath')) {
-            $app->usePublicPath(__DIR__.'/fixture');
-        } else {
-            $app->instance('path.public', __DIR__.'/fixture');
-        }
-    }
-
-    protected function getPackageProviders($app)
+    protected function getPackageProviders($app): array
     {
         return [
             ServiceProvider::class,
         ];
     }
 
-    protected function getPackageAliases($app)
+    /**
+     * @param  Application  $app
+     */
+    protected function defineEnvironment($app): void
     {
-        return [
-            'Mediatheque' => Facade::class,
-        ];
+        $app['config']->set('database.default', 'testing');
+    }
+
+    /**
+     * Path of a file in tests/fixtures.
+     */
+    protected static function fixturePath(string $path = ''): string
+    {
+        return __DIR__.'/fixtures'.($path !== '' ? '/'.$path : '');
     }
 }

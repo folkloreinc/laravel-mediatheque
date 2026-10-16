@@ -8,19 +8,14 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
-        <testsuite name="Unit">
-            <directory>tests/Unit</directory>
-        </testsuite>
     </testsuites>
     <source>
         <include>
-            <directory suffix=".php">src/Folklore/Mediatheque</directory>
+            <directory suffix=".php">src</directory>
         </include>
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_KEY" value="AckfSECXIvnK5r28GVIWUAxmbBSjTsmF"/>
-        <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="MEDIATHEQUE_DEBUG" value="false"/>
     </php>
 </phpunit>
