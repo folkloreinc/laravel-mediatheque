@@ -216,12 +216,12 @@ A `Prober` reads a file's technical metadata: kind, mime, dimensions, rotation, 
 - Eclair's prober uses its `probe` endpoint.
 - The probe runs in a queued job.
 
-The contract is asynchronous ([decisions/0012](decisions/0012-pipeline-runs-recorder-and-probe.md)): a prober returns the metadata, or a pending outcome with its external id when the probe takes longer (Eclair answers `202` with a job).
+The contract is asynchronous ([decisions/0012](decisions/0012-pipeline-runs-recorder-and-probe.md)): a prober returns the metadata, a pending outcome with its external id when the probe takes longer (Eclair answers `202` with a job), or an error. The metadata always has a `kind`.
 
 ```php
 interface Prober
 {
-    public function probe(File $file): ProbeOutcome;   // ProbeOutcome::done($metadata) or ProbeOutcome::pending($externalId)
+    public function probe(File $file): ProbeOutcome;   // ProbeOutcome::done($metadata), ::pending($externalId) or ::failed($error)
 }
 ```
 
@@ -317,6 +317,9 @@ interface Recorder
 The rules below are in [decisions/0012](decisions/0012-pipeline-runs-recorder-and-probe.md).
 
 - **Idempotent and forward only.** A duplicated webhook or a retried queue job changes nothing the second time. Statuses only move forward (`queued` → `running` → `completed`, `failed`, `skipped` or `canceled`): a call that would move a rendition back, or change a final status, is ignored, and progress never goes down. A driver that receives the whole job on every webhook reports every rendition each time, in whatever order deliveries arrive.
+- **Dependencies.** A failed rendition fails the renditions that read from it (`dependency_failed`), a skipped one skips them, a canceled one cancels them; independent renditions continue.
+- **End of a run.** A run ends when every rendition has a final status: `failed` if one failed, else `canceled` if one was canceled, else `completed` (skipped renditions are a normal outcome). After a run of its pipeline, the media is `ready` if its main rendition completed, `failed` otherwise. The main rendition is the first one with the `main` role (the default role) that keeps its output.
+- **Progress** is a number from 0 to 1. Reporting progress moves a queued rendition to `running`.
 - **Errors.** `TranscoderError` has a `code` from the `TranscoderErrorCode` enum (`input_unreadable`, `unsupported_input`, `timeout`, `limit_exceeded`, `operation_failed`, `storage_failed`, `provider_failed`, `dependency_failed`, the same as Eclair's) and a message for humans. An unknown code is read as `operation_failed`.
 - **Refresh.** `mediatheque:refresh`, scheduled by the application, calls `refresh()` for runs that have been running too long (a lost webhook) and for every running run of a driver that reports progress only by polling. The MediaConvert poller is this command.
 - **Retries.** A webhook for a run that has ended changes nothing. Retrying creates a new run.
@@ -404,6 +407,7 @@ Every action is authorized through a `Media` policy (`create`, `view`, `update`,
 | `PipelineStarted`, `PipelineCompleted`, `PipelineFailed`, `PipelineCanceled` | Pipeline run |
 | `RenditionCompleted`, `RenditionFailed`, `RenditionSkipped`, `RenditionCanceled` | Each rendition. Drivers that report from webhook snapshots may dispatch them some time after the fact |
 | `MediaReady` | Every rendition of the default pipeline ended, at least the main one completed |
+| `MediaFailed` | The probe failed, or the main rendition did not complete |
 | `MediaVisibilityChanged`, `OriginalReplaced` | |
 
 Events carry contracts, not concrete classes, so they work with the application's models.
@@ -415,12 +419,16 @@ Mediatheque::fake();
 
 $media = Mediatheque::ingest(UploadedFile::fake()->create('clip.mp4', 2048, 'video/mp4'));
 
-Mediatheque::assertIngested(fn (Media $m) => $m->type === 'video');
+Mediatheque::assertIngested(fn (Media $m) => $m->type() === 'video');
 Mediatheque::assertPipelineRan($media, 'video');
-Mediatheque::fake()->failRendition('h264');
+Mediatheque::assertRendition($media, 'h264', JobStatus::Completed);
+
+Mediatheque::fake()->failRendition('h264');                 // or skipRendition(), failProbe()
+Mediatheque::fake()->probeWith(['duration' => 12.5]);       // over the probe fixtures
+Mediatheque::fake()->holdPipelines();                       // renditions stay queued until releasePipelines()
 ```
 
-The fake stores files on a fake disk, returns probe fixtures, and completes renditions with placeholder files, without ffmpeg or a queue worker.
+The fake stores files on fake disks, returns probe fixtures, and completes renditions with placeholder files, without ffmpeg, a database or a queue worker. It dispatches the package's events, and reports renditions through an in-memory recorder that passes the same contract tests as the package's recorder (`tests/Contracts/`). The fake binds the `Mediatheque`, `Ingestor`, `Recorder`, `Prober` and `UrlGenerator` contracts.
 
 ## Extension
 
@@ -457,19 +465,26 @@ The package merges its defaults deeply with the application's file, so a publish
 
 ```
 src/                                  PSR-4: Folklore\Mediatheque\
-  Contracts/                          Public contracts
+  Contracts/                          Public contracts: Mediatheque, Ingestor, Prober, Transcoder, Recorder,
+                                      UrlGenerator, UrlSigner; Models/ (Media, File, PipelineRun, PipelineJob)
   Models/                             Media, File, PipelineRun, PipelineJob, Upload
-  Enums/                              MediaStatus, Visibility, PipelineStatus, JobStatus
+  Enums/                              MediaStatus, Visibility, PipelineStatus, JobStatus, ProbeKind,
+                                      TranscoderErrorCode, ProgressReporting, RejectionReason
+  Events/
+  Exceptions/
+  Facades/                            Mediatheque
+  Metadata/                           Canonical keys
   Ingest/                             Sources, validation, sanitizers, path formatter
   Probe/                              Prober contract implementations
   Pipelines/                          Renditions, runner, recorder
   Transcoders/Ffmpeg/, MediaConvert/
   Urls/                               UrlGenerator, signers
   References/                         media:// and medias:// parsing and resolution
+  Support/                            Uid
   Http/                               Opt-in routes, controllers, requests, resources
   Concerns/                           HasMedias
   Compat/                             1.x compatibility layer (deprecated)
-  Testing/                            MediathequeFake
+  Testing/                            MediathequeFake, and the in-memory models, recorder, prober and URLs it uses
   Console/
 config/mediatheque.php
 database/migrations/
