@@ -42,6 +42,7 @@ use Folklore\Mediatheque\Services\ImagineSvg;
 use Folklore\Mediatheque\Services\MediaConvertClient;
 use Folklore\Mediatheque\Services\OtfInfo;
 use Folklore\Mediatheque\Services\PathFormatter;
+use Folklore\Mediatheque\Services\SvgSanitizer;
 use Folklore\Mediatheque\Services\Webp;
 use Illuminate\Support\Arr;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
@@ -391,6 +392,10 @@ class ServiceProvider extends BaseServiceProvider
             'mediatheque.services.svg',
             ImagineSvg::class
         );
+        $this->app->singleton(
+            'mediatheque.services.svg_sanitizer',
+            SvgSanitizer::class
+        );
 
         $services = [
             'mediatheque.services.animated_image' => [
@@ -399,6 +404,7 @@ class ServiceProvider extends BaseServiceProvider
             'mediatheque.services.gif' => [Contracts\Services\Gif::class],
             'mediatheque.services.webp' => [Contracts\Services\Webp::class],
             'mediatheque.services.svg' => [Svg::class],
+            'mediatheque.services.svg_sanitizer' => [Contracts\Services\SvgSanitizer::class],
             'mediatheque.services.otfinfo' => [
                 FontFamilyName::class,
             ],

@@ -5,6 +5,7 @@ namespace Folklore\Mediatheque\Http\Controllers;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 use Folklore\Mediatheque\Http\Requests\UploadMediaRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class UploadController extends Controller
 {
@@ -53,6 +54,7 @@ class UploadController extends Controller
     {
         if ($request->has('id')) {
             $item = $item->newQuery()->findOrFail($request->get('id'));
+            $this->authorizeReplace($item);
         }
 
         $file = $request->file('file');
@@ -61,6 +63,19 @@ class UploadController extends Controller
         $item->load('files');
 
         return $item;
+    }
+
+    protected function authorizeReplace($item)
+    {
+        if (Gate::has('mediatheque.replace')) {
+            Gate::authorize('mediatheque.replace', [$item]);
+
+            return;
+        }
+
+        if (! UploadMediaRequest::canReplaceMedia()) {
+            abort(403);
+        }
     }
 
     public function __call($method, $args)
