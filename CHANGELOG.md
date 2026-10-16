@@ -24,6 +24,8 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 - Eloquent models `Media`, `File`, `PipelineRun` and `PipelineJob`, which implement the model contracts. Set your own classes in `mediatheque.models`. Their relations are `mediaFiles()`, `pipelineRuns()`, `pipelineJobs()`, `pipelineRun()`, `pipelinable()` and `File::media()` ([decisions/0014](docs/decisions/0014-run-outcomes-and-model-contracts.md), #42).
 - `Media::thumbnail()` returns the poster first, then the first thumbnail (#42).
 - The path formatter: `file_path_format` builds the path of originals and names the `ffmpeg` driver's files, and `run_path_format` the prefix each run writes under. Placeholders: `{media.<attribute>}` (an application's `{media.tenant_id}`), `{type}`, `{handle}`, `{index}`, `{extension}`, `{run}`, `{date(Y/m)}`. A missing attribute, or a value that would leave its directory, throws (#44).
+- `url()` and `temporaryUrl()` on media and files, through the package's `UrlGenerator`: a public file gets its disk's URL; a private file only gets temporary URLs, signed by its disk (S3, or a local disk with `'serve' => true`), valid for `urls.temporary_ttl` seconds by default. A private file on a disk that can't sign URLs has no URL (#46).
+- `Mediatheque::resolve()` and `resolveMany()` find media by uid, `media://` and `medias://` references, with their files, in one query per form. Deleted media don't resolve. The facade works outside the fake (#46).
 - Releases are tagged by CI, from a commit of `v2.x` whose lint and test jobs passed, when `CHANGELOG.md` gets a dated section for a new version (#30).
 
 [Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v1.1.3...v2.x

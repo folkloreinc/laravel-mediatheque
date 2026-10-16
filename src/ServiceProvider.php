@@ -3,8 +3,11 @@
 namespace Folklore\Mediatheque;
 
 use Folklore\Mediatheque\Console\InstallCommand;
+use Folklore\Mediatheque\Contracts\Mediatheque;
+use Folklore\Mediatheque\Contracts\UrlGenerator;
 use Folklore\Mediatheque\Support\ConfigMerger;
 use Folklore\Mediatheque\Support\MediathequeConfig;
+use Folklore\Mediatheque\Urls\DiskUrlGenerator;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\CachesConfiguration;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
@@ -17,6 +20,8 @@ class ServiceProvider extends BaseServiceProvider
         $this->app->booting(fn () => $this->mergeConfig());
 
         $this->app->singleton(MediathequeConfig::class, fn () => new MediathequeConfig($this->app->make(Repository::class)));
+        $this->app->singleton(Mediatheque::class, MediathequeManager::class);
+        $this->app->singleton(UrlGenerator::class, DiskUrlGenerator::class);
     }
 
     public function boot(): void

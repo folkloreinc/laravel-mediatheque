@@ -33,7 +33,7 @@ What the pilot's media library needs first, end to end.
 - [x] Path formatter that receives the media, with a prefix per run ([#44](https://github.com/folkloreinc/laravel-mediatheque/issues/44))
 - [ ] Queued probe (ffprobe, Imagick) through the asynchronous `Prober` contract
 - [ ] `ffmpeg` transcoder: web video rendition (`h264`), poster and thumbnails
-- [ ] `url()` and `temporaryUrl()`, public and private media
+- [x] `url()` and `temporaryUrl()`, public and private media ([#46](https://github.com/folkloreinc/laravel-mediatheque/issues/46))
 - [ ] Events (`MediaCreated`, `MediaProbed`, `Rendition*`, `Pipeline*`, `MediaReady`)
 - [ ] `Mediatheque::fake()` with assertions
 - [ ] `laravel-image` 2 resolver, so images ingested here get presets and signed URLs ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)); it needs a `laravel-image` pre-release with the `SourceResolver` contract
