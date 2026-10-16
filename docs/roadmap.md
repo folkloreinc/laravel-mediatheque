@@ -26,8 +26,8 @@ Tracking issues: [#1](https://github.com/folkloreinc/laravel-mediatheque/issues/
 
 What the pilot's media library needs first, end to end.
 
-- [ ] Schema: `medias` with `uid`, `status`, `visibility`, `metadata`, soft deletes; `files` with `media_id`, `handle`, `index`, `role`, 64-bit `size`; pipeline runs and jobs with statuses
-- [ ] Migrations owned by the application (`mediatheque:install` publishes them) ([#22](https://github.com/folkloreinc/laravel-mediatheque/issues/22))
+- [x] Schema: `medias` with `uid`, `status`, `visibility`, `metadata`, soft deletes; `files` with `media_id`, `handle`, `index`, `role`, 64-bit `size`; pipeline runs and jobs with statuses ([#42](https://github.com/folkloreinc/laravel-mediatheque/issues/42))
+- [x] Migrations owned by the application (`mediatheque:install` publishes them) ([#22](https://github.com/folkloreinc/laravel-mediatheque/issues/22), [#42](https://github.com/folkloreinc/laravel-mediatheque/issues/42))
 - [ ] `Mediatheque::ingest()` from an uploaded file and from a file on a disk, with content-based types and validation
 - [ ] Presigned multipart uploads to an S3-compatible disk (opt-in routes, policy)
 - [ ] Path formatter that receives the media, with a prefix per run

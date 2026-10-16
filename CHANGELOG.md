@@ -19,6 +19,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 - Enums (`MediaStatus`, `Visibility`, `PipelineStatus`, `JobStatus`, `ProbeKind`, `TranscoderErrorCode`, `ProgressReporting`, `RejectionReason`), the canonical metadata keys, and the events of the architecture plus `MediaFailed` (#31).
 - `Mediatheque::fake()`, with in-memory media, probe fixtures, placeholder renditions and assertions (#31). There is no implementation behind the facade yet: outside the fake, it doesn't resolve.
 - The config is merged deeply with the package's defaults, so a published config only needs its overrides; lists and a pipeline's `renditions` replace the defaults, and `false` removes a type or a pipeline. Types, pipelines and sources are validated when they are read, with the key that is wrong; sources are Laravel disk names, and each type has a maximum size (#40).
+- The schema of a new install: `medias`, `files`, `pipelines` and `pipelines_jobs`, with their 1.x names, foreign keys and 64-bit sizes ([decisions/0015](docs/decisions/0015-new-install-schema-attributes-and-uploads.md), #42).
+- `php artisan mediatheque:install` publishes the config and the migrations the application doesn't have yet, with fresh timestamps. The package never loads its migrations: the application owns its schema and can add its own columns (#22, #42).
+- Eloquent models `Media`, `File`, `PipelineRun` and `PipelineJob`, which implement the model contracts. Set your own classes in `mediatheque.models`. Their relations are `mediaFiles()`, `pipelineRuns()`, `pipelineJobs()`, `pipelineRun()`, `pipelinable()` and `File::media()` ([decisions/0014](docs/decisions/0014-run-outcomes-and-model-contracts.md), #42).
+- `Media::thumbnail()` returns the poster first, then the first thumbnail (#42).
 - Releases are tagged by CI, from a commit of `v2.x` whose lint and test jobs passed, when `CHANGELOG.md` gets a dated section for a new version (#30).
 
 [Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v1.1.3...v2.x
