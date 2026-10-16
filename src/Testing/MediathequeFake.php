@@ -98,12 +98,14 @@ class MediathequeFake implements Fake, Mediatheque
         ?string $pipeline = null,
         ?string $name = null,
         array $data = [],
+        array $attributes = [],
     ): Media {
         return $this->ingestSource(Source::from($source), new IngestOptions(
             visibility: $visibility,
             pipeline: $pipeline,
             name: $name,
             data: $data,
+            attributes: $attributes,
         ));
     }
 
@@ -130,6 +132,7 @@ class MediathequeFake implements Fake, Mediatheque
             name: $options->name ?? $source->filename,
             visibility: $visibility,
             data: $options->data,
+            attributes: $options->attributes,
             mainRendition: $pipeline !== null ? $this->pipeline($pipeline)->mainRendition()?->name : null,
         );
 

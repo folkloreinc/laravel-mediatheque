@@ -32,12 +32,14 @@ class MediathequeManager implements Mediatheque
         ?string $pipeline = null,
         ?string $name = null,
         array $data = [],
+        array $attributes = [],
     ): Media {
         return $this->container->make(Ingestor::class)->ingest(Source::from($source), new IngestOptions(
             visibility: $visibility,
             pipeline: $pipeline,
             name: $name,
             data: $data,
+            attributes: $attributes,
         ));
     }
 

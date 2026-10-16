@@ -167,7 +167,8 @@ A type has a name, mime patterns, a default pipeline, the metadata it expects, a
 1. the mime is sniffed from the content (`symfony/mime`, with `fileinfo`);
 2. the first type whose patterns match wins; a type can refine detection (`Video` accepts animated GIF and WebP when enabled);
 3. the stored extension is derived from the detected mime;
-4. a file that matches no type is rejected, instead of becoming a `document`.
+4. a file that matches no type is rejected, instead of becoming a `document`;
+5. mimes whose files a server could execute or a browser render as an active document (HTML, XML, scripts, executables) are never stored, even when a custom type's patterns accept them.
 
 `Mediatheque::type('unknown')` throws. Custom types register in the config or with `Mediatheque::extendType()`.
 
