@@ -64,3 +64,14 @@ composer test
 - GitHub Actions (`.github/workflows/ci.yml`) runs Pint, Larastan and the test suite (PHP 8.3–8.5 × Laravel 12 and 13) on every pull request and on `v2.x`. **Merge only when CI is green.** Never skip, disable or weaken a test to get there.
 - `v1.1` is never merged into `v2.x`: their code has nothing in common any more. A 1.x fix that matters to 2.0 is written again for 2.0, with its own test.
 - Commit messages follow Conventional Commits (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`…).
+- Every pull request with a user-visible effect adds a line under `[Unreleased]` in `CHANGELOG.md`, with its issue number. A breaking change goes under **Breaking changes**, and says what to change.
+
+## Releases
+
+2.0 ships as tagged pre-releases (`v2.0.0-alpha.N`, then `-beta.N` and `-rc.N`), so the pilot project requires `^2.0@alpha` rather than `v2.x-dev`. A release is only tagged from a commit of `v2.x` whose CI passed.
+
+1. Open a pull request `release/<issue>-v2.0.0-alpha.N` to `v2.x` that renames `[Unreleased]` in `CHANGELOG.md` to `[2.0.0-alpha.N] - YYYY-MM-DD`, adds an empty `[Unreleased]` above it and updates the compare links at the bottom. Check the alpha's items in `docs/roadmap.md`.
+2. Merge it once its CI is green and it is approved.
+3. CI runs again on `v2.x`. When its lint and test jobs pass, its **Release** job reads the first dated section of `CHANGELOG.md` and, if that version has no tag yet, creates the tag on that commit and a GitHub release with the section as its notes, marked as a pre-release for alphas, betas and RCs. Packagist picks up the tag. If CI fails, nothing is tagged: fix `v2.x` in a new pull request, and the release happens when CI passes.
+
+A dated section in `CHANGELOG.md` is a release: only a release pull request adds one. The Release job refuses a version that is not 2.x. Never create a 2.x tag by hand or from another branch.
