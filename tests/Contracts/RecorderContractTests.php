@@ -50,6 +50,14 @@ trait RecorderContractTests
 
     abstract protected function freshMedia(PipelineRun $run): Media;
 
+    /**
+     * Another run of the same pipeline on the same media, with these
+     * renditions (closed under `from`), every job queued.
+     *
+     * @param  list<string>  $renditions
+     */
+    abstract protected function rerun(PipelineRun $run, array $renditions): PipelineRun;
+
     protected function videoPipeline(): PipelineDefinition
     {
         return PipelineDefinition::fromArray('video', ['renditions' => [
@@ -361,5 +369,60 @@ trait RecorderContractTests
         Event::assertDispatchedTimes(PipelineCompleted::class, 1);
         Event::assertNotDispatched(PipelineFailed::class);
         Event::assertNotDispatched(RenditionFailed::class);
+    }
+
+    #[Test]
+    public function a_ready_media_stays_ready_when_a_rerun_of_its_main_rendition_fails(): void
+    {
+        Event::fake();
+        $run = $this->createRun($this->videoPipeline());
+        foreach (['normalized', 'h264', 'webm', 'poster', 'thumbnails', 'palette'] as $rendition) {
+            $this->complete($run, $rendition);
+        }
+
+        $rerun = $this->rerun($run, ['h264']);
+        $this->recorder()->failed($this->job($rerun, 'normalized'), new TranscoderError(TranscoderErrorCode::Timeout, 'Too slow'));
+
+        $this->assertSame(PipelineStatus::Failed, $this->freshRun($rerun)->status());
+        $this->assertSame(MediaStatus::Ready, $this->freshMedia($rerun)->status(), 'Its main rendition still has a file (docs/decisions/0014).');
+        $this->assertSame($run->pathPrefix().'/h264.bin', $this->freshMedia($rerun)->file('h264')?->path());
+        Event::assertNotDispatched(MediaFailed::class);
+        Event::assertDispatchedTimes(PipelineFailed::class, 1);
+    }
+
+    #[Test]
+    public function a_run_without_the_main_rendition_leaves_the_media_status_as_it_is(): void
+    {
+        Event::fake();
+        $run = $this->createRun($this->videoPipeline());
+        $this->recorder()->failed($this->job($run, 'normalized'), new TranscoderError(TranscoderErrorCode::InputUnreadable, 'Corrupted'));
+        $this->recorder()->failed($this->job($run, 'poster'), new TranscoderError(TranscoderErrorCode::InputUnreadable, 'Corrupted'));
+        $this->recorder()->failed($this->job($run, 'palette'), new TranscoderError(TranscoderErrorCode::InputUnreadable, 'Corrupted'));
+        $this->assertSame(MediaStatus::Failed, $this->freshMedia($run)->status());
+
+        $rerun = $this->rerun($run, ['poster']);
+        $this->complete($rerun, 'poster');
+
+        $this->assertSame(PipelineStatus::Completed, $this->freshRun($rerun)->status());
+        $this->assertSame(MediaStatus::Failed, $this->freshMedia($rerun)->status());
+        Event::assertNotDispatched(MediaReady::class);
+    }
+
+    #[Test]
+    public function a_failed_media_is_ready_when_a_rerun_completes_its_main_rendition(): void
+    {
+        Event::fake();
+        $run = $this->createRun($this->videoPipeline());
+        $this->recorder()->failed($this->job($run, 'normalized'), new TranscoderError(TranscoderErrorCode::Timeout, 'Too slow'));
+        $this->complete($run, 'poster');
+        $this->complete($run, 'palette');
+        $this->assertSame(MediaStatus::Failed, $this->freshMedia($run)->status());
+
+        $rerun = $this->rerun($run, ['h264']);
+        $this->complete($rerun, 'normalized');
+        $this->complete($rerun, 'h264');
+
+        $this->assertSame(MediaStatus::Ready, $this->freshMedia($rerun)->status());
+        Event::assertDispatchedTimes(MediaReady::class, 1);
     }
 }

@@ -8,6 +8,7 @@ use Folklore\Mediatheque\Events\MediaFailed;
 use Folklore\Mediatheque\Events\MediaProbed;
 use Folklore\Mediatheque\Events\MediaReady;
 use Folklore\Mediatheque\Metadata\MetadataKey;
+use Folklore\Mediatheque\Pipelines\PipelineRunner;
 use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Transcoders\TranscoderError;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -19,8 +20,8 @@ use Illuminate\Database\Eloquent\Model;
  *
  * - Done: the metadata goes to the media, the dimensions and duration to its
  *   original, and the media moves to `processing` (`MediaProbed`), or to
- *   `ready` (`MediaReady`) when its type has no main rendition. Its pipeline
- *   starts on `MediaProbed`.
+ *   `ready` (`MediaReady`) when its pipeline has no main rendition. Then its
+ *   pipeline starts: the one ingest chose, or its type's.
  * - Failed: the media is `failed` (`MediaFailed`).
  *
  * Only a `pending` media is updated, so a repeated probe changes nothing.
@@ -30,12 +31,14 @@ class ProbeResults
     public function __construct(
         private readonly Dispatcher $events,
         private readonly MediathequeConfig $config,
+        private readonly PipelineRunner $runner,
     ) {}
 
     /**
      * @param  array<string, mixed>  $metadata  Canonical keys, with a kind
+     * @param  string|null  $pipeline  The pipeline ingest chose; the type's by default
      */
-    public function done(Model&Media $media, array $metadata): void
+    public function done(Model&Media $media, array $metadata, ?string $pipeline = null): void
     {
         if ($media->status() !== MediaStatus::Pending) {
             return;
@@ -51,7 +54,8 @@ class ProbeResults
             ], fn (int|float|null $value) => $value !== null))->save();
         }
 
-        $ready = $this->config->mainRenditionOfType($media->type()) === null;
+        $definition = $pipeline !== null ? $this->config->pipeline($pipeline) : $this->config->pipelineOfType($media->type());
+        $ready = $definition?->mainRendition() === null;
 
         $media->forceFill([
             'metadata' => [...$media->metadata(), ...$metadata],
@@ -63,6 +67,10 @@ class ProbeResults
         if ($ready && $media->status() === MediaStatus::Processing) {
             $media->forceFill(['status' => MediaStatus::Ready])->save();
             $this->events->dispatch(new MediaReady($media));
+        }
+
+        if ($definition !== null) {
+            $this->runner->run($media, $definition->name);
         }
     }
 

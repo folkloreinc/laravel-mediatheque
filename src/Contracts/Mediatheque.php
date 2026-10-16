@@ -56,6 +56,8 @@ interface Mediatheque
      * `$force` is set. Returns null when there is nothing to produce.
      *
      * @param  list<string>|null  $renditions  Only these renditions (and those they read from)
+     *
+     * @phpstan-impure
      */
     public function runPipeline(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false): ?PipelineRun;
 }

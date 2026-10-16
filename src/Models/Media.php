@@ -3,6 +3,7 @@
 namespace Folklore\Mediatheque\Models;
 
 use DateTimeInterface;
+use Folklore\Mediatheque\Casts\Json;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineRun;
@@ -67,13 +68,25 @@ class Media extends Model implements MediaContract
         'restored' => MediaRestored::class,
     ];
 
-    protected static function booted(): void
+    /**
+     * A uid is set on insert when none was set, even when model events are
+     * faked.
+     *
+     * @var bool
+     */
+    public $usesUniqueIds = true;
+
+    /**
+     * @return list<string>
+     */
+    public function uniqueIds(): array
     {
-        static::creating(function (Media $media) {
-            if (($media->getAttributes()['uid'] ?? '') === '') {
-                $media->setAttribute('uid', Uid::generate(app(MediathequeConfig::class)->mediaPrefix()));
-            }
-        });
+        return ['uid'];
+    }
+
+    public function newUniqueId(): string
+    {
+        return Uid::generate(app(MediathequeConfig::class)->mediaPrefix());
     }
 
     /**
@@ -90,8 +103,8 @@ class Media extends Model implements MediaContract
             'name' => 'string',
             'status' => MediaStatus::class,
             'visibility' => Visibility::class,
-            'metadata' => 'array',
-            'data' => 'array',
+            'metadata' => Json::class,
+            'data' => Json::class,
         ];
     }
 

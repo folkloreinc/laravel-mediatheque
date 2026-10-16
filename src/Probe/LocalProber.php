@@ -56,11 +56,37 @@ class LocalProber implements Prober
         }
 
         $kind = self::kindOf($mime);
+
+        if ($kind !== ProbeKind::Video && $kind !== ProbeKind::Audio && $kind !== ProbeKind::Image) {
+            return ProbeOutcome::done([MetadataKey::Kind->value => $kind->value, MetadataKey::Mime->value => $mime]);
+        }
+
+        $url = $kind !== ProbeKind::Image ? $this->remoteInput($source, $path) : null;
+        if ($url !== null) {
+            return $this->probePath($url, $mime);
+        }
+
+        $copy = $this->files->copy($source, $path);
+
+        try {
+            return $this->probePath($copy->path, $mime);
+        } finally {
+            $copy->cleanup();
+        }
+    }
+
+    /**
+     * Probe a local file, or a URL that ffprobe reads, of this mime.
+     */
+    public function probePath(string $input, string $mime): ProbeOutcome
+    {
+        $mime = strtolower($mime);
+        $kind = self::kindOf($mime);
         $base = [MetadataKey::Kind->value => $kind->value, MetadataKey::Mime->value => $mime];
 
         return match ($kind) {
-            ProbeKind::Video, ProbeKind::Audio => $this->probeMedia($source, $path, $base),
-            ProbeKind::Image => $this->probeImage($source, $path, $mime, $base),
+            ProbeKind::Video, ProbeKind::Audio => $this->probeMedia($input, $base),
+            ProbeKind::Image => $this->probeImage($input, $mime, $base),
             default => ProbeOutcome::done($base),
         };
     }
@@ -83,41 +109,33 @@ class LocalProber implements Prober
     /**
      * @param  array<string, mixed>  $base
      */
-    private function probeMedia(string $disk, string $path, array $base): ProbeOutcome
+    private function probeMedia(string $input, array $base): ProbeOutcome
     {
-        $ffprobe = $this->binaries->path('ffprobe');
-        $input = $this->remoteInput($disk, $path);
-        $copy = $input === null ? $this->files->copy($disk, $path) : null;
+        $process = new Process([
+            $this->binaries->path('ffprobe'),
+            '-v', 'error',
+            '-print_format', 'json',
+            '-show_format',
+            '-show_streams',
+            $input,
+        ]);
+        $process->setTimeout($this->config->probeTimeout());
 
         try {
-            $process = new Process([
-                $ffprobe,
-                '-v', 'error',
-                '-print_format', 'json',
-                '-show_format',
-                '-show_streams',
-                $input ?? $copy->path ?? '',
-            ]);
-            $process->setTimeout($this->config->probeTimeout());
-
-            try {
-                $process->run();
-            } catch (ProcessTimedOutException) {
-                return ProbeOutcome::failed(new TranscoderError(TranscoderErrorCode::Timeout, sprintf('ffprobe took longer than %d seconds.', $this->config->probeTimeout())));
-            }
-
-            if (! $process->isSuccessful()) {
-                return ProbeOutcome::failed(new TranscoderError(TranscoderErrorCode::InputUnreadable, 'ffprobe can\'t read the file: '.Str::limit(trim($process->getErrorOutput()), 500)));
-            }
-
-            $output = json_decode($process->getOutput(), true);
-
-            return is_array($output)
-                ? self::fromFfprobe($output, $base)
-                : ProbeOutcome::failed(new TranscoderError(TranscoderErrorCode::InputUnreadable, 'ffprobe gave no metadata.'));
-        } finally {
-            $copy?->cleanup();
+            $process->run();
+        } catch (ProcessTimedOutException) {
+            return ProbeOutcome::failed(new TranscoderError(TranscoderErrorCode::Timeout, sprintf('ffprobe took longer than %d seconds.', $this->config->probeTimeout())));
         }
+
+        if (! $process->isSuccessful()) {
+            return ProbeOutcome::failed(new TranscoderError(TranscoderErrorCode::InputUnreadable, 'ffprobe can\'t read the file: '.Str::limit(trim($process->getErrorOutput()), 500)));
+        }
+
+        $output = json_decode($process->getOutput(), true);
+
+        return is_array($output)
+            ? self::fromFfprobe($output, $base)
+            : ProbeOutcome::failed(new TranscoderError(TranscoderErrorCode::InputUnreadable, 'ffprobe gave no metadata.'));
     }
 
     /**
@@ -231,23 +249,17 @@ class LocalProber implements Prober
     /**
      * @param  array<string, mixed>  $base
      */
-    private function probeImage(string $disk, string $path, string $mime, array $base): ProbeOutcome
+    private function probeImage(string $path, string $mime, array $base): ProbeOutcome
     {
-        $copy = $this->files->copy($disk, $path);
-
-        try {
-            if ($mime === 'image/svg+xml') {
-                return ProbeOutcome::done([...$base, ...self::svgSize($copy->path)]);
-            }
-
-            $metadata = class_exists(Imagick::class) ? self::imagick($copy->path) : self::getImageSize($copy->path);
-
-            return $metadata !== null
-                ? ProbeOutcome::done([...$base, ...$metadata])
-                : ProbeOutcome::failed(new TranscoderError(TranscoderErrorCode::InputUnreadable, 'The image can\'t be read.'));
-        } finally {
-            $copy->cleanup();
+        if ($mime === 'image/svg+xml') {
+            return ProbeOutcome::done([...$base, ...self::svgSize($path)]);
         }
+
+        $metadata = class_exists(Imagick::class) ? self::imagick($path) : self::getImageSize($path);
+
+        return $metadata !== null
+            ? ProbeOutcome::done([...$base, ...$metadata])
+            : ProbeOutcome::failed(new TranscoderError(TranscoderErrorCode::InputUnreadable, 'The image can\'t be read.'));
     }
 
     /**

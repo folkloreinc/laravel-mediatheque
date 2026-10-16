@@ -6,11 +6,14 @@ use Folklore\Mediatheque\Console\InstallCommand;
 use Folklore\Mediatheque\Contracts\Ingestor;
 use Folklore\Mediatheque\Contracts\Mediatheque;
 use Folklore\Mediatheque\Contracts\Prober;
+use Folklore\Mediatheque\Contracts\Recorder;
 use Folklore\Mediatheque\Contracts\UrlGenerator;
 use Folklore\Mediatheque\Ingest\MediaIngestor;
+use Folklore\Mediatheque\Pipelines\EloquentRecorder;
 use Folklore\Mediatheque\Probe\LocalProber;
 use Folklore\Mediatheque\Support\ConfigMerger;
 use Folklore\Mediatheque\Support\MediathequeConfig;
+use Folklore\Mediatheque\Transcoders\TranscoderManager;
 use Folklore\Mediatheque\Urls\DiskUrlGenerator;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\CachesConfiguration;
@@ -28,6 +31,8 @@ class ServiceProvider extends BaseServiceProvider
         $this->app->singleton(UrlGenerator::class, DiskUrlGenerator::class);
         $this->app->singleton(Prober::class, LocalProber::class);
         $this->app->singleton(Ingestor::class, MediaIngestor::class);
+        $this->app->singleton(Recorder::class, EloquentRecorder::class);
+        $this->app->singleton(TranscoderManager::class);
     }
 
     public function boot(): void

@@ -3,6 +3,7 @@
 namespace Folklore\Mediatheque\Models;
 
 use DateTimeInterface;
+use Folklore\Mediatheque\Casts\Json;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
@@ -68,7 +69,7 @@ class File extends Model implements FileContract
             'duration' => 'float',
             'bitrate' => 'integer',
             'parts_count' => 'integer',
-            'metadata' => 'array',
+            'metadata' => Json::class,
         ];
     }
 

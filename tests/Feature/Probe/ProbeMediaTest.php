@@ -11,6 +11,7 @@ use Folklore\Mediatheque\Events\MediaFailed;
 use Folklore\Mediatheque\Events\MediaProbed;
 use Folklore\Mediatheque\Events\MediaReady;
 use Folklore\Mediatheque\Jobs\ProbeMedia;
+use Folklore\Mediatheque\Jobs\RunRendition;
 use Folklore\Mediatheque\Models\Media;
 use Folklore\Mediatheque\Models\PipelineRun;
 use Folklore\Mediatheque\Probe\ProbeOutcome;
@@ -18,6 +19,7 @@ use Folklore\Mediatheque\Tests\Concerns\CreatesMedia;
 use Folklore\Mediatheque\Tests\DatabaseTestCase;
 use Folklore\Mediatheque\Tests\Feature\Models\Fixtures\TenantMedia;
 use Folklore\Mediatheque\Transcoders\TranscoderError;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
@@ -32,6 +34,7 @@ class ProbeMediaTest extends DatabaseTestCase
         parent::setUp();
 
         Storage::fake('public');
+        Bus::fake([RunRendition::class]);
     }
 
     /**

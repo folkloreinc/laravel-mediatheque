@@ -8,6 +8,7 @@ use Folklore\Mediatheque\Contracts\Models\PipelineRun;
 use Folklore\Mediatheque\Contracts\Recorder;
 use Folklore\Mediatheque\Facades\Mediatheque;
 use Folklore\Mediatheque\Pipelines\PipelineDefinition;
+use Folklore\Mediatheque\Testing\Models\FakePipelineRun;
 use Folklore\Mediatheque\Tests\Contracts\RecorderContractTests;
 use Folklore\Mediatheque\Tests\TestCase;
 use Illuminate\Http\UploadedFile;
@@ -50,5 +51,12 @@ class InMemoryRecorderTest extends TestCase
     protected function freshMedia(PipelineRun $run): Media
     {
         return $run->media();
+    }
+
+    protected function rerun(PipelineRun $run, array $renditions): PipelineRun
+    {
+        $this->assertInstanceOf(FakePipelineRun::class, $run);
+
+        return Mediatheque::fake()->createRun($run->media(), $run->pipeline, $renditions);
     }
 }
