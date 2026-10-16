@@ -8,4 +8,12 @@ parameters:
     paths:
         - src
         - config
+        - tests
+    excludePaths:
+        - tests/fixtures
     tmpDir: build/phpstan
+    ignoreErrors:
+        # The package's config file is a config file: env() is expected there.
+        -
+            identifier: larastan.noEnvCallsOutsideOfConfig
+            path: config/mediatheque.php
