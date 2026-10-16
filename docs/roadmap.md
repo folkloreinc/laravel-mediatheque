@@ -24,6 +24,8 @@ Tracking issues: [#1](https://github.com/folkloreinc/laravel-mediatheque/issues/
 
 ## Alpha 1: upload and play a video
 
+Released as [2.0.0-alpha.1](https://github.com/folkloreinc/laravel-mediatheque/releases/tag/v2.0.0-alpha.1) ([#58](https://github.com/folkloreinc/laravel-mediatheque/issues/58)).
+
 What the pilot's media library needs first, end to end.
 
 - [x] Schema: `medias` with `uid`, `status`, `visibility`, `metadata`, soft deletes; `files` with `media_id`, `handle`, `index`, `role`, 64-bit `size`; pipeline runs and jobs with statuses ([#42](https://github.com/folkloreinc/laravel-mediatheque/issues/42))
@@ -35,13 +37,13 @@ What the pilot's media library needs first, end to end.
 - [x] `ffmpeg` transcoder: web video rendition (`h264`), poster and thumbnails ([#52](https://github.com/folkloreinc/laravel-mediatheque/issues/52))
 - [x] `url()` and `temporaryUrl()`, public and private media ([#46](https://github.com/folkloreinc/laravel-mediatheque/issues/46))
 - [x] Events (`MediaCreated`, `MediaProbed`, `Rendition*`, `Pipeline*`, `MediaReady`, `MediaFailed`) ([#50](https://github.com/folkloreinc/laravel-mediatheque/issues/50), [#52](https://github.com/folkloreinc/laravel-mediatheque/issues/52))
-- [ ] `Mediatheque::fake()` with assertions
-- [ ] `laravel-image` 2 resolver, so images ingested here get presets and signed URLs ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)); it needs a `laravel-image` pre-release with the `SourceResolver` contract
+- [x] `Mediatheque::fake()` with assertions ([#31](https://github.com/folkloreinc/laravel-mediatheque/issues/31))
 
 Images: the alpha stores and probes them; their renditions come from `laravel-image` 2's first alpha.
 
 ## Alpha 2: content and protected playback
 
+- [ ] `laravel-image` 2 resolver, so images ingested here get presets and signed URLs ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md), [#56](https://github.com/folkloreinc/laravel-mediatheque/issues/56)); moved from alpha 1, it ships after `laravel-image` v2.0.0-alpha.1
 - [ ] Visibility changes, CDN prefixes, `UrlSigner` contract
 - [ ] `HasMedias` with `attachMedia`, `syncMedias`, `media()`; usage graph; media in use protected from deletion
 - [ ] `media://` references: parser, batch resolution
