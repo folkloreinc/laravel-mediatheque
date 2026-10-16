@@ -8,7 +8,7 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ### Added
 
-- The `media` resolver of `laravel-image` 2, registered when `laravel-image` is installed: `med_…`, `med_…/{handle}` and `med_…/{handle}/{index}` resolve to the media's image files, with the first 8 hex characters of the file's checksum as version and its source as disk; deleted media don't resolve; private media are private sources ([decisions/0013](docs/decisions/0013-media-resolver-for-laravel-image.md), #56).
+- The `media` resolver of `laravel-image` 2, registered when `laravel-image` is installed, even when another provider built its resolvers first (#60): `med_…`, `med_…/{handle}` and `med_…/{handle}/{index}` resolve to the media's image files, with the first 8 hex characters of the file's checksum as version and its source as disk; deleted media don't resolve; private media are private sources ([decisions/0013](docs/decisions/0013-media-resolver-for-laravel-image.md), #56).
 
 ## [2.0.0-alpha.1] - 2026-10-16
 
