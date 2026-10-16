@@ -59,7 +59,7 @@ A media is one piece of content: a video, an audio file, an image, a document, a
 | `name` | Display name, from the upload's file name by default |
 | `status` | `MediaStatus` enum: `pending`, `processing`, `ready`, `failed` |
 | `visibility` | `Visibility` enum: `public` or `private` ([decisions/0007](decisions/0007-visibility-and-urls.md)) |
-| `metadata` | JSON: `width`, `height`, `duration`, `frame_rate`, `codecs`, `pages_count`, `font_names`, `palette`, `blurhash`, `locale`… |
+| `metadata` | JSON, with the [canonical keys](#metadata-keys): `width`, `height`, `duration`, `frame_rate`, `video_codec`, `pages_count`, `font_names`, `palette`, `blurhash`, `locale`… |
 | `data` | JSON for the application (kept from 1.x) |
 | `derived_from_id` | The media it was derived from (a clip, a caption track) |
 | `deleted_at` | Soft deletes |
@@ -82,18 +82,39 @@ A file belongs to one media. Its **handle** says what it is: `original` for the 
 
 | Attribute | Notes |
 |---|---|
-| `handle` | `original`, `h264`, `thumbnails`… Letters, digits, `_` and `-`, no dots |
+| `handle` | `original`, `h264`, `thumbnails`… A letter, then letters, digits, `_` and `-`; 64 characters at most; no dots ([decisions/0011](decisions/0011-renditions-on-remote-transcoders.md)) |
 | `index` | Position in a group (`thumbnails` 0 to 4, one per document page). `null` for a single file. Replaces the 1.x `thumbnails.0` handles ([decisions/0004](decisions/0004-renditions.md)) |
 | `role` | `main`, `thumbnail`, `poster`, `captions`, `playlist`… |
-| `source`, `path` | Where it is stored. A multi-part rendition (HLS) stores its main file; `parts_count` says how many files sit next to it |
+| `source`, `path` | Where it is stored: the path the transcoder reports, never rebuilt. A multi-part rendition (HLS) stores its main file; `parts_count` says how many files sit next to it |
 | `name`, `mime` (255), `size` (64-bit), `checksum` | |
-| `width`, `height`, `duration`, `bitrate` | Filled from the rendition's probe or from the transcoder's output |
+| `width`, `height`, `duration`, `bitrate` | From the transcoder's output. When the output lacks them, the file is probed for the missing fields |
 | `metadata` | JSON for anything else |
 | `definition_hash` | Hash of the rendition definition that produced it, so an unchanged rendition is not produced twice |
 | `pipeline_job_id` | The job that produced it |
 | `provider`, `provider_ref` | For a remote rendition, played from a provider's URL instead of a file on a source (prepared in 2.0, used by a later Cloudflare Stream driver) |
 
-Outputs that are not files (palette, blurhash, scenes, a transcript's words) are written to the media's or the file's `metadata`.
+Outputs that are not files (palette, blurhash, scenes, a transcript's words) are written to `metadata`: the media's for a rendition without files, its main file's for a rendition with files (index 0 for a group).
+
+### Metadata keys
+
+Metadata keys are snake_case and come from one list, so every prober and transcoder writes the same keys. Drivers map their own names to it (Eclair's `frameRate` → `frame_rate`, `pageCount` → `pages_count`). A key outside the list is stored converted to snake_case.
+
+| Key | Notes |
+|---|---|
+| `kind` | `image`, `video`, `audio`, `document`, `font` or `other`: the probe's kind, shared by every prober and transcoder |
+| `mime`, `extension`, `size`, `checksum` | Detected from the content; `checksum` is a SHA-256 in hex |
+| `filename` | The name the file was ingested with |
+| `width`, `height`, `rotation` | Pixels; rotation in degrees, clockwise (0, 90, 180, 270) |
+| `duration`, `frame_rate`, `bitrate` | Seconds, frames per second, bits per second |
+| `video_codec`, `audio_codec`, `audio_channels` | |
+| `pages_count` | Documents |
+| `font_names` | Fonts |
+| `animated` | Animated GIF and WebP |
+| `exif` | A summary, never GPS data |
+| `palette`, `blurhash`, `scenes` | Metadata outputs of renditions |
+| `locale` | Caption tracks |
+
+`mediatheque:upgrade` maps the 1.x names to these keys (`font_family_name` → `font_names`, `colors` → `palette`).
 
 ### Pipelines and jobs
 
@@ -105,11 +126,13 @@ A **pipeline run** (`pipelines` table) records one execution:
 |---|---|
 | `name`, `pipelinable` | The pipeline and the media it runs on |
 | `transcoder`, `external_id` | The driver and its job id (an Eclair job, a MediaConvert job) |
-| `definition` | JSON snapshot of the renditions, never `serialize()` |
+| `definition` | JSON snapshot of the renditions, the output source, the run's path prefix and the media's visibility; never `serialize()` |
 | `status` | `PipelineStatus` enum: `pending`, `running`, `completed`, `failed`, `canceled` |
 | `progress`, `attempts`, `error` (`{code, message}`), `started_at`, `ended_at` | |
 
-Each rendition gets a **pipeline job** (`pipelines_jobs`) with its own `status` (`queued`, `running`, `completed`, `failed`, `skipped`, `canceled`), `progress`, `attempts` and `error`. A failed job fails the jobs that read from it; independent jobs continue. `skipped` is a normal outcome: a condition did not match the probed input (an audio-only video, a short clip).
+Each rendition gets a **pipeline job** (`pipelines_jobs`) with its own `status` (`queued`, `running`, `completed`, `failed`, `skipped`, `canceled`), `progress`, `attempts` and `error`. Statuses only move forward ([Recorder](#transcoders)). A failed job fails the jobs that read from it (`dependency_failed`); a skipped job skips them; independent jobs continue. `skipped` is a normal outcome: a condition did not match the probed input (an audio-only video, a short clip).
+
+A run is never retried in place: retrying failed renditions creates a new run, with its own driver job ([decisions/0012](decisions/0012-pipeline-runs-recorder-and-probe.md)). Queue retries of the `ffmpeg` driver's jobs stay within their run and count in `attempts`.
 
 ### Attachments and usages
 
@@ -187,13 +210,24 @@ Uploads are tracked in an `uploads` table (status, disk, path, expected size, ex
 
 ## Probe
 
-A `Prober` reads a file's technical metadata: kind, mime, dimensions, rotation, duration, frame rate, codecs, bitrate, page count, font names, animation.
+A `Prober` reads a file's technical metadata: kind, mime, dimensions, rotation, duration, frame rate, bitrate, codecs, audio channels, page count, font names, animation.
 
 - The local prober uses ffprobe, Imagick or `getimagesize`, and otfinfo.
 - Eclair's prober uses its `probe` endpoint.
-- The probe runs in a queued job. A slow probe leaves the media `pending` until it completes.
+- The probe runs in a queued job.
 
-Probe results fill the media's `metadata`, and the file's `width`, `height`, `duration` and `bitrate`.
+The contract is asynchronous ([decisions/0012](decisions/0012-pipeline-runs-recorder-and-probe.md)): a prober returns the metadata, or a pending outcome with its external id when the probe takes longer (Eclair answers `202` with a job).
+
+```php
+interface Prober
+{
+    public function probe(File $file): ProbeOutcome;   // ProbeOutcome::done($metadata) or ProbeOutcome::pending($externalId)
+}
+```
+
+A pending probe is recorded as a run of the `probe` pipeline (one rendition, operation `probe`, no files) and completes through the recorder, like any run. The media stays `pending` until then. `MediaProbed` is dispatched when the results are stored, and the type's pipeline starts on `MediaProbed`, never before. A failed probe fails the media.
+
+Probe results fill the media's `metadata`, with the [canonical keys](#metadata-keys), and the original's `width`, `height`, `duration` and `bitrate`.
 
 ## Renditions and pipelines
 
@@ -203,6 +237,7 @@ Renditions are declared in the config, or in PHP for applications that prefer cl
 'pipelines' => [
     'video' => [
         'transcoder' => env('MEDIATHEQUE_TRANSCODER', 'ffmpeg'),
+        'source' => null,                     // the original's source by default
         'renditions' => [
             'h264' => ['op' => 'video.transcode', 'codec' => 'h264', 'max_width' => 1920],
             'webm' => ['op' => 'video.transcode', 'codec' => 'vp9', 'max_width' => 1920],
@@ -219,9 +254,16 @@ Renditions are declared in the config, or in PHP for applications that prefer cl
 ],
 ```
 
-A rendition can set `from` (another rendition), `when` (`kind`, `mime`, `min_duration`, `max_duration`), `keep: false` (an intermediate file) and `queue`.
+A pipeline's renditions are written to its `source`, the original's source by default. A rendition can set:
 
-Renditions are **idempotent**. Running a pipeline again only produces the renditions that are missing, failed, or whose definition changed (`definition_hash`). An application can also ask for one rendition on demand:
+- `from`: another rendition it reads from;
+- `when`: `kind` (the probe's kinds: `image`, `video`, `audio`, `document`, `font`, `other`, never a mediatheque type), `mime`, `min_duration`, `max_duration`. A rendition whose condition doesn't match is `skipped`;
+- `keep: false`: an intermediate output, recorded as `completed` with no file. Renditions of the same run read it;
+- `queue`: the queue of the `ffmpeg` driver's job. Remote drivers ignore it.
+
+The rules are in [decisions/0011](decisions/0011-renditions-on-remote-transcoders.md); the config reader and `mediatheque:doctor` refuse a `when.kind` outside the list.
+
+Renditions are **idempotent**. Running a pipeline again only produces the renditions that are missing, failed, or whose definition changed (`definition_hash`). A run's renditions are **closed under `from`**: if a rendition in the run reads from another one, that one is in the run too and is produced again, even if it exists. An application can also ask for one rendition on demand:
 
 ```php
 $media->ensureRendition('vertical');          // queued if missing
@@ -249,13 +291,16 @@ interface Transcoder
     /** Operations this driver can run. */
     public function supports(string $operation): bool;
 
-    /** Optional abilities: progress, cancel, probe, remote renditions. */
+    /** Optional abilities: progress (pushed or polled), cancel, refresh, probe, remote renditions. */
     public function capabilities(): Capabilities;
 
     /** Start the run. Returns the driver's job id, if it has one. */
     public function submit(PipelineRun $run): ?string;
 
     public function cancel(PipelineRun $run): void;
+
+    /** With the refresh capability: fetch the run's state and report it through the recorder. */
+    public function refresh(PipelineRun $run): void;
 }
 
 interface Recorder
@@ -265,10 +310,17 @@ interface Recorder
     public function completed(PipelineJob $job, Outputs $outputs): void;  // files and metadata outputs
     public function skipped(PipelineJob $job, string $reason): void;
     public function failed(PipelineJob $job, TranscoderError $error): void;
+    public function canceled(PipelineJob $job): void;
 }
 ```
 
-Recorder calls are idempotent: a duplicated webhook or a retried queue job changes nothing the second time. Each call checks the job's attempt and status before writing.
+The rules below are in [decisions/0012](decisions/0012-pipeline-runs-recorder-and-probe.md).
+
+- **Idempotent and forward only.** A duplicated webhook or a retried queue job changes nothing the second time. Statuses only move forward (`queued` → `running` → `completed`, `failed`, `skipped` or `canceled`): a call that would move a rendition back, or change a final status, is ignored, and progress never goes down. A driver that receives the whole job on every webhook reports every rendition each time, in whatever order deliveries arrive.
+- **Errors.** `TranscoderError` has a `code` from the `TranscoderErrorCode` enum (`input_unreadable`, `unsupported_input`, `timeout`, `limit_exceeded`, `operation_failed`, `storage_failed`, `provider_failed`, `dependency_failed`, the same as Eclair's) and a message for humans. An unknown code is read as `operation_failed`.
+- **Refresh.** `mediatheque:refresh`, scheduled by the application, calls `refresh()` for runs that have been running too long (a lost webhook) and for every running run of a driver that reports progress only by polling. The MediaConvert poller is this command.
+- **Retries.** A webhook for a run that has ended changes nothing. Retrying creates a new run.
+- **Outputs.** The run tells the driver the output source, a path prefix for the run (`run_path_format`) and the media's visibility. Remote drivers write under the prefix with their own file names and apply the visibility to what they write; the file records the path the driver reports. Only the `ffmpeg` driver also builds each file's path with `file_path_format`.
 
 | Driver | Runs | Completion | Package |
 |---|---|---|---|
@@ -277,11 +329,11 @@ Recorder calls are idempotent: a duplicated webhook or a retried queue job chang
 | `mediaconvert` | AWS Elemental MediaConvert jobs for video renditions | EventBridge notifications through a webhook, or a scheduled poller. Never `sleep()` in a worker | This package, with `aws/aws-sdk-php` (suggested) |
 | `cloudflare-stream` (2.x) | Upload to Cloudflare Stream; remote renditions | Webhook | Later, if a project needs it |
 
-One transcoder runs a whole pipeline run. A pipeline whose renditions need two transcoders is split into two pipelines. At boot, `mediatheque:doctor` checks that each pipeline's transcoder supports its operations.
+One transcoder runs a whole pipeline run. A pipeline whose renditions need two transcoders is split into two pipelines. At boot, `mediatheque:doctor` checks that each pipeline's transcoder supports its operations, and warns when a pipeline on a remote driver sets `queue`.
 
 ## Visibility and URLs
 
-A media is `public` or `private`. Its files follow its visibility on their source (object ACL on S3-compatible disks). Changing the visibility updates the files in a queued job.
+A media is `public` or `private`. Its files follow its visibility on their source (object ACL on S3-compatible disks). Transcoders write their outputs with the media's visibility. Changing the visibility updates the files in a queued job; files of a run in progress are updated when it ends.
 
 ```php
 $media->url();                                    // the main rendition, or the original
@@ -349,8 +401,8 @@ Every action is authorized through a `Media` policy (`create`, `view`, `update`,
 |---|---|
 | `MediaCreated`, `MediaUpdated`, `MediaDeleted`, `MediaRestored` | Model lifecycle |
 | `MediaProbed` | Probe results stored |
-| `PipelineStarted`, `PipelineCompleted`, `PipelineFailed` | Pipeline run |
-| `RenditionCompleted`, `RenditionFailed`, `RenditionSkipped` | Each rendition |
+| `PipelineStarted`, `PipelineCompleted`, `PipelineFailed`, `PipelineCanceled` | Pipeline run |
+| `RenditionCompleted`, `RenditionFailed`, `RenditionSkipped`, `RenditionCanceled` | Each rendition. Drivers that report from webhook snapshots may dispatch them some time after the fact |
 | `MediaReady` | Every rendition of the default pipeline ended, at least the main one completed |
 | `MediaVisibilityChanged`, `OriginalReplaced` | |
 
@@ -375,7 +427,7 @@ The fake stores files on a fake disk, returns probe fixtures, and completes rend
 - **Models.** `Media`, `File`, `PipelineRun` and `PipelineJob` are bound to contracts and set in the config (`models.media`…). Applications extend them to add columns, scopes and relations.
 - **Migrations.** `mediatheque:install` publishes the migrations; the package does not load them itself. The application owns its schema and can add its own columns (a tenant id, for example) in the same migration.
 - **Global scopes.** Package workers load models through the morph map and without global scopes, so a tenant scope that depends on the current request does not hide media from queued jobs.
-- **Path formatter.** Receives the media and the file: `{media.uid}`, `{media.tenant_id}`, `{type}`, `{handle}`, `{index}`, `{extension}`, `{date(Y/m)}`.
+- **Path formatter.** Receives the media and the file: `{media.uid}`, `{media.tenant_id}`, `{type}`, `{handle}`, `{index}`, `{extension}`, `{date(Y/m)}`. It builds originals and the `ffmpeg` driver's files with `file_path_format`, and each run's prefix with `run_path_format` (the media's placeholders and `{run}`), under which remote transcoders name their own files. Paths are recorded, so consumers never rebuild them.
 - **Types, renditions, transcoders, probers, URL signers and sources** register through the config or `Mediatheque::extend*()`.
 
 ## Commands
@@ -383,9 +435,10 @@ The fake stores files on a fake disk, returns probe fixtures, and completes rend
 | Command | Purpose |
 |---|---|
 | `mediatheque:install` | Publish the config and migrations, check the environment |
-| `mediatheque:doctor` | Binaries and versions, disks and visibility, queue `retry_after` against job timeouts, transcoders against pipelines |
+| `mediatheque:doctor` | Binaries and versions, disks and visibility, queue `retry_after` against job timeouts, transcoders against pipelines (operations, `when.kind`, `queue` on remote drivers), `mediatheque:refresh` scheduled when a driver needs it |
 | `mediatheque:upgrade` | Convert a 1.x database (see [upgrade.md](upgrade.md)); `--check` lists what would change |
 | `mediatheque:run-pipeline` | Run a pipeline on media, by type or uid |
+| `mediatheque:refresh` | Scheduled: fetch the state of runs that have been running too long, and the progress of drivers that only report it by polling |
 | `mediatheque:prune` | Force-delete soft-deleted media after the grace period, abandoned uploads, orphan files |
 
 ## Deletion and replacement
@@ -396,7 +449,7 @@ The fake stores files on a fake disk, returns probe fixtures, and completes rend
 
 ## Configuration
 
-The 1.x keys keep their meaning where the concept is unchanged (`table_prefix`, `source`, `sources`, `file_path_format`, `types`, `pipelines`, `routes`, `jobs`). New keys: `models`, `ingest`, `urls`, `transcoders`, `probe`, `uploads`, `prune`.
+The 1.x keys keep their meaning where the concept is unchanged (`table_prefix`, `source`, `sources`, `file_path_format`, `types`, `pipelines`, `routes`, `jobs`). New keys: `models`, `ingest`, `urls`, `transcoders`, `probe`, `uploads`, `prune`, `run_path_format`.
 
 The package merges its defaults deeply with the application's file, so a published config only needs its overrides. The 1.x shapes of `types` and `pipelines` are read with deprecation warnings (see [upgrade.md](upgrade.md)).
 

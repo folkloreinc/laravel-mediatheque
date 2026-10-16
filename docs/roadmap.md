@@ -18,8 +18,9 @@ Tracking issues: [#1](https://github.com/folkloreinc/laravel-mediatheque/issues/
 - [ ] Tooling: PSR-4, PHP 8.3+, Laravel 12+, CI matrix (PHP 8.3 to 8.5 × Laravel 12 and 13), Pint, Larastan at the maximum level without a baseline for new code
 - [ ] Remove the 1.x code from `v2.x` and start the new layout; keep 1.x fixtures for the compatibility tests
 - [ ] Release process: changelog, `v2.0.0-alpha.N` tags from green CI
-- [ ] Contracts and their tests: `Media`, `File`, `uid` and references, `Ingest`, `Prober`, `Transcoder` and `Recorder`, `UrlGenerator`, events, `Mediatheque::fake()`
-- [ ] Review the `Transcoder` contract with Eclair ([urbania-media/eclair#13](https://github.com/urbania-media/eclair/issues/13)) and the image resolver with `laravel-image` 2 ([laravel-image#59](https://github.com/folkloreinc/laravel-image/issues/59))
+- [ ] Contracts and their tests: `Media`, `File`, `uid` and references, `Ingest`, `Prober` (asynchronous), `Transcoder` and `Recorder`, `UrlGenerator`, events, `Mediatheque::fake()`
+- [x] Review the `Transcoder` contract with Eclair ([urbania-media/eclair#13](https://github.com/urbania-media/eclair/issues/13), [review](https://github.com/folkloreinc/laravel-mediatheque/pull/24#issuecomment-6204765550)); answered in [decisions/0011](decisions/0011-renditions-on-remote-transcoders.md) and [0012](decisions/0012-pipeline-runs-recorder-and-probe.md)
+- [ ] Review the image resolver with `laravel-image` 2 ([laravel-image#59](https://github.com/folkloreinc/laravel-image/issues/59))
 
 ## Alpha 1: upload and play a video
 
@@ -29,8 +30,8 @@ What the pilot's media library needs first, end to end.
 - [ ] Migrations owned by the application (`mediatheque:install` publishes them) ([#22](https://github.com/folkloreinc/laravel-mediatheque/issues/22))
 - [ ] `Mediatheque::ingest()` from an uploaded file and from a file on a disk, with content-based types and validation
 - [ ] Presigned multipart uploads to an S3-compatible disk (opt-in routes, policy)
-- [ ] Path formatter that receives the media
-- [ ] Queued probe (ffprobe, Imagick)
+- [ ] Path formatter that receives the media, with a prefix per run
+- [ ] Queued probe (ffprobe, Imagick) through the asynchronous `Prober` contract
 - [ ] `ffmpeg` transcoder: web video rendition (`h264`), poster and thumbnails
 - [ ] `url()` and `temporaryUrl()`, public and private media
 - [ ] Events (`MediaCreated`, `MediaProbed`, `Rendition*`, `Pipeline*`, `MediaReady`)
@@ -59,8 +60,8 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] Animated GIF and WebP as video
 - [ ] URL import behind an SSRF guard
 - [ ] TUS adapter
-- [ ] `mediaconvert` transcoder, asynchronous
-- [ ] `mediatheque:doctor`, `mediatheque:run-pipeline`
+- [ ] `mediaconvert` transcoder, asynchronous, polled by `mediatheque:refresh`
+- [ ] `mediatheque:doctor`, `mediatheque:run-pipeline`, `mediatheque:refresh`
 - [ ] Custom types, renditions and operations through the config and `extend*()`
 
 ## Beta: upgrade path and Eclair
@@ -69,7 +70,13 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] Compatibility layer: 1.x model methods, handles, `medias://` references, 1.x config shapes, `legacy` JSON resource
 - [ ] Rector rules
 - [ ] Upgrade validated on a copy of an existing project's database, and against `laravel-folklore` 1.1's test suite
-- [ ] `eclair` transcoder in `laravel-eclair`, with its webhook and probe
+- [ ] `eclair` transcoder in `laravel-eclair`, with its webhook and probe. It works with Eclair's current protocol; these additions to Eclair's `/v1` remove workarounds ([decisions/0011](decisions/0011-renditions-on-remote-transcoders.md), [0012](decisions/0012-pipeline-runs-recorder-and-probe.md)):
+  - `width`, `height`, `duration` and `bitrate` on output files (until then, each rendition is probed again);
+  - an explicit `index` on files of a group (until then, inferred from file names);
+  - a reason on skipped tasks (until then, a generic reason);
+  - a visibility applied to outputs (until then, an ACL request per file);
+  - `metadata` on probe requests (optional: the driver matches the probe job by its id);
+  - a task-level input (optional, later: partial reruns would stop producing their inputs again).
 - [ ] HLS rendition, with private playback (signed segments)
 - [ ] Derived media: clips with start, end and crop
 - [ ] `captions` type; transcription through transcoders that support it
