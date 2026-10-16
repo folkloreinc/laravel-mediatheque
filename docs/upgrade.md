@@ -40,6 +40,8 @@
 | `files.mime` 50 characters, `size` 32-bit | 255 characters, 64-bit |
 | `files.handle` `thumbnails.0` | `handle` `thumbnails`, `index` 0, `role` |
 | `metadatas` EAV table | `metadata` JSON on media and files |
+| Metadata names `font_family_name`, `colors` | [Canonical keys](architecture.md#metadata-keys) `font_names`, `palette` |
+| Any handle | A letter first, 64 characters at most ([decisions/0011](decisions/0011-renditions-on-remote-transcoders.md)): `--check` lists the handles that break the rule; rename those renditions |
 | `pipelines.definition` serialized | JSON snapshot; `status`, `attempts`, `error` |
 | `started`, `ended`, `failed` booleans | `status` enum |
 | No foreign keys | Foreign keys on files, pipeline jobs and pivots |

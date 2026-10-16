@@ -1,6 +1,6 @@
 # 0005: An asynchronous `Transcoder` contract and declarative renditions
 
-- Status: accepted
+- Status: accepted, amended by [0012](0012-pipeline-runs-recorder-and-probe.md)
 - Date: 2026-10-15
 
 ## Context

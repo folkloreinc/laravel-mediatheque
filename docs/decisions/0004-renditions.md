@@ -1,6 +1,6 @@
 # 0004: Renditions: groups, metadata outputs, remote renditions
 
-- Status: accepted
+- Status: accepted, amended by [0011](0011-renditions-on-remote-transcoders.md)
 - Date: 2026-10-15
 
 ## Context
