@@ -58,9 +58,16 @@ jobs:
         steps:
             - uses: actions/checkout@v5
 
+            - name: Install media tools
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y --no-install-recommends ffmpeg imagemagick
+                  ffprobe -version | head -n 1
+
             - uses: shivammathur/setup-php@v2
               with:
                   php-version: ${{ matrix.php }}
+                  extensions: imagick
                   coverage: none
 
             - name: Cache Composer downloads
