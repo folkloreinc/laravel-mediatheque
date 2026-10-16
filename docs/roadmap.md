@@ -43,7 +43,7 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 
 ## Alpha 2: content and protected playback
 
-- [ ] `laravel-image` 2 resolver, so images ingested here get presets and signed URLs ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md), [#56](https://github.com/folkloreinc/laravel-mediatheque/issues/56)); moved from alpha 1, it ships after `laravel-image` v2.0.0-alpha.1
+- [x] `laravel-image` 2 resolver, so images ingested here get presets and signed URLs ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md), [#56](https://github.com/folkloreinc/laravel-mediatheque/issues/56)); moved from alpha 1, it ships after `laravel-image` v2.0.0-alpha.1
 - [ ] Visibility changes, CDN prefixes, `UrlSigner` contract
 - [ ] `HasMedias` with `attachMedia`, `syncMedias`, `media()`; usage graph; media in use protected from deletion
 - [ ] `media://` references: parser, batch resolution

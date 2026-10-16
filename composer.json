@@ -44,6 +44,7 @@
         "symfony/uid": "^7.2|^8.0"
     },
     "require-dev": {
+        "folklore/laravel-image": "^2.0@alpha",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.18",
         "league/flysystem-aws-s3-v3": "^3.25",

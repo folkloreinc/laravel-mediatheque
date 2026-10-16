@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque;
 
+use Folklore\Image\Contracts\SourceResolver;
 use Folklore\Mediatheque\Console\InstallCommand;
 use Folklore\Mediatheque\Contracts\Ingestor;
 use Folklore\Mediatheque\Contracts\Mediatheque;
@@ -9,6 +10,7 @@ use Folklore\Mediatheque\Contracts\Prober;
 use Folklore\Mediatheque\Contracts\Recorder;
 use Folklore\Mediatheque\Contracts\UrlGenerator;
 use Folklore\Mediatheque\Http\Routes;
+use Folklore\Mediatheque\Images\MediaResolver;
 use Folklore\Mediatheque\Ingest\MediaIngestor;
 use Folklore\Mediatheque\Pipelines\EloquentRecorder;
 use Folklore\Mediatheque\Probe\LocalProber;
@@ -41,6 +43,8 @@ class ServiceProvider extends BaseServiceProvider
 
     public function boot(): void
     {
+        $this->registerImageResolver();
+
         // Registered by the application, inside its own middleware: Route::mediatheque()
         Router::macro('mediatheque', function (string $prefix = 'mediatheque') {
             /** @var Router $this */
@@ -77,5 +81,24 @@ class ServiceProvider extends BaseServiceProvider
             is_array($defaults) ? $defaults : [],
             is_array($overrides) ? $overrides : [],
         ));
+    }
+
+    /**
+     * When `laravel-image` 2 is installed, register the `media` resolver
+     * (docs/decisions/0013) in its resolvers, once they are built.
+     */
+    private function registerImageResolver(): void
+    {
+        $registry = 'Folklore\\Image\\Sources\\SourceResolvers';
+
+        if (! interface_exists(SourceResolver::class) || ! class_exists($registry)) {
+            return;
+        }
+
+        $this->app->afterResolving($registry, function (object $resolvers) {
+            if (method_exists($resolvers, 'register')) {
+                $resolvers->register($this->app->make(MediaResolver::class));
+            }
+        });
     }
 }
