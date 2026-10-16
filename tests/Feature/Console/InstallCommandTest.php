@@ -49,8 +49,11 @@ class InstallCommandTest extends TestCase
         $this->install();
 
         $this->assertFileExists(config_path('mediatheque.php'));
-        $this->assertCount(1, $this->published());
-        $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_create_mediatheque_tables\.php$/', $this->published()[0]);
+        $published = $this->published();
+        sort($published);
+        $this->assertCount(2, $published);
+        $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_create_mediatheque_tables\.php$/', $published[0]);
+        $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_create_mediatheque_uploads_table\.php$/', $published[1], 'Later migrations run after the first one.');
     }
 
     #[Test]
@@ -61,7 +64,7 @@ class InstallCommandTest extends TestCase
 
         $this->install();
 
-        $this->assertCount(1, $this->published());
+        $this->assertCount(2, $this->published());
         $this->assertStringContainsString("'local'", (string) file_get_contents(config_path('mediatheque.php')));
     }
 
@@ -72,7 +75,7 @@ class InstallCommandTest extends TestCase
 
         Artisan::call('migrate', ['--path' => $this->migrations, '--realpath' => true]);
 
-        foreach (['medias', 'files', 'pipelines', 'pipelines_jobs'] as $table) {
+        foreach (['medias', 'files', 'pipelines', 'pipelines_jobs', 'uploads'] as $table) {
             $this->assertTrue(Schema::hasTable('mediatheque_'.$table), $table);
         }
         $this->assertTrue(Schema::hasColumns('mediatheque_files', ['media_id', 'handle', 'index', 'role', 'size', 'checksum', 'definition_hash']));

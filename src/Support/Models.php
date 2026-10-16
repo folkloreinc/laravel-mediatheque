@@ -6,6 +6,7 @@ use Folklore\Mediatheque\Contracts\Models\File;
 use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob;
 use Folklore\Mediatheque\Contracts\Models\PipelineRun;
+use Folklore\Mediatheque\Models\Upload;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -45,6 +46,14 @@ final class Models
     public static function pipelineJob(): string
     {
         return self::config()->model('pipeline_job', PipelineJob::class);
+    }
+
+    /**
+     * @return class-string<Upload>
+     */
+    public static function upload(): string
+    {
+        return self::config()->model('upload', Upload::class);
     }
 
     /**

@@ -405,12 +405,24 @@ Route::middleware(['web', 'auth'])->group(function () {
 
 | Route | Purpose |
 |---|---|
-| `POST uploads`, `POST uploads/{upload}/parts`, `POST uploads/{upload}/complete` | Presigned multipart uploads |
+| `POST uploads`, `GET uploads/{upload}/parts`, `POST uploads/{upload}/parts`, `POST uploads/{upload}/complete`, `DELETE uploads/{upload}` | Presigned multipart uploads: create, list the parts received (to resume), sign parts, complete, abort |
 | `POST medias` | Small uploads through PHP |
 | `GET medias/{media}`, `PATCH medias/{media}`, `DELETE medias/{media}` | Read, rename, change visibility, delete |
 | `GET files/{file}` | Signed streaming of private files on local disks |
 
 Every action is authorized through a `Media` policy (`create`, `view`, `update`, `delete`). Without a policy, everything is denied. Requests are validated, responses use the JSON resource, and errors are `application/problem+json`.
+
+Alpha 1 ships the upload routes. With Uppy's `AwsS3` plugin (`shouldUseMultipart: true`), each of its functions calls one route:
+
+| Uppy | Route | Request → response |
+|---|---|---|
+| `createMultipartUpload` | `POST uploads` | `{filename, size}` → `{id, expires_at}`; use `id` as both `uploadId` and `key` |
+| `signPart` | `POST uploads/{id}/parts` | `{part_numbers: [n]}` → `{parts: [{number, url}]}`; the client PUTs the part to `url` |
+| `listParts` | `GET uploads/{id}/parts` | → `{parts: [{number, etag, size}]}` |
+| `completeMultipartUpload` | `POST uploads/{id}/complete` | `{parts: [{number, etag}]}` → `{id, type, name, status, visibility}` of the media |
+| `abortMultipartUpload` | `DELETE uploads/{id}` | → `204` |
+
+The bucket's CORS rules must allow `PUT` from the application's origin and expose the `ETag` header. Parts are 5 MB at least, except the last one (S3's rule).
 
 ## Events
 

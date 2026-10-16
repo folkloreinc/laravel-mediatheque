@@ -23,6 +23,7 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Connection;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\UploadedFile;
 use InvalidArgumentException;
 use Throwable;
@@ -304,6 +305,13 @@ class MediaIngestor implements Ingestor
     private function copyFromDisk(string $fromDisk, string $from, string $toDisk, string $to, array $options): void
     {
         $target = $this->filesystems->disk($toDisk);
+
+        if ($fromDisk === $toDisk && $target instanceof FilesystemAdapter) {
+            // One request on S3: the copy gets the media's visibility, without reading the source's
+            $target->getDriver()->copy($from, $to, ['retain_visibility' => false, 'visibility' => $options['visibility']]);
+
+            return;
+        }
 
         if ($fromDisk === $toDisk) {
             $target->copy($from, $to);

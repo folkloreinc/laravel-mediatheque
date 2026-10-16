@@ -29,7 +29,7 @@ What the pilot's media library needs first, end to end.
 - [x] Schema: `medias` with `uid`, `status`, `visibility`, `metadata`, soft deletes; `files` with `media_id`, `handle`, `index`, `role`, 64-bit `size`; pipeline runs and jobs with statuses ([#42](https://github.com/folkloreinc/laravel-mediatheque/issues/42))
 - [x] Migrations owned by the application (`mediatheque:install` publishes them) ([#22](https://github.com/folkloreinc/laravel-mediatheque/issues/22), [#42](https://github.com/folkloreinc/laravel-mediatheque/issues/42))
 - [x] `Mediatheque::ingest()` from an uploaded file and from a file on a disk, with content-based types and validation ([#50](https://github.com/folkloreinc/laravel-mediatheque/issues/50))
-- [ ] Presigned multipart uploads to an S3-compatible disk (opt-in routes, policy)
+- [x] Presigned multipart uploads to an S3-compatible disk (opt-in routes, policy) ([#54](https://github.com/folkloreinc/laravel-mediatheque/issues/54))
 - [x] Path formatter that receives the media, with a prefix per run ([#44](https://github.com/folkloreinc/laravel-mediatheque/issues/44))
 - [x] Queued probe (ffprobe, Imagick) through the asynchronous `Prober` contract ([#48](https://github.com/folkloreinc/laravel-mediatheque/issues/48))
 - [x] `ffmpeg` transcoder: web video rendition (`h264`), poster and thumbnails ([#52](https://github.com/folkloreinc/laravel-mediatheque/issues/52))
