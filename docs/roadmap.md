@@ -36,7 +36,7 @@ What the pilot's media library needs first, end to end.
 - [ ] `url()` and `temporaryUrl()`, public and private media
 - [ ] Events (`MediaCreated`, `MediaProbed`, `Rendition*`, `Pipeline*`, `MediaReady`)
 - [ ] `Mediatheque::fake()` with assertions
-- [ ] `laravel-image` 2 resolver, so images ingested here get presets and signed URLs
+- [ ] `laravel-image` 2 resolver, so images ingested here get presets and signed URLs ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)); it needs a `laravel-image` pre-release with the `SourceResolver` contract
 
 Images: the alpha stores and probes them; their renditions come from `laravel-image` 2's first alpha.
 
@@ -49,7 +49,7 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] `replaceOriginal()`
 - [ ] `MediaResource` and `FileResource`, in sync with Panneau 5's protocol
 - [ ] Contract for Panneau 5's media adapter ([laravel-panneau#35](https://github.com/folkloreinc/laravel-panneau/issues/35))
-- [ ] Images at ingest: HEIC, orientation, GPS removal, blurhash
+- [ ] Images at ingest: HEIC, orientation, GPS removal, ThumbHash placeholder
 - [ ] SVG sanitizing
 
 ## Alpha 3: parity with 1.x

@@ -15,7 +15,10 @@ One file per decision. A decision is not edited once accepted: a later one repla
 | [0009](0009-package-boundaries.md) | Package boundaries | Accepted |
 | [0010](0010-json-resource.md) | A canonical JSON resource | Accepted |
 | [0011](0011-renditions-on-remote-transcoders.md) | Renditions on remote transcoders | Accepted |
-| [0012](0012-pipeline-runs-recorder-and-probe.md) | Pipeline runs, the recorder and an asynchronous probe | Accepted |
+| [0012](0012-pipeline-runs-recorder-and-probe.md) | Pipeline runs, the recorder and an asynchronous probe | Amended by 0014 |
+| [0013](0013-media-resolver-for-laravel-image.md) | The `media` resolver for `laravel-image` | Accepted |
+| [0014](0014-run-outcomes-and-model-contracts.md) | How runs end, the media's status, and model contracts | Accepted |
+| [0015](0015-new-install-schema-attributes-and-uploads.md) | The schema of a new install, application attributes, and uploads | Accepted |
 
 Template:
 
