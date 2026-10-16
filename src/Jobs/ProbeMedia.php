@@ -39,8 +39,12 @@ class ProbeMedia implements ShouldQueue
 
     public int $timeout;
 
+    /**
+     * @param  string|null  $pipeline  The pipeline to run once probed; the type's by default
+     */
     public function __construct(
         public readonly int|string $mediaId,
+        public readonly ?string $pipeline = null,
     ) {
         $config = app(MediathequeConfig::class);
         $this->tries = $config->jobsTries();
@@ -73,7 +77,7 @@ class ProbeMedia implements ShouldQueue
         } elseif ($outcome->isPending() && $outcome->externalId !== null) {
             $this->recordPendingProbe($media, $outcome->externalId, $paths);
         } else {
-            $results->done($media, $outcome->metadata);
+            $results->done($media, $outcome->metadata, $this->pipeline);
         }
     }
 
@@ -111,7 +115,7 @@ class ProbeMedia implements ShouldQueue
             'pipelinable_id' => $media->getKey(),
             'transcoder' => $pipeline->transcoder,
             'external_id' => $externalId,
-            'definition' => PipelineRun::snapshot($pipeline, $pipeline->renditions),
+            'definition' => [...PipelineRun::snapshot($pipeline, $pipeline->renditions), 'then' => $this->pipeline],
             'output_source' => $media->original()?->source() ?? '',
             'path_prefix' => $paths->runPrefix($media, $uid),
             'visibility' => $media->visibility(),

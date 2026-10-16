@@ -32,9 +32,9 @@ What the pilot's media library needs first, end to end.
 - [ ] Presigned multipart uploads to an S3-compatible disk (opt-in routes, policy)
 - [x] Path formatter that receives the media, with a prefix per run ([#44](https://github.com/folkloreinc/laravel-mediatheque/issues/44))
 - [x] Queued probe (ffprobe, Imagick) through the asynchronous `Prober` contract ([#48](https://github.com/folkloreinc/laravel-mediatheque/issues/48))
-- [ ] `ffmpeg` transcoder: web video rendition (`h264`), poster and thumbnails
+- [x] `ffmpeg` transcoder: web video rendition (`h264`), poster and thumbnails ([#52](https://github.com/folkloreinc/laravel-mediatheque/issues/52))
 - [x] `url()` and `temporaryUrl()`, public and private media ([#46](https://github.com/folkloreinc/laravel-mediatheque/issues/46))
-- [ ] Events (`MediaCreated`, `MediaProbed`, `Rendition*`, `Pipeline*`, `MediaReady`)
+- [x] Events (`MediaCreated`, `MediaProbed`, `Rendition*`, `Pipeline*`, `MediaReady`, `MediaFailed`) ([#50](https://github.com/folkloreinc/laravel-mediatheque/issues/50), [#52](https://github.com/folkloreinc/laravel-mediatheque/issues/52))
 - [ ] `Mediatheque::fake()` with assertions
 - [ ] `laravel-image` 2 resolver, so images ingested here get presets and signed URLs ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)); it needs a `laravel-image` pre-release with the `SourceResolver` contract
 
@@ -54,7 +54,7 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 
 ## Alpha 3: parity with 1.x
 
-- [ ] Audio: `mp3` rendition and waveform
+- [x] Audio: `mp3` rendition and waveform (shipped in alpha 1 with the `ffmpeg` transcoder; the waveform is drawn by ffmpeg, [#52](https://github.com/folkloreinc/laravel-mediatheque/issues/52))
 - [ ] Documents: page thumbnails, page count
 - [ ] Fonts: web fonts, family names
 - [ ] Animated GIF and WebP as video

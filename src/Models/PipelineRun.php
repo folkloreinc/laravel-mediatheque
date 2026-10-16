@@ -36,7 +36,7 @@ use LogicException;
  * @property int $pipelinable_id
  * @property string $transcoder
  * @property string|null $external_id
- * @property array{transcoder?: string, source?: string|null, renditions?: array<string, array<string, mixed>>, main?: string|null} $definition
+ * @property array{transcoder?: string, source?: string|null, renditions?: array<string, array<string, mixed>>, main?: string|null, then?: string|null} $definition
  * @property string $output_source
  * @property string $path_prefix
  * @property Visibility $visibility
@@ -64,13 +64,25 @@ class PipelineRun extends Model implements PipelineRunContract
         'attempts' => 0,
     ];
 
-    protected static function booted(): void
+    /**
+     * A uid is set on insert when none was set, even when model events are
+     * faked.
+     *
+     * @var bool
+     */
+    public $usesUniqueIds = true;
+
+    /**
+     * @return list<string>
+     */
+    public function uniqueIds(): array
     {
-        static::creating(function (PipelineRun $run) {
-            if (($run->getAttributes()['uid'] ?? '') === '') {
-                $run->setAttribute('uid', Uid::generate(self::UID_PREFIX));
-            }
-        });
+        return ['uid'];
+    }
+
+    public function newUniqueId(): string
+    {
+        return Uid::generate(self::UID_PREFIX);
     }
 
     /**
@@ -191,6 +203,15 @@ class PipelineRun extends Model implements PipelineRunContract
     public function mainRendition(): ?string
     {
         return $this->definition['main'] ?? null;
+    }
+
+    /**
+     * For a pending probe: the pipeline to run once it completes, when
+     * ingest chose one.
+     */
+    public function nextPipeline(): ?string
+    {
+        return $this->definition['then'] ?? null;
     }
 
     public function jobs(): Collection

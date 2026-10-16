@@ -223,6 +223,7 @@ class MediaIngestor implements Ingestor
     private function store(Source $source, IngestOptions $options, TypeDefinition $type, string $mime, int $size, string $local, bool $sanitized): Media
     {
         $visibility = $options->visibility ?? $this->config->defaultVisibility();
+        $pipeline = $options->pipeline !== null ? $this->config->pipeline($options->pipeline)->name : null;
         $disk = $options->source !== null ? $this->config->disk('source', $options->source) : $this->config->defaultSource();
         $extension = ContentType::extension($mime);
         $readsLocally = $source->kind !== SourceKind::Disk || $sanitized;
@@ -289,7 +290,7 @@ class MediaIngestor implements Ingestor
             throw $exception;
         }
 
-        $this->afterCommit($media);
+        $this->afterCommit($media, $pipeline);
 
         return $media;
     }
@@ -327,13 +328,13 @@ class MediaIngestor implements Ingestor
      * `MediaCreated` and the probe, once the media is committed: when the
      * application ingests inside its own transaction, after it commits.
      */
-    private function afterCommit(Model&Media $media): void
+    private function afterCommit(Model&Media $media, ?string $pipeline): void
     {
-        $created = function () use ($media) {
+        $created = function () use ($media, $pipeline) {
             $this->events->dispatch(new MediaCreated($media));
             $key = $media->getKey();
             if (is_int($key) || is_string($key)) {
-                $this->jobs->dispatch(new ProbeMedia($key));
+                $this->jobs->dispatch(new ProbeMedia($key, $pipeline));
             }
         };
 

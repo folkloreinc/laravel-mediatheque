@@ -9,12 +9,12 @@ use Folklore\Mediatheque\Contracts\Models\PipelineRun;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
+use Folklore\Mediatheque\Pipelines\PipelineRunner;
 use Folklore\Mediatheque\References\MediaReference;
 use Folklore\Mediatheque\Support\Models;
 use Folklore\Mediatheque\Support\Uid;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Collection;
-use LogicException;
 
 /**
  * The package's entry point, behind the `Mediatheque` facade, on the
@@ -99,7 +99,7 @@ class MediathequeManager implements Mediatheque
 
     public function runPipeline(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false): ?PipelineRun
     {
-        throw new LogicException('Pipelines run with the ffmpeg transcoder, which is not available yet.');
+        return $this->container->make(PipelineRunner::class)->run($media, $pipeline, $renditions, $force);
     }
 
     /**

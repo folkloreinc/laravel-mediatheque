@@ -230,7 +230,7 @@ interface Prober
 }
 ```
 
-A pending probe is recorded as a run of the `probe` pipeline (one rendition, operation `probe`, no files) and completes through the recorder, like any run. The media stays `pending` until then. `MediaProbed` is dispatched when the results are stored, and the type's pipeline starts on `MediaProbed`, never before. A failed probe fails the media.
+A pending probe is recorded as a run of the `probe` pipeline (one rendition, operation `probe`, no files) and completes through the recorder, like any run. The media stays `pending` until then. `MediaProbed` is dispatched when the results are stored, and the pipeline starts then, never before: the one ingest chose (`pipeline:`), or the type's. A failed probe fails the media.
 
 Probe results fill the media's `metadata`, with the [canonical keys](#metadata-keys), and the original's `width`, `height`, `duration` and `bitrate`.
 
@@ -332,7 +332,7 @@ The rules below are in [decisions/0012](decisions/0012-pipeline-runs-recorder-an
 
 | Driver | Runs | Completion | Package |
 |---|---|---|---|
-| `ffmpeg` | ffmpeg, ffprobe, Imagick, audiowaveform and fonttools in the application's queue | Each rendition is a queued job; dependent renditions are dispatched when their input completes | This package |
+| `ffmpeg` | ffmpeg, ffprobe, Imagick and fonttools in the application's queue. Alpha 1: `video.transcode` (`h264`, `vp9`), `video.poster`, `video.thumbnails`, `audio.transcode` (`mp3`, `aac`), `audio.waveform` | Each rendition is a queued job; dependent renditions are dispatched when their input completes | This package |
 | `eclair` | The whole run as one Eclair job (task graph, `when` conditions, outputs written to the application's storage) | Signed webhooks, deduplicated | [`laravel-eclair`](https://github.com/urbania-media/eclair/issues/13) |
 | `mediaconvert` | AWS Elemental MediaConvert jobs for video renditions | EventBridge notifications through a webhook, or a scheduled poller. Never `sleep()` in a worker | This package, with `aws/aws-sdk-php` (suggested) |
 | `cloudflare-stream` (2.x) | Upload to Cloudflare Stream; remote renditions | Webhook | Later, if a project needs it |
