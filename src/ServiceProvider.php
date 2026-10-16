@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque;
 
+use Folklore\Mediatheque\Console\InstallCommand;
 use Folklore\Mediatheque\Support\ConfigMerger;
 use Folklore\Mediatheque\Support\MediathequeConfig;
 use Illuminate\Contracts\Config\Repository;
@@ -21,6 +22,10 @@ class ServiceProvider extends BaseServiceProvider
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {
+            $this->commands([
+                InstallCommand::class,
+            ]);
+
             $this->publishes([
                 __DIR__.'/../config/mediatheque.php' => $this->app->configPath('mediatheque.php'),
             ], 'mediatheque-config');

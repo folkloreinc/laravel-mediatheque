@@ -8,6 +8,7 @@ parameters:
     paths:
         - src
         - config
+        - database
         - tests
     excludePaths:
         - tests/fixtures

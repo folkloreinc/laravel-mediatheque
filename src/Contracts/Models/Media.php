@@ -63,7 +63,8 @@ interface Media
     public function files(?string $handle = null): Collection;
 
     /**
-     * The first file with the `poster` or `thumbnail` role, whatever the type.
+     * The file with the `poster` role, or else the first file with the
+     * `thumbnail` role, whatever the type.
      */
     public function thumbnail(): ?File;
 

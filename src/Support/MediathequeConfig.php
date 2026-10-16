@@ -8,6 +8,7 @@ use Folklore\Mediatheque\Exceptions\InvalidPipeline;
 use Folklore\Mediatheque\Pipelines\PipelineDefinition;
 use Folklore\Mediatheque\Pipelines\Rendition;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Reads `config('mediatheque')`, already merged with the package's defaults
@@ -28,6 +29,26 @@ final class MediathequeConfig
         $prefix = $this->config->get('mediatheque.table_prefix', '');
 
         return is_string($prefix) ? $prefix : throw InvalidConfig::at('table_prefix', 'expected a string');
+    }
+
+    /**
+     * The model class set for a contract in `models`: an Eloquent model that
+     * implements it.
+     *
+     * @template T of object
+     *
+     * @param  class-string<T>  $contract
+     * @return class-string<Model&T>
+     */
+    public function model(string $key, string $contract): string
+    {
+        $class = $this->config->get('mediatheque.models.'.$key);
+
+        if (! is_string($class) || ! is_subclass_of($class, Model::class) || ! is_subclass_of($class, $contract)) {
+            throw InvalidConfig::at('models.'.$key, sprintf('expected an Eloquent model that implements %s', $contract));
+        }
+
+        return $class;
     }
 
     /**

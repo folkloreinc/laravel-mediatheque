@@ -1,5 +1,10 @@
 <?php
 
+use Folklore\Mediatheque\Models\File;
+use Folklore\Mediatheque\Models\Media;
+use Folklore\Mediatheque\Models\PipelineJob;
+use Folklore\Mediatheque\Models\PipelineRun;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -11,6 +16,23 @@ return [
     |
     */
     'table_prefix' => 'mediatheque_',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Models
+    |--------------------------------------------------------------------------
+    |
+    | The Eloquent models the package uses. Extend them to add your own
+    | columns, scopes and relations, and set your classes here. Package code
+    | only depends on the contracts they implement.
+    |
+    */
+    'models' => [
+        'media' => Media::class,
+        'file' => File::class,
+        'pipeline_run' => PipelineRun::class,
+        'pipeline_job' => PipelineJob::class,
+    ],
 
     /*
     |--------------------------------------------------------------------------

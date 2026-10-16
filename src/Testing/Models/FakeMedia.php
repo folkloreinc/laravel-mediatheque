@@ -86,7 +86,10 @@ class FakeMedia implements Media
 
     public function thumbnail(): ?File
     {
-        return $this->files()->first(fn (File $file) => in_array($file->role(), ['poster', 'thumbnail'], true));
+        $files = $this->files();
+
+        return $files->first(fn (File $file) => $file->role() === 'poster')
+            ?? $files->first(fn (File $file) => $file->role() === 'thumbnail');
     }
 
     public function url(?string $handle = null): ?string
