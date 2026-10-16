@@ -30,7 +30,7 @@ What the pilot's media library needs first, end to end.
 - [x] Migrations owned by the application (`mediatheque:install` publishes them) ([#22](https://github.com/folkloreinc/laravel-mediatheque/issues/22), [#42](https://github.com/folkloreinc/laravel-mediatheque/issues/42))
 - [ ] `Mediatheque::ingest()` from an uploaded file and from a file on a disk, with content-based types and validation
 - [ ] Presigned multipart uploads to an S3-compatible disk (opt-in routes, policy)
-- [ ] Path formatter that receives the media, with a prefix per run
+- [x] Path formatter that receives the media, with a prefix per run ([#44](https://github.com/folkloreinc/laravel-mediatheque/issues/44))
 - [ ] Queued probe (ffprobe, Imagick) through the asynchronous `Prober` contract
 - [ ] `ffmpeg` transcoder: web video rendition (`h264`), poster and thumbnails
 - [ ] `url()` and `temporaryUrl()`, public and private media

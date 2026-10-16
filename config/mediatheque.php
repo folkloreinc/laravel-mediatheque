@@ -61,6 +61,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Paths
+    |--------------------------------------------------------------------------
+    |
+    | `file_path_format` builds the path of originals, and names the files of
+    | the ffmpeg driver. `run_path_format` builds the prefix of each pipeline
+    | run: every transcoder writes the files of a run under it, so a run never
+    | overwrites the files of another. Paths are recorded on the files.
+    |
+    | Placeholders: {media.<attribute>} (any attribute of your media model,
+    | such as {media.uid} or {media.tenant_id}), {type}, {handle}, {index}
+    | ("-2" in a group, empty otherwise), {extension}, {run} and {date(Y/m)}.
+    |
+    */
+    'file_path_format' => '{type}/{media.uid}/{handle}{index}.{extension}',
+
+    'run_path_format' => '{type}/{media.uid}/{run}',
+
+    /*
+    |--------------------------------------------------------------------------
     | Ingest
     |--------------------------------------------------------------------------
     */

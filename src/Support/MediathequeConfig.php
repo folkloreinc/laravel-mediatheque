@@ -106,6 +106,37 @@ final class MediathequeConfig
     }
 
     /**
+     * The format of the paths of originals, and of the names of the files
+     * the `ffmpeg` driver writes. It must contain `{media.uid}`, so each
+     * media gets its own paths.
+     */
+    public function filePathFormat(): string
+    {
+        $format = $this->config->get('mediatheque.file_path_format');
+
+        if (! is_string($format) || ! str_contains($format, '{media.uid}') || ! str_contains($format, '{handle}') || ! str_contains($format, '{index}')) {
+            throw InvalidConfig::at('file_path_format', 'expected a path format with {media.uid}, {handle} and {index}, such as "{type}/{media.uid}/{handle}{index}.{extension}"');
+        }
+
+        return $format;
+    }
+
+    /**
+     * The format of the prefix of a run's files. It must contain `{run}`, so
+     * a run never overwrites the files of another.
+     */
+    public function runPathFormat(): string
+    {
+        $format = $this->config->get('mediatheque.run_path_format');
+
+        if (! is_string($format) || ! str_contains($format, '{run}')) {
+            throw InvalidConfig::at('run_path_format', 'expected a path format with {run}, such as "{type}/{media.uid}/{run}"');
+        }
+
+        return $format;
+    }
+
+    /**
      * Seconds a temporary URL lives when url() returns one.
      */
     public function temporaryTtl(): int
@@ -215,6 +246,8 @@ final class MediathequeConfig
         $this->mediaPrefix();
         $this->defaultSource();
         $this->defaultVisibility();
+        $this->filePathFormat();
+        $this->runPathFormat();
         $this->maxSize();
         $this->temporaryTtl();
         $this->types();
