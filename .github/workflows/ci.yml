@@ -26,7 +26,6 @@ jobs:
             - uses: shivammathur/setup-php@v2
               with:
                   php-version: '8.4'
-                  extensions: imagick
                   coverage: none
 
             - name: Validate composer.json
@@ -56,26 +55,12 @@ jobs:
             matrix:
                 php: ['8.3', '8.4', '8.5']
                 laravel: ['12.*', '13.*']
-        env:
-            FFMPEG_BIN: /usr/bin/ffmpeg
-            FFPROBE_BIN: /usr/bin/ffprobe
-            AUDIOWAVEFORM_BIN: /usr/bin/audiowaveform
-            IMAGICK_CONVERT_BIN: /usr/bin/convert
-            OTFINFO_BIN: /usr/bin/otfinfo
         steps:
             - uses: actions/checkout@v5
-
-            # Needed by the 1.x test suite until it is removed from v2.x (#29)
-            - name: Install media tools
-              run: |
-                  sudo add-apt-repository --yes ppa:chris-needham/ppa
-                  sudo apt-get update
-                  sudo apt-get install --yes --no-install-recommends ffmpeg audiowaveform imagemagick lcdf-typetools
 
             - uses: shivammathur/setup-php@v2
               with:
                   php-version: ${{ matrix.php }}
-                  extensions: imagick
                   coverage: none
 
             - name: Cache Composer downloads
