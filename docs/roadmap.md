@@ -44,7 +44,7 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 ## Alpha 2: content and protected playback
 
 - [x] `laravel-image` 2 resolver, so images ingested here get presets and signed URLs ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md), [#56](https://github.com/folkloreinc/laravel-mediatheque/issues/56)); moved from alpha 1, released in [2.0.0-alpha.2](https://github.com/folkloreinc/laravel-mediatheque/releases/tag/v2.0.0-alpha.2) once `laravel-image` v2.0.0-alpha.1 was tagged ([#62](https://github.com/folkloreinc/laravel-mediatheque/issues/62))
-- [x] Direct uploads for Uppy 6's `AwsS3` plugin (`signRequest`), next to Uppy 5's ([decisions/0016](decisions/0016-uploads-signed-for-uppy-6.md), [#65](https://github.com/folkloreinc/laravel-mediatheque/issues/65))
+- [x] Direct uploads for Uppy 6's `AwsS3` plugin (`signRequest`), next to Uppy 5's ([decisions/0016](decisions/0016-uploads-signed-for-uppy-6.md), [#65](https://github.com/folkloreinc/laravel-mediatheque/issues/65)); released in [2.0.0-alpha.3](https://github.com/folkloreinc/laravel-mediatheque/releases/tag/v2.0.0-alpha.3) ([#67](https://github.com/folkloreinc/laravel-mediatheque/issues/67))
 - [ ] Visibility changes, CDN prefixes, `UrlSigner` contract
 - [ ] `HasMedias` with `attachMedia`, `syncMedias`, `media()`; usage graph; media in use protected from deletion
 - [ ] `media://` references: parser, batch resolution

@@ -10,7 +10,7 @@
 
 ## The alphas: upload and play a video, images through laravel-image
 
-The alphas are for new projects; the upgrade from 1.x comes in the beta. 2.0.0-alpha.1 uploads and plays videos; 2.0.0-alpha.2 adds image URLs through `laravel-image` 2.
+The alphas are for new projects; the upgrade from 1.x comes in the beta. 2.0.0-alpha.1 uploads and plays videos; 2.0.0-alpha.2 adds image URLs through `laravel-image` 2; 2.0.0-alpha.3 adds direct uploads with Uppy 6.
 
 ### Requirements
 
