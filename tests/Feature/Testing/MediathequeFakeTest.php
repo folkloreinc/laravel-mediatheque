@@ -5,6 +5,7 @@ namespace Folklore\Mediatheque\Tests\Feature\Testing;
 use Folklore\Mediatheque\Contracts\Ingestor;
 use Folklore\Mediatheque\Contracts\Mediatheque as MediathequeContract;
 use Folklore\Mediatheque\Contracts\Models\Media;
+use Folklore\Mediatheque\Contracts\Models\PipelineRun;
 use Folklore\Mediatheque\Enums\JobStatus;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\RejectionReason;
@@ -25,9 +26,11 @@ use Folklore\Mediatheque\Facades\Mediatheque;
 use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
 use Folklore\Mediatheque\Support\Uid;
+use Folklore\Mediatheque\Testing\FakeProber;
 use Folklore\Mediatheque\Testing\MediathequeFake;
 use Folklore\Mediatheque\Testing\Models\FakeMedia;
 use Folklore\Mediatheque\Tests\Contracts\ResolvesReferencesContractTests;
+use Folklore\Mediatheque\Tests\Contracts\RunActionsContractTests;
 use Folklore\Mediatheque\Tests\TestCase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
@@ -38,6 +41,7 @@ use PHPUnit\Framework\Attributes\Test;
 class MediathequeFakeTest extends TestCase
 {
     use ResolvesReferencesContractTests;
+    use RunActionsContractTests;
 
     protected function mediatheque(): MediathequeContract
     {
@@ -54,6 +58,47 @@ class MediathequeFakeTest extends TestCase
         $this->assertInstanceOf(FakeMedia::class, $media);
 
         return $media->id;
+    }
+
+    protected function probedVideo(): Media
+    {
+        return Mediatheque::fake()->ingest($this->video());
+    }
+
+    protected function videoWhoseProbeFailed(): Media
+    {
+        return Mediatheque::fake()->failProbe()->ingest($this->video());
+    }
+
+    protected function failRenditions(array $renditions): void
+    {
+        $fake = Mediatheque::fake();
+        $fake->transcoder()->failures = [];
+        foreach ($renditions as $rendition) {
+            $fake->failRendition($rendition);
+        }
+    }
+
+    protected function holdRuns(): void
+    {
+        Mediatheque::fake()->holdPipelines();
+    }
+
+    protected function probesSucceed(): void
+    {
+        $prober = Mediatheque::fake()->prober();
+        $this->assertInstanceOf(FakeProber::class, $prober);
+        $prober->failure = null;
+    }
+
+    protected function freshRun(PipelineRun $run): PipelineRun
+    {
+        return $run;
+    }
+
+    protected function freshMedia(Media $media): Media
+    {
+        return $media;
     }
 
     private function video(string $name = 'clip.mp4'): UploadedFile
