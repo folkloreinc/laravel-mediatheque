@@ -2,6 +2,8 @@
 
 namespace Folklore\Mediatheque\Testing\Models;
 
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob;
 use Folklore\Mediatheque\Contracts\Models\PipelineRun;
 use Folklore\Mediatheque\Enums\JobStatus;
@@ -22,6 +24,12 @@ class FakePipelineJob implements PipelineJob
     public ?TranscoderError $error = null;
 
     public ?string $reason = null;
+
+    public ?CarbonImmutable $queuedAt = null;
+
+    public ?CarbonImmutable $startedAt = null;
+
+    public ?CarbonImmutable $endedAt = null;
 
     public function __construct(
         public FakePipelineRun $run,
@@ -61,5 +69,20 @@ class FakePipelineJob implements PipelineJob
     public function reason(): ?string
     {
         return $this->reason;
+    }
+
+    public function queuedAt(): ?CarbonInterface
+    {
+        return $this->queuedAt;
+    }
+
+    public function startedAt(): ?CarbonInterface
+    {
+        return $this->startedAt;
+    }
+
+    public function endedAt(): ?CarbonInterface
+    {
+        return $this->endedAt;
     }
 }

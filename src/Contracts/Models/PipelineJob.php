@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque\Contracts\Models;
 
+use Carbon\CarbonInterface;
 use Folklore\Mediatheque\Enums\JobStatus;
 use Folklore\Mediatheque\Pipelines\Rendition;
 use Folklore\Mediatheque\Transcoders\TranscoderError;
@@ -33,4 +34,15 @@ interface PipelineJob
      * Why it was skipped.
      */
     public function reason(): ?string;
+
+    /**
+     * When the rendition could run: when its run was created, or when the
+     * rendition it reads from completed (docs/decisions/0017).
+     */
+    public function queuedAt(): ?CarbonInterface;
+
+    public function startedAt(): ?CarbonInterface;
+
+    /** When it reached a final status. */
+    public function endedAt(): ?CarbonInterface;
 }

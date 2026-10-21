@@ -11,6 +11,7 @@ What a monitoring view needs is recorded ([decisions/0017](docs/decisions/0017-m
 ### Breaking changes
 
 - The `Mediatheque` contract has `retry()`, `cancel()`, `refresh()` and `probeAgain()`: a class that implements it implements them too (#73).
+- The `PipelineRun` and `PipelineJob` contracts have timestamp methods: a class that implements them implements them too (#77).
 
 ### Added
 
@@ -27,6 +28,8 @@ What a monitoring view needs is recorded ([decisions/0017](docs/decisions/0017-m
   - `Mediatheque::monitoringScope()` narrows what it reads, for a tenant;
   - new `monitoring.stuck_after` and `monitoring.max_rows` config keys.
 - `php artisan mediatheque:status`: media by status, runs in progress and stuck, what ended in the last hours, and the latest failures (#75).
+- `PipelineRunResource`, `PipelineJobResource` and `UploadResource`, the JSON shapes of runs, their renditions and uploads, with fixtures in `tests/fixtures/json/` (#77).
+- `createdAt()`, `startedAt()` and `endedAt()` on the `PipelineRun` contract, and `queuedAt()`, `startedAt()` and `endedAt()` on the `PipelineJob` contract. The fake's recorder sets them as the Eloquent recorder does (#77).
 
 ### Changed
 

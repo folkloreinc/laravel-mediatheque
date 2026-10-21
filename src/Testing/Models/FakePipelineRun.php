@@ -2,6 +2,8 @@
 
 namespace Folklore\Mediatheque\Testing\Models;
 
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Folklore\Mediatheque\Contracts\Models\File;
 use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob;
@@ -12,6 +14,7 @@ use Folklore\Mediatheque\Pipelines\PipelineDefinition;
 use Folklore\Mediatheque\Pipelines\Rendition;
 use Folklore\Mediatheque\Transcoders\TranscoderError;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
 use LogicException;
 
 /**
@@ -28,6 +31,12 @@ class FakePipelineRun implements PipelineRun
 
     public ?TranscoderError $error = null;
 
+    public CarbonImmutable $createdAt;
+
+    public ?CarbonImmutable $startedAt = null;
+
+    public ?CarbonImmutable $endedAt = null;
+
     /**
      * @param  array<string, Rendition>  $renditions  Closed under `from`
      */
@@ -39,8 +48,11 @@ class FakePipelineRun implements PipelineRun
         public string $outputSource,
         public string $pathPrefix,
     ) {
+        $this->createdAt = CarbonImmutable::instance(Date::now());
+
         foreach ($renditions as $name => $rendition) {
             $this->jobs[$name] = new FakePipelineJob($this, $rendition);
+            $this->jobs[$name]->queuedAt = $rendition->from === null ? $this->createdAt : null;
         }
     }
 
@@ -124,6 +136,21 @@ class FakePipelineRun implements PipelineRun
     public function error(): ?TranscoderError
     {
         return $this->error;
+    }
+
+    public function createdAt(): ?CarbonInterface
+    {
+        return $this->createdAt;
+    }
+
+    public function startedAt(): ?CarbonInterface
+    {
+        return $this->startedAt;
+    }
+
+    public function endedAt(): ?CarbonInterface
+    {
+        return $this->endedAt;
     }
 
     /**
