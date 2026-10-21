@@ -213,6 +213,22 @@ Large files should not go through PHP. The package provides, as opt-in HTTP endp
 
 Uploads are tracked in an `uploads` table (status, disk, path, expected size, creator, expiry, and when and why it ended: `aborted` by its creator, `expired`, or the reason ingest rejected its file). Each step is authorized by the `Media` policy's `create` ability, and only the user who created an upload can continue it. The application sets the options of the media an upload creates (its attributes, such as a tenant id) with `Mediatheque::uploadsUsing()`, from its own context ([decisions/0015](decisions/0015-new-install-schema-attributes-and-uploads.md)). `mediatheque:prune` removes abandoned uploads.
 
+The routes are an HTTP layer over `DirectUploads`, which an application or a package (`laravel-panneau`) calls to offer the same flow under its own routes, with the same rules ([decisions/0018](decisions/0018-direct-uploads-as-services.md)). Every method takes the user, checks the policy and the upload's owner, and throws what the routes turn into problems: `UploadNotFound` (`404`), `UploadExpired` (`410`), `UploadIncomplete` (`409`), `UnknownS3Operation` and `FileRejected` (`422`). Completing an upload and ingesting it are two steps, so an upload can be used before, or instead of, becoming a media:
+
+```php
+$uploads = app(DirectUploads::class);
+
+// POST …/uploads/sign: Uppy 6's signRequest
+return $uploads->sign($request->user(), $input['method'], $input['key'], $input['uploadId'] ?? null, $input['partNumber'] ?? null)->toArray();
+
+// POST …/uploads/{upload}/complete: the file is on the storage; the upload stays open
+$upload = $uploads->complete($request->user(), $id, filename: $input['filename'] ?? null);
+$key = $uploads->key($upload);
+
+// Later: a media from the upload, with the options of Mediatheque::uploadsUsing()
+$media = $uploads->ingest($request->user(), $id);
+```
+
 ## Probe
 
 A `Prober` reads a file's technical metadata: kind, mime, dimensions, rotation, duration, frame rate, bitrate, codecs, audio channels, page count, font names, animation.
@@ -463,21 +479,26 @@ Alpha 1 ships the upload routes. The routes work under a prefix with its own par
 
 | S3 request | Uppy's request → response |
 |---|---|
-| `CreateMultipartUpload`, `PutObject` | `{method: "POST" or "PUT", key}` → `{url, key}`: a new upload, with its own key `{uploads.path}/{upl_…}`; Uppy uses that key from then on |
+| `CreateMultipartUpload`, `PutObject` | `{method: "POST" or "PUT", key}` → `{url, key, upload}`: a new upload, `upload` (`upl_…`), with its own key `{uploads.path}/{upl_…}`; Uppy uses that key from then on |
 | `UploadPart` | `{method: "PUT", key, uploadId, partNumber}` → `{url, key}` |
 | `ListParts` | `{method: "GET", key, uploadId}` → `{url, key}` |
 | `CompleteMultipartUpload`, `AbortMultipartUpload` | `{method: "POST" or "DELETE", key, uploadId}` → `{url, key}` |
 | `DeleteObject` | `{method: "DELETE", key}` → `{url, key}` |
 
-A request other than the first is signed only for the key of an open upload of the same user, and for the first `uploadId` signed for it: anything else gets a `404`. When Uppy reports `upload-success`, the client completes the upload with `POST uploads/{id}/complete` and `{filename}`, without `parts`: `id` is the last segment of the key. The route checks that the file is on the storage (`409` otherwise), then ingests it.
+A request other than the first is signed only for the key of an open upload of the same user, and for the first `uploadId` signed for it: anything else gets a `404`. When Uppy reports `upload-success`, the client completes the upload with `POST uploads/{upload}/complete` and `{filename}`, without `parts`, where `upload` is the one the first sign response named ([decisions/0018](decisions/0018-direct-uploads-as-services.md)). The route checks that the file is on the storage (`409` otherwise), then ingests it.
 
 ```js
+const uploads = new Map() // key → upl_…
 uppy.use(AwsS3, {
   shouldUseMultipart: true,
-  signRequest: (request) => api.post('uploads/sign', request),
+  signRequest: async (request) => {
+    const signed = await api.post('uploads/sign', request)
+    if (signed.upload) uploads.set(signed.key, signed.upload)
+    return signed
+  },
 })
 uppy.on('upload-success', (file, { body }) =>
-  api.post(`uploads/${body.key.split('/').pop()}/complete`, { filename: file.name }))
+  api.post(`uploads/${uploads.get(body.key)}/complete`, { filename: file.name }))
 ```
 
 The bucket's CORS rules must allow `PUT` from the application's origin and expose the `ETag` header; with Uppy 6, they must also allow `POST`, `GET` and `DELETE`, and the `Content-Type` header. Parts are 5 MB at least, except the last one (S3's rule). The type the client sends with the file is never kept: the media's file gets the type detected from its content.
@@ -585,6 +606,7 @@ src/                                  PSR-4: Folklore\Mediatheque\
   Ingest/                             Sources, validation, sanitizers, path formatter
   Probe/                              Prober contract implementations
   Pipelines/                          Renditions, runner, recorder
+  Uploads/                            DirectUploads, multipart storage, S3 operations, the options of uploads
   Transcoders/Ffmpeg/, MediaConvert/
   Urls/                               UrlGenerator, signers
   References/                         media:// and medias:// parsing and resolution

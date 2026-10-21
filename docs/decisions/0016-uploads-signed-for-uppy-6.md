@@ -1,6 +1,6 @@
 # 0016: Direct uploads signed for Uppy 6
 
-- Status: accepted
+- Status: accepted, amended by [0018](0018-direct-uploads-as-services.md)
 - Date: 2026-10-21
 - Amends: 0015
 

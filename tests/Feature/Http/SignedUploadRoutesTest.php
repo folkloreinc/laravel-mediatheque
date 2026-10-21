@@ -42,12 +42,11 @@ class SignedUploadRoutesTest extends UploadRoutesTestCase
     private function start(User $user, string $method = 'POST'): array
     {
         $response = $this->actingAs($user)->sign(['method' => $method, 'key' => 'b3f1-clip.mp4'])->assertOk();
-        $key = $this->string($response->json('key'));
 
         return [
             'url' => $this->string($response->json('url')),
-            'key' => $key,
-            'upload' => Upload::query()->where('uid', basename($key))->sole(),
+            'key' => $this->string($response->json('key')),
+            'upload' => Upload::query()->where('uid', $this->string($response->json('upload')))->sole(),
         ];
     }
 
@@ -130,6 +129,7 @@ class SignedUploadRoutesTest extends UploadRoutesTestCase
         ['url' => $url, 'key' => $key, 'upload' => $upload] = $this->start($user);
 
         $this->assertMatchesRegularExpression('#^mediatheque-uploads/upl_[0-9a-z]+$#i', $key, 'The key the client proposed is ignored.');
+        $this->assertSame('mediatheque-uploads/'.$upload->uid, $key, 'The response names the upload the request created.');
         $this->assertSame('/'.$this->bucket.'/'.$key, parse_url($url, PHP_URL_PATH));
         $query = $this->presignedQuery($url);
         $this->assertArrayHasKey('uploads', $query);
@@ -141,8 +141,9 @@ class SignedUploadRoutesTest extends UploadRoutesTestCase
     #[Test]
     public function a_single_put_object_gets_its_own_key(): void
     {
-        ['url' => $url, 'key' => $key] = $this->start($this->user(), 'PUT');
+        ['url' => $url, 'key' => $key, 'upload' => $upload] = $this->start($this->user(), 'PUT');
 
+        $this->assertSame('mediatheque-uploads/'.$upload->uid, $key);
         $this->assertSame('/'.$this->bucket.'/'.$key, parse_url($url, PHP_URL_PATH));
         $this->assertArrayNotHasKey('uploads', $this->presignedQuery($url));
         $this->assertArrayNotHasKey('uploadId', $this->presignedQuery($url));
@@ -164,7 +165,7 @@ class SignedUploadRoutesTest extends UploadRoutesTestCase
         ];
 
         foreach ($requests as $operation => [$request, $expected]) {
-            $response = $this->sign(['key' => $key, ...$request])->assertOk()->assertJsonPath('key', $key);
+            $response = $this->sign(['key' => $key, ...$request])->assertOk()->assertJsonPath('key', $key)->assertJsonMissingPath('upload');
             $url = $this->string($response->json('url'));
 
             $this->assertSame('/'.$this->bucket.'/'.$key, parse_url($url, PHP_URL_PATH), $operation);
@@ -347,6 +348,20 @@ class SignedUploadRoutesTest extends UploadRoutesTestCase
             ->assertOk()
             ->assertJsonPath('id', $first->json('id'));
         $this->assertSame(1, Media::query()->count());
+    }
+
+    #[Test]
+    public function an_upload_without_a_multipart_upload_is_aborted_with_its_file(): void
+    {
+        $this->requiresStorage();
+        $user = $this->user();
+        ['url' => $url, 'upload' => $upload] = $this->start($user, 'PUT');
+        $this->sendToStorage('PUT', $url, 'half a file');
+
+        $this->deleteJson('/mediatheque/uploads/'.$upload->uid)->assertNoContent();
+
+        $this->assertSame(UploadStatus::Aborted, $upload->refresh()->status);
+        Storage::disk('s3')->assertMissing($upload->path);
     }
 
     #[Test]

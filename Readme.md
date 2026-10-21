@@ -87,14 +87,17 @@ With Uppy 5's `AwsS3` plugin, each of its functions calls one route, and the ser
 With Uppy 6 (`@uppy/aws-s3` 6.1 or later), the browser sends every S3 request itself: `POST uploads/sign` presigns each one, and gives a new upload its own key. Complete the upload once Uppy is done, so the package ingests it:
 
 ```js
+const uploads = new Map() // key → upl_…
 uppy.use(AwsS3, {
   shouldUseMultipart: true,
-  signRequest: (request) => api.post('/mediatheque/uploads/sign', request), // → {url, key}
+  signRequest: async (request) => {
+    const signed = await api.post('/mediatheque/uploads/sign', request) // → {url, key}, and upload for a new file
+    if (signed.upload) uploads.set(signed.key, signed.upload)
+    return signed
+  },
 })
-uppy.on('upload-success', (file, { body }) => {
-  const id = body.key.split('/').pop() // the key ends with the upload's id
-  return api.post(`/mediatheque/uploads/${id}/complete`, { filename: file.name })
-})
+uppy.on('upload-success', (file, { body }) =>
+  api.post(`/mediatheque/uploads/${uploads.get(body.key)}/complete`, { filename: file.name }))
 ```
 
 The bucket's CORS rules must then allow `PUT`, `POST`, `GET` and `DELETE` from your origin, allow the `Content-Type` header, and expose `ETag`:
@@ -107,6 +110,8 @@ The bucket's CORS rules must then allow `PUT`, `POST`, `GET` and `DELETE` from y
   "ExposeHeaders": ["ETag"]
 }]
 ```
+
+To offer the same flow under your own routes, call `Folklore\Mediatheque\Uploads\DirectUploads`: its `sign()`, `complete()` and `ingest()` apply the same policy, owners and `uploadsUsing()` options as the package's routes ([architecture.md](docs/architecture.md#direct-and-resumable-uploads)).
 
 The routes work under a prefix with your own parameters, such as `Route::prefix('workspaces/{workspace}')->group(fn () => Route::mediatheque())`.
 

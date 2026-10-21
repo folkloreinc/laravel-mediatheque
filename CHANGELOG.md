@@ -30,6 +30,11 @@ What a monitoring view needs is recorded ([decisions/0017](docs/decisions/0017-m
 - `php artisan mediatheque:status`: media by status, runs in progress and stuck, what ended in the last hours, and the latest failures (#75).
 - `PipelineRunResource`, `PipelineJobResource` and `UploadResource`, the JSON shapes of runs, their renditions and uploads, with fixtures in `tests/fixtures/json/` (#77).
 - `createdAt()`, `startedAt()` and `endedAt()` on the `PipelineRun` contract, and `queuedAt()`, `startedAt()` and `endedAt()` on the `PipelineJob` contract. The fake's recorder sets them as the Eloquent recorder does (#77).
+- `DirectUploads`, the services behind the upload routes, for an application or a package that offers the same flow under its own routes ([decisions/0018](docs/decisions/0018-direct-uploads-as-services.md), #65):
+  - `sign()`, `find()`, `findByKey()`, `complete()` and `ingest()`, and Uppy 5's `create()`, `signParts()`, `parts()` and `abort()`, each with the user, the media policy and the upload's owner;
+  - `complete()` makes sure the file is on the storage and records its size, without ingesting it; `ingest()` makes the media, with the options of `Mediatheque::uploadsUsing()`;
+  - errors are exceptions: `UploadNotFound`, `UploadExpired`, `UploadIncomplete`, `UnknownS3Operation`, and `FileRejected`.
+- `POST uploads/sign` names the upload a new file creates: `{url, key, upload}` for `CreateMultipartUpload` and `PutObject`, so clients don't read the id from the key (#65).
 
 ### Changed
 
@@ -40,6 +45,7 @@ What a monitoring view needs is recorded ([decisions/0017](docs/decisions/0017-m
 
 - Presigned upload URLs live `uploads.url_ttl` seconds exactly: they could live a second less, or be off by however far the application's clock was frozen or traveled (#78).
 - A pending probe that completed through the recorder made the media `ready` without probing it, and its pipeline never started.
+- `DELETE uploads/{upload}` failed for an upload without a multipart upload, as one started by `uploads/sign` with `PutObject`: it now deletes the file the client sent. Signing or listing the parts of such an upload answers `409` (`not_multipart`) instead of failing (#65).
 
 ## [2.0.0-alpha.3] - 2026-10-21
 
