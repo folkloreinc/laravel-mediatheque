@@ -82,7 +82,33 @@ Mediatheque::uploadsUsing(fn (Request $request, Upload $upload) => new IngestOpt
 ));
 ```
 
-With Uppy's `AwsS3` plugin, each of its functions calls one route ([architecture.md](docs/architecture.md#http)). The bucket's CORS rules must allow `PUT` from your origin and expose the `ETag` header.
+With Uppy 5's `AwsS3` plugin, each of its functions calls one route, and the server creates and completes the multipart upload ([architecture.md](docs/architecture.md#http)). The bucket's CORS rules must allow `PUT` from your origin and expose the `ETag` header.
+
+With Uppy 6 (`@uppy/aws-s3` 6.1 or later), the browser sends every S3 request itself: `POST uploads/sign` presigns each one, and gives a new upload its own key. Complete the upload once Uppy is done, so the package ingests it:
+
+```js
+uppy.use(AwsS3, {
+  shouldUseMultipart: true,
+  signRequest: (request) => api.post('/mediatheque/uploads/sign', request), // → {url, key}
+})
+uppy.on('upload-success', (file, { body }) => {
+  const id = body.key.split('/').pop() // the key ends with the upload's id
+  return api.post(`/mediatheque/uploads/${id}/complete`, { filename: file.name })
+})
+```
+
+The bucket's CORS rules must then allow `PUT`, `POST`, `GET` and `DELETE` from your origin, allow the `Content-Type` header, and expose `ETag`:
+
+```json
+[{
+  "AllowedOrigins": ["https://app.example.com"],
+  "AllowedMethods": ["PUT", "POST", "GET", "DELETE"],
+  "AllowedHeaders": ["Content-Type"],
+  "ExposeHeaders": ["ETag"]
+}]
+```
+
+The routes work under a prefix with your own parameters, such as `Route::prefix('workspaces/{workspace}')->group(fn () => Route::mediatheque())`.
 
 ### Images with laravel-image
 

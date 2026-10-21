@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Date;
 /**
  * Multipart uploads on an S3-compatible disk, through the disk's own client:
  * the package signs requests, and the client sends the parts to the storage
- * directly. Needs `league/flysystem-aws-s3-v3`.
+ * directly. With Uppy 6, the client sends every S3 request itself, and the
+ * package only presigns them (`sign()`). Needs `league/flysystem-aws-s3-v3`.
  */
 class MultipartStorage
 {
@@ -41,16 +42,44 @@ class MultipartStorage
      */
     public function signPart(string $disk, string $path, string $uploadId, int $part, int $ttl): string
     {
+        return $this->sign($disk, $path, S3Operation::UploadPart, $ttl, $uploadId, $part);
+    }
+
+    /**
+     * A presigned URL for one S3 request the client sends to the storage
+     * itself, with the operation's HTTP method. Signing needs no request to
+     * the storage.
+     */
+    public function sign(string $disk, string $path, S3Operation $operation, int $ttl, ?string $uploadId = null, ?int $part = null): string
+    {
         [$client, $bucket, $key] = $this->target($disk, $path);
 
-        $command = $client->getCommand('UploadPart', [
+        if ($operation->needsUploadId() && ($uploadId === null || $uploadId === '')) {
+            throw new \InvalidArgumentException(sprintf('%s needs the id of a multipart upload.', $operation->value));
+        }
+
+        if ($operation === S3Operation::UploadPart && $part === null) {
+            throw new \InvalidArgumentException('UploadPart needs a part number.');
+        }
+
+        $parameters = array_filter([
             'Bucket' => $bucket,
             'Key' => $key,
-            'UploadId' => $uploadId,
-            'PartNumber' => $part,
-        ]);
+            'UploadId' => $operation->needsUploadId() ? $uploadId : null,
+            'PartNumber' => $operation === S3Operation::UploadPart ? $part : null,
+        ], fn (mixed $value) => $value !== null);
+
+        $command = $client->getCommand($operation->value, $parameters);
 
         return (string) $client->createPresignedRequest($command, Date::now()->addSeconds($ttl))->getUri();
+    }
+
+    /**
+     * The key of a file in the disk's bucket, with the disk's root.
+     */
+    public function key(string $disk, string $path): string
+    {
+        return $this->target($disk, $path)[2];
     }
 
     /**

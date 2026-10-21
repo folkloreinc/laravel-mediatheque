@@ -6,6 +6,18 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Added
+
+- Direct uploads for Uppy 6's `AwsS3` plugin (`@uppy/aws-s3` 6.1 or later), whose `signRequest` sends every S3 request from the browser: `POST uploads/sign` takes Uppy's request (`method`, `key`, `uploadId`, `partNumber`) and returns `{url, key}`. A `CreateMultipartUpload` or `PutObject` creates an upload for the user with its own key (`{uploads.path}/{upl_…}`); any other request is signed only for the key of an open upload of the same user, and for the first multipart upload signed for it. `POST uploads/{upload}/complete` without `parts` ingests a file the client already completed on the storage (`409` until it is there), and takes the media's `filename`. With Uppy 6, the bucket's CORS rules must also allow `POST`, `GET`, `DELETE` and the `Content-Type` header ([decisions/0016](docs/decisions/0016-uploads-signed-for-uppy-6.md), #65).
+
+### Changed
+
+- The original of a media ingested from the same disk, as uploads are, gets the type detected from its content on the storage, rather than the type it was uploaded with ([decisions/0016](docs/decisions/0016-uploads-signed-for-uppy-6.md), #65).
+
+### Fixed
+
+- The upload routes work under a prefix that has its own parameters, such as `workspaces/{workspace}`: the actions received the prefix's parameter as the upload's id, and answered `404` (#65).
+
 ## [2.0.0-alpha.2] - 2026-10-16
 
 Image URLs for media, with `laravel-image` 2 (v2.0.0-alpha.1 or later).

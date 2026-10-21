@@ -1,6 +1,6 @@
 # 0015: The schema of a new install, application attributes, and uploads
 
-- Status: accepted
+- Status: accepted, amended by [0016](0016-uploads-signed-for-uppy-6.md)
 - Date: 2026-10-16
 
 ## Context

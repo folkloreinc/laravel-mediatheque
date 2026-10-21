@@ -16,6 +16,7 @@ final class Routes
     {
         $router->prefix($prefix)->name('mediatheque.')->group(function (Router $router) {
             $router->post('uploads', [UploadController::class, 'store'])->name('uploads.store');
+            $router->post('uploads/sign', [UploadController::class, 'sign'])->name('uploads.sign');
             $router->get('uploads/{upload}/parts', [UploadController::class, 'listParts'])->name('uploads.parts.index');
             $router->post('uploads/{upload}/parts', [UploadController::class, 'signParts'])->name('uploads.parts.sign');
             $router->post('uploads/{upload}/complete', [UploadController::class, 'complete'])->name('uploads.complete');

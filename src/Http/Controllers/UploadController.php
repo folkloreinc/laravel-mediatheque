@@ -13,6 +13,7 @@ use Folklore\Mediatheque\Models\Upload;
 use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Support\Models;
 use Folklore\Mediatheque\Uploads\MultipartStorage;
+use Folklore\Mediatheque\Uploads\S3Operation;
 use Folklore\Mediatheque\Uploads\UploadOptions;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Access\Gate;
@@ -23,13 +24,17 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
  * Presigned multipart uploads, for Uppy's `AwsS3` plugin and other clients
- * (docs/decisions/0006, 0008, 0015).
+ * (docs/decisions/0006, 0008, 0015, 0016).
  *
+ * - With Uppy 5, the server creates and completes the multipart upload, and
+ *   signs its parts. With Uppy 6, the client sends every S3 request itself,
+ *   presigned by `sign()`, then completes the upload here to ingest it.
  * - Every step is authorized with the `create` ability of the media
  *   model's policy; without a policy, every request is denied.
  * - An upload belongs to the user who created it: for anyone else it
@@ -71,23 +76,8 @@ class UploadController
                 return Problem::response(422, 'The file is too large.', sprintf('Files can\'t be larger than %d bytes.', $limit), ['reason' => 'too_large']);
             }
 
-            $upload = Models::upload()::query()->getModel()->newInstance();
-            $disk = $this->config->uploadsDisk();
-            $uid = $upload->newUniqueId();
-            $path = $this->config->uploadsPath().'/'.$uid;
-
-            $upload->forceFill([
-                'uid' => $uid,
-                'status' => UploadStatus::Pending,
-                'disk' => $disk,
-                'path' => $path,
-                'filename' => is_string($input['filename'] ?? null) ? $input['filename'] : null,
-                'size' => $size,
-                'creator_type' => $user->getMorphClass(),
-                'creator_id' => $user->getKey(),
-                'expires_at' => Date::now()->addSeconds($this->config->uploadsExpireAfter()),
-                'provider_upload_id' => $this->storage->start($disk, $path),
-            ])->save();
+            $upload = $this->newUpload($user, is_string($input['filename'] ?? null) ? $input['filename'] : null, $size);
+            $upload->forceFill(['provider_upload_id' => $this->storage->start($upload->disk, $upload->path)])->save();
 
             return new JsonResponse([
                 'id' => $upload->uid,
@@ -97,12 +87,63 @@ class UploadController
     }
 
     /**
+     * Presign one S3 request, for Uppy 6's `signRequest`: `{method, key,
+     * uploadId?, partNumber?}` → `{url, key}` (docs/decisions/0016).
+     *
+     * - A new upload (`CreateMultipartUpload`: `POST` without `uploadId`;
+     *   `PutObject`: `PUT` without `uploadId`) gets its own key,
+     *   `{uploads.path}/{upl_…}` on the disk, whatever key the client
+     *   proposed. The last segment of the key is the upload's id.
+     * - Any other request is signed only for the key of an open upload of
+     *   this user, and only for the multipart upload that key started: the
+     *   first `uploadId` signed for an upload is the only one it accepts.
+     */
+    public function sign(Request $request): SymfonyResponse
+    {
+        return $this->respond($request, function (Model $user) use ($request) {
+            $input = $this->validate($request, [
+                'method' => ['required', 'string', 'in:GET,PUT,POST,DELETE'],
+                'key' => ['required', 'string', 'max:1024'],
+                'uploadId' => ['sometimes', 'nullable', 'string', 'max:1024'],
+                'partNumber' => ['sometimes', 'nullable', 'integer', 'between:1,'.self::MAX_PARTS],
+                'contentType' => ['sometimes', 'nullable', 'string', 'max:255'],
+            ]);
+
+            $uploadId = is_string($input['uploadId'] ?? null) && $input['uploadId'] !== '' ? $input['uploadId'] : null;
+            $part = isset($input['partNumber']) ? $this->integer($input['partNumber']) : null;
+            $operation = S3Operation::fromRequest(is_string($input['method'] ?? null) ? $input['method'] : '', $uploadId !== null, $part !== null);
+
+            if ($operation === null) {
+                return Problem::response(422, 'The request is invalid.', 'No S3 request has this method, upload id and part number.', ['reason' => 'unknown_operation']);
+            }
+
+            if ($operation->startsUpload()) {
+                $upload = $this->newUpload($user, null, null);
+                $url = $this->storage->sign($upload->disk, $upload->path, $operation, $this->config->uploadsUrlTtl());
+                $upload->save();
+            } else {
+                $upload = $this->findByKey($user, is_string($input['key'] ?? null) ? $input['key'] : '', $uploadId);
+                if (! $upload instanceof Upload) {
+                    return $upload;
+                }
+
+                $url = $this->storage->sign($upload->disk, $upload->path, $operation, $this->config->uploadsUrlTtl(), $uploadId, $part);
+            }
+
+            return new JsonResponse([
+                'url' => $url,
+                'key' => $this->storage->key($upload->disk, $upload->path),
+            ]);
+        });
+    }
+
+    /**
      * Sign parts: `{part_numbers: [1, 2…]}` → `{parts: [{number, url}]}`.
      */
-    public function signParts(Request $request, string $upload): SymfonyResponse
+    public function signParts(Request $request): SymfonyResponse
     {
-        return $this->respond($request, function (Model $user) use ($request, $upload) {
-            $upload = $this->find($user, $upload);
+        return $this->respond($request, function (Model $user) use ($request) {
+            $upload = $this->find($user, $this->uploadParameter($request));
             if (! $upload instanceof Upload) {
                 return $upload;
             }
@@ -128,10 +169,10 @@ class UploadController
     /**
      * The parts the storage received: `{parts: [{number, etag, size}]}`.
      */
-    public function listParts(Request $request, string $upload): SymfonyResponse
+    public function listParts(Request $request): SymfonyResponse
     {
-        return $this->respond($request, function (Model $user) use ($upload) {
-            $upload = $this->find($user, $upload);
+        return $this->respond($request, function (Model $user) use ($request) {
+            $upload = $this->find($user, $this->uploadParameter($request));
             if (! $upload instanceof Upload) {
                 return $upload;
             }
@@ -141,12 +182,19 @@ class UploadController
     }
 
     /**
-     * Complete an upload: `{parts: [{number, etag}]}` → the media.
+     * Complete an upload and ingest it → the media.
+     *
+     * - With `{parts: [{number, etag}]}`, the server completes the multipart
+     *   upload on the storage (Uppy 5).
+     * - Without `parts`, the client already completed it on the storage, or
+     *   sent the file in one `PutObject` (Uppy 6): the file must be there.
+     *
+     * `filename` names the media when the upload has no file name yet.
      */
-    public function complete(Request $request, string $upload): SymfonyResponse
+    public function complete(Request $request): SymfonyResponse
     {
-        return $this->respond($request, function (Model $user) use ($request, $upload) {
-            $upload = $this->find($user, $upload, allowCompleted: true);
+        return $this->respond($request, function (Model $user) use ($request) {
+            $upload = $this->find($user, $this->uploadParameter($request), allowCompleted: true);
             if (! $upload instanceof Upload) {
                 return $upload;
             }
@@ -158,21 +206,34 @@ class UploadController
             }
 
             $input = $this->validate($request, [
-                'parts' => ['required', 'array', 'min:1', 'max:'.self::MAX_PARTS],
+                'parts' => ['sometimes', 'array', 'min:1', 'max:'.self::MAX_PARTS],
                 'parts.*.number' => ['required', 'integer', 'between:1,'.self::MAX_PARTS, 'distinct'],
                 'parts.*.etag' => ['required', 'string', 'max:255'],
+                'filename' => ['sometimes', 'nullable', 'string', 'max:255'],
             ]);
+            $disk = $this->filesystems->disk($upload->disk);
 
-            $parts = [];
-            foreach (is_array($input['parts'] ?? null) ? $input['parts'] : [] as $part) {
-                $parts[] = [
-                    'number' => $this->integer(is_array($part) ? ($part['number'] ?? null) : null),
-                    'etag' => is_array($part) && is_string($part['etag'] ?? null) ? $part['etag'] : '',
-                ];
+            if (is_array($input['parts'] ?? null)) {
+                if ($upload->provider_upload_id === null) {
+                    return Problem::response(409, 'The upload has no multipart upload.', 'Complete it on the storage, then complete it here without parts.', ['reason' => 'not_multipart']);
+                }
+
+                $parts = [];
+                foreach ($input['parts'] as $part) {
+                    $parts[] = [
+                        'number' => $this->integer(is_array($part) ? ($part['number'] ?? null) : null),
+                        'etag' => is_array($part) && is_string($part['etag'] ?? null) ? $part['etag'] : '',
+                    ];
+                }
+
+                $this->storage->complete($upload->disk, $upload->path, $upload->provider_upload_id, $parts);
+            } elseif (! $disk->exists($upload->path)) {
+                return Problem::response(409, 'The upload is not complete.', 'The storage has no file for this upload: complete it on the storage first, or send its parts.', ['reason' => 'incomplete']);
             }
 
-            $this->storage->complete($upload->disk, $upload->path, (string) $upload->provider_upload_id, $parts);
-            $disk = $this->filesystems->disk($upload->disk);
+            if (is_string($input['filename'] ?? null) && $input['filename'] !== '' && $upload->filename === null) {
+                $upload->forceFill(['filename' => $input['filename']])->save();
+            }
 
             try {
                 $media = $this->ingestor->ingest(
@@ -199,10 +260,10 @@ class UploadController
     /**
      * Abort an upload and remove its parts.
      */
-    public function destroy(Request $request, string $upload): SymfonyResponse
+    public function destroy(Request $request): SymfonyResponse
     {
-        return $this->respond($request, function (Model $user) use ($upload) {
-            $upload = $this->find($user, $upload);
+        return $this->respond($request, function (Model $user) use ($request) {
+            $upload = $this->find($user, $this->uploadParameter($request));
             if (! $upload instanceof Upload) {
                 return $upload;
             }
@@ -236,6 +297,73 @@ class UploadController
         } catch (ValidationException $exception) {
             return Problem::response(422, 'The request is invalid.', $exception->getMessage(), ['errors' => $exception->errors()]);
         }
+    }
+
+    /**
+     * A new upload of this user, not saved yet, with its own path.
+     */
+    private function newUpload(Model $user, ?string $filename, ?int $size): Upload
+    {
+        $upload = Models::upload()::query()->getModel()->newInstance();
+        $uid = $upload->newUniqueId();
+
+        return $upload->forceFill([
+            'uid' => $uid,
+            'status' => UploadStatus::Pending,
+            'disk' => $this->config->uploadsDisk(),
+            'path' => $this->config->uploadsPath().'/'.$uid,
+            'filename' => $filename,
+            'size' => $size,
+            'creator_type' => $user->getMorphClass(),
+            'creator_id' => $user->getKey(),
+            'expires_at' => Date::now()->addSeconds($this->config->uploadsExpireAfter()),
+        ]);
+    }
+
+    /**
+     * The `{upload}` parameter of the route, read by name: an application
+     * can put the routes under a prefix with its own parameters, which
+     * Laravel would pass to the action first.
+     */
+    private function uploadParameter(Request $request): string
+    {
+        $upload = $request->route('upload');
+
+        return match (true) {
+            $upload instanceof Upload => $upload->uid,
+            is_string($upload) => $upload,
+            default => '',
+        };
+    }
+
+    /**
+     * The open upload of this user that has this key on its disk, or the
+     * problem to answer. With an `uploadId`, the upload must be that
+     * multipart upload: the first id signed for it is recorded.
+     */
+    private function findByKey(Model $user, string $key, ?string $uploadId): Upload|JsonResponse
+    {
+        $upload = $this->find($user, Str::afterLast($key, '/'));
+
+        if (! $upload instanceof Upload) {
+            return $upload;
+        }
+
+        if ($this->storage->key($upload->disk, $upload->path) !== $key) {
+            return Problem::response(404, 'The upload doesn\'t exist.');
+        }
+
+        if ($uploadId !== null && $upload->provider_upload_id === null) {
+            // Only the first multipart upload of a key is recorded, even when two requests race
+            $upload->newQuery()->whereKey($upload->getKey())->whereNull('provider_upload_id')->update(['provider_upload_id' => $uploadId]);
+            $upload->refresh();
+        }
+
+        if ($uploadId !== null && $upload->provider_upload_id !== $uploadId) {
+            return Problem::response(404, 'The upload doesn\'t exist.');
+        }
+
+        return $upload;
     }
 
     /**
