@@ -1,6 +1,6 @@
 # 0003: Prefixed ULIDs and `media://` references
 
-- Status: accepted
+- Status: accepted, amended by [0018](0018-ingest-only.md)
 - Date: 2026-10-15
 
 ## Context

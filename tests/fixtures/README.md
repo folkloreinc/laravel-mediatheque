@@ -3,7 +3,7 @@
 | Path | Content |
 |---|---|
 | `media/` | Sample media: images (JPEG, SVG, animated GIF), video (H.264, vertical HEVC), audio (WAV), a font (OTF) |
-| `json/` | The JSON shapes of `PipelineRunResource` and `UploadResource`, as the resource tests render them: a reference for clients such as the monitoring dashboard and Panneau 5 |
+| `json/` | The JSON shapes of `PipelineRunResource`, as the resource tests render them: a reference for clients such as the monitoring dashboard and Panneau 5 |
 | `v1/migrations/` | The 1.x migrations, as of `v1.1`: the schema that `mediatheque:upgrade` converts |
 | `v1/config.php` | The 1.x default config, as of `v1.1.3`: the shapes the compatibility layer reads |
 

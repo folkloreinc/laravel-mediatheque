@@ -23,7 +23,6 @@ use Illuminate\Support\Facades\Facade;
  * @method static bool refresh(\Folklore\Mediatheque\Contracts\Models\PipelineRun $run)
  * @method static bool probeAgain(\Folklore\Mediatheque\Contracts\Models\Media $media)
  * @method static void monitoringScope((\Closure(\Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model>, string): mixed)|null $scope)
- * @method static void uploadsUsing(\Closure(\Illuminate\Http\Request, \Folklore\Mediatheque\Models\Upload): (\Folklore\Mediatheque\Ingest\IngestOptions|null) $resolver)
  * @method static void assertIngested(\Closure(\Folklore\Mediatheque\Contracts\Models\Media): bool|null $callback = null, int|null $times = null)
  * @method static void assertNotIngested(\Closure(\Folklore\Mediatheque\Contracts\Models\Media): bool|null $callback = null)
  * @method static void assertNothingIngested()

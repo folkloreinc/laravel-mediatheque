@@ -23,7 +23,7 @@ class StatusCommand extends Command
                             {--hours=24 : The period, in hours up to now}
                             {--failures=10 : How many failure groups to list}';
 
-    protected $description = 'Show the state of media, pipeline runs and uploads';
+    protected $description = 'Show the state of media and pipeline runs';
 
     public function handle(Monitoring $monitoring): int
     {
@@ -52,13 +52,6 @@ class StatusCommand extends Command
             $this->components->twoColumnDetail(Str::ucfirst($status).' in the last '.$hours.' h', (string) $count);
         }
         $this->components->twoColumnDetail('Oldest queued rendition', $overview->oldestQueuedAt?->diffForHumans() ?? '—');
-
-        $this->newLine();
-        $this->components->twoColumnDetail('<options=bold>Uploads</>');
-        $this->components->twoColumnDetail('Open', (string) $overview->uploadsOpen);
-        foreach ($overview->uploadsEnded as $status => $count) {
-            $this->components->twoColumnDetail(Str::ucfirst($status).' in the last '.$hours.' h', (string) $count);
-        }
 
         if ($overview->stuckRuns > 0) {
             $this->newLine();

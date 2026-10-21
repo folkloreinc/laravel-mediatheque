@@ -1,6 +1,6 @@
 # 0006: One ingest step, with optional upload adapters
 
-- Status: accepted
+- Status: accepted, amended by [0018](0018-ingest-only.md): the package has no upload adapters
 - Date: 2026-10-15
 
 ## Context

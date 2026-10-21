@@ -10,14 +10,14 @@
 
 ## The alphas: upload and play a video, images through laravel-image
 
-The alphas are for new projects; the upgrade from 1.x comes in the beta. 2.0.0-alpha.1 uploads and plays videos; 2.0.0-alpha.2 adds image URLs through `laravel-image` 2; 2.0.0-alpha.3 adds direct uploads with Uppy 6.
+The alphas are for new projects; the upgrade from 1.x comes in the beta. 2.0.0-alpha.1 uploads and plays videos; 2.0.0-alpha.2 adds image URLs through `laravel-image` 2; 2.0.0-alpha.3 added direct uploads with Uppy 6, which the next alpha moves to the application, or to Panneau 5 ([decisions/0018](docs/decisions/0018-ingest-only.md)).
 
 ### Requirements
 
 - PHP 8.3+ and Laravel 12+.
 - ffmpeg and ffprobe on the servers that run your queue. The Imagick extension is optional: without it, image sizes come from `getimagesize()`.
 - A queue worker: probes and renditions run in jobs.
-- For direct uploads: an S3-compatible disk (`league/flysystem-aws-s3-v3`).
+- For S3-compatible disks: `league/flysystem-aws-s3-v3`.
 
 ### Install
 
@@ -56,59 +56,19 @@ Mediatheque::resolve('media://med_01JAB3…');
 
 A private media only gets temporary URLs, signed by its disk (S3, or a local disk with `'serve' => true`). Listen to `MediaReady` and `MediaFailed` to follow a media.
 
-### Direct uploads
+### Files uploaded directly to storage
 
-Large files go from the client to an S3-compatible disk in parts, without going through PHP. The routes are off until you register them inside your own middleware:
-
-```php
-// routes/web.php
-Route::middleware(['web', 'auth'])->group(function () {
-    Route::mediatheque();
-});
-```
-
-Every request needs a user, and the `create` ability of your media policy: without a policy, everything is denied.
+The package takes no uploads: it ingests files ([decisions/0018](docs/decisions/0018-ingest-only.md)). Large files go from the browser to an S3-compatible disk through your application's routes, or Panneau 5's direct uploads, which sign each request. Once a file is on the disk, ingest it from there. On the media's disk, it is moved without going through PHP:
 
 ```php
-Gate::policy(\Folklore\Mediatheque\Models\Media::class, MediaPolicy::class);
-```
-
-Choose, on the server, what the media of an upload gets:
-
-```php
-Mediatheque::uploadsUsing(fn (Request $request, Upload $upload) => new IngestOptions(
-    attributes: ['tenant_id' => $request->user()->current_tenant_id],
+$media = Mediatheque::ingest(
+    Source::disk('s3', $upload->path, $upload->name),
     visibility: Visibility::Private,
-));
+    attributes: ['tenant_id' => $request->user()->current_tenant_id],
+);
 ```
 
-With Uppy 5's `AwsS3` plugin, each of its functions calls one route, and the server creates and completes the multipart upload ([architecture.md](docs/architecture.md#http)). The bucket's CORS rules must allow `PUT` from your origin and expose the `ETag` header.
-
-With Uppy 6 (`@uppy/aws-s3` 6.1 or later), the browser sends every S3 request itself: `POST uploads/sign` presigns each one, and gives a new upload its own key. Complete the upload once Uppy is done, so the package ingests it:
-
-```js
-uppy.use(AwsS3, {
-  shouldUseMultipart: true,
-  signRequest: (request) => api.post('/mediatheque/uploads/sign', request), // → {url, key}
-})
-uppy.on('upload-success', (file, { body }) => {
-  const id = body.key.split('/').pop() // the key ends with the upload's id
-  return api.post(`/mediatheque/uploads/${id}/complete`, { filename: file.name })
-})
-```
-
-The bucket's CORS rules must then allow `PUT`, `POST`, `GET` and `DELETE` from your origin, allow the `Content-Type` header, and expose `ETag`:
-
-```json
-[{
-  "AllowedOrigins": ["https://app.example.com"],
-  "AllowedMethods": ["PUT", "POST", "GET", "DELETE"],
-  "AllowedHeaders": ["Content-Type"],
-  "ExposeHeaders": ["ETag"]
-}]
-```
-
-The routes work under a prefix with your own parameters, such as `Route::prefix('workspaces/{workspace}')->group(fn () => Route::mediatheque())`.
+The type comes from the file's content, never from the type the browser stored it with.
 
 ### Images with laravel-image
 

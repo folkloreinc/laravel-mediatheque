@@ -4,7 +4,6 @@ use Folklore\Mediatheque\Models\File;
 use Folklore\Mediatheque\Models\Media;
 use Folklore\Mediatheque\Models\PipelineJob;
 use Folklore\Mediatheque\Models\PipelineRun;
-use Folklore\Mediatheque\Models\Upload;
 
 return [
     /*
@@ -33,7 +32,6 @@ return [
         'file' => File::class,
         'pipeline_run' => PipelineRun::class,
         'pipeline_job' => PipelineJob::class,
-        'upload' => Upload::class,
     ],
 
     /*
@@ -169,24 +167,6 @@ return [
                 'waveform' => ['op' => 'audio.waveform', 'role' => 'thumbnail'],
             ],
         ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Uploads
-    |--------------------------------------------------------------------------
-    |
-    | Presigned multipart uploads, on the routes of Route::mediatheque():
-    | clients upload large files to an S3-compatible disk directly, in parts,
-    | and the package ingests them when they complete. `expires_after` and
-    | `url_ttl` are in seconds.
-    |
-    */
-    'uploads' => [
-        'disk' => env('MEDIATHEQUE_UPLOADS_DISK', 's3'),
-        'path' => 'mediatheque-uploads',
-        'expires_after' => 86400,
-        'url_ttl' => 3600,
     ],
 
     /*

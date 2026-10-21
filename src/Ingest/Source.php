@@ -57,7 +57,8 @@ final readonly class Source
 
     /**
      * A file already on a Laravel disk: moved or copied without going through
-     * PHP when the disk allows it. Direct uploads end here.
+     * PHP when the disk allows it. A file that the browser uploaded directly
+     * to storage, through the application's own routes, is ingested this way.
      */
     public static function disk(string $disk, string $path, ?string $filename = null): self
     {
