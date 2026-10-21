@@ -30,6 +30,7 @@ What a monitoring view needs is recorded ([decisions/0017](docs/decisions/0017-m
 
 ### Fixed
 
+- Presigned upload URLs live `uploads.url_ttl` seconds exactly: they could live a second less, or be off by however far the application's clock was frozen or traveled (#78).
 - A pending probe that completed through the recorder made the media `ready` without probing it, and its pipeline never started.
 
 ## [2.0.0-alpha.3] - 2026-10-21
