@@ -23,7 +23,7 @@
 4. **Convert the data:** `php artisan mediatheque:upgrade`. It backfills `uid`, copies metadata into JSON, converts pipelines to the new statuses and JSON definitions, splits grouped handles into handle and index, and adds the foreign keys. It can run in batches and be resumed.
 5. **Update the config.** The 1.x file keeps working, with deprecation notices. `php artisan mediatheque:upgrade --config` rewrites it with only the project's overrides, in the 2.0 shape.
 6. **Run the Rector rules:** `vendor/bin/rector process --config vendor/folklore/laravel-mediatheque/rector.php`.
-7. **Routes.** If the project used the package routes, register them with `Route::mediatheque()` inside its middleware, and write a policy for the media model ([decisions/0008](decisions/0008-secure-http.md)).
+7. **Routes.** 2.0 has no upload routes ([decisions/0018](decisions/0018-ingest-only.md)). If the project used the package's upload routes, take files in its own routes, or Panneau 5's, and call `Mediatheque::ingest()`.
 8. **Run the project's tests**, upload a file of each type, and check pages that show media.
 9. **Fix the deprecations** at your own pace. They are logged on the `deprecations` channel.
 10. **Later:** `php artisan mediatheque:upgrade --cleanup` drops the unused EAV `metadatas` table once you have checked the converted data.
@@ -63,7 +63,7 @@ Existing media become `public` and `ready` (or `failed` if their last pipeline f
 | `medias://{id}` references | `media://med_…` | `medias://` still resolves |
 | Contracts bound with `app()->bind()` | Models set in `config('mediatheque.models')` | 1.x bindings still honored |
 | `Support\PipelineJob` subclasses | Custom operations of the `ffmpeg` transcoder | Manual (see below) |
-| `Route::mediatheque()` loaded by default | Registered by the application, behind a policy | — |
+| `Route::mediatheque()` loaded by default | No upload routes: the application takes files and calls `ingest()` | — |
 | `media()` helper | `Mediatheque::ingest()` | Removed |
 
 ### Custom pipeline jobs

@@ -6,8 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * What monitoring needs (docs/decisions/0017): when each rendition starts
- * waiting in the queue, how each upload ended, and indexes for queries over
- * a period.
+ * waiting in the queue, and indexes for queries over a period.
  */
 return new class extends Migration
 {
@@ -26,20 +25,11 @@ return new class extends Migration
             $table->index('created_at');
             $table->index('ended_at');
         });
-
-        Schema::table($prefix.'uploads', function (Blueprint $table) {
-            $table->string('reason', 64)->nullable()->after('status');
-            $table->timestamp('ended_at')->nullable()->after('expires_at');
-        });
     }
 
     public function down(): void
     {
         $prefix = $this->prefix();
-
-        Schema::table($prefix.'uploads', function (Blueprint $table) {
-            $table->dropColumn(['reason', 'ended_at']);
-        });
 
         Schema::table($prefix.'pipelines_jobs', function (Blueprint $table) {
             $table->dropIndex(['created_at']);

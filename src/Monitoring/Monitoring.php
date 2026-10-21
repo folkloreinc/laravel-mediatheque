@@ -12,8 +12,6 @@ use Folklore\Mediatheque\Enums\JobStatus;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\PipelineStatus;
 use Folklore\Mediatheque\Enums\TranscoderErrorCode;
-use Folklore\Mediatheque\Enums\UploadStatus;
-use Folklore\Mediatheque\Models\Upload;
 use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Support\Models;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,8 +25,8 @@ use Illuminate\Support\Facades\Date;
  *
  * Queries ignore the application's global scopes, as the package's workers
  * do: monitoring sees every media unless the application narrows it with
- * `Mediatheque::monitoringScope()`. That scope narrows media and uploads,
- * and runs and renditions through their media.
+ * `Mediatheque::monitoringScope()`. That scope narrows media, and runs and
+ * renditions through their media.
  */
 class Monitoring
 {
@@ -38,9 +36,8 @@ class Monitoring
     public function __construct(private readonly MediathequeConfig $config) {}
 
     /**
-     * Narrow what monitoring reads. The closure receives a query of media
-     * (`media`) or of uploads (`upload`), without the application's global
-     * scopes.
+     * Narrow what monitoring reads. The closure receives a query of media,
+     * with the kind `media`, without the application's global scopes.
      *
      * @param  (Closure(Builder<covariant Model>, string): mixed)|null  $scope
      */
@@ -61,11 +58,6 @@ class Monitoring
             $runsEnded[$status->value] = $this->runQuery()->where('status', $status)->whereBetween('ended_at', $period->bounds())->count();
         }
 
-        $uploadsEnded = [];
-        foreach ([UploadStatus::Completed, UploadStatus::Aborted] as $status) {
-            $uploadsEnded[$status->value] = $this->uploadQuery()->where('status', $status)->whereBetween('ended_at', $period->bounds())->count();
-        }
-
         $oldest = $this->jobQuery()->where('status', JobStatus::Queued)->whereNotNull('queued_at')->min('queued_at');
 
         return new Overview(
@@ -75,8 +67,6 @@ class Monitoring
             stuckRuns: $this->stuck($this->runQuery())->count(),
             runsEnded: $runsEnded,
             oldestQueuedAt: is_string($oldest) || $oldest instanceof \DateTimeInterface ? CarbonImmutable::parse($oldest) : null,
-            uploadsOpen: $this->uploadQuery()->where('status', UploadStatus::Pending)->count(),
-            uploadsEnded: $uploadsEnded,
         );
     }
 
@@ -122,30 +112,6 @@ class Monitoring
         $page = $query->orderByDesc('id')->cursorPaginate($limit, ['*'], 'cursor', $cursor !== null ? Cursor::fromEncoded($cursor) : null);
 
         /** @var list<PipelineRunContract> $items */
-        $items = array_values($page->items());
-
-        return new Page($items, $page->nextCursor()?->encode());
-    }
-
-    /**
-     * Uploads created in a period, newest first.
-     *
-     * @return Page<Upload>
-     */
-    public function uploads(?UploadStatus $status = null, ?Period $period = null, ?string $cursor = null, int $limit = 50): Page
-    {
-        $query = $this->uploadQuery()->with(['media' => fn ($media) => $media->withoutGlobalScopes()]);
-
-        if ($status !== null) {
-            $query->where('status', $status);
-        }
-        if ($period !== null) {
-            $query->whereBetween('created_at', $period->bounds());
-        }
-
-        $page = $query->orderByDesc('id')->cursorPaginate($limit, ['*'], 'cursor', $cursor !== null ? Cursor::fromEncoded($cursor) : null);
-
-        /** @var list<Upload> $items */
         $items = array_values($page->items());
 
         return new Page($items, $page->nextCursor()?->encode());
@@ -340,20 +306,6 @@ class Monitoring
 
         if ($this->scope !== null) {
             $query->whereHas('pipelineRun', fn (Builder $run) => $run->whereHasMorph('pipelinable', [Models::media()], fn (Builder $media) => $this->scopeMedia($media->withoutGlobalScopes())));
-        }
-
-        return $query;
-    }
-
-    /**
-     * @return Builder<Upload>
-     */
-    private function uploadQuery(): Builder
-    {
-        $query = Models::upload()::query()->withoutGlobalScopes();
-
-        if ($this->scope !== null) {
-            ($this->scope)($query, 'upload');
         }
 
         return $query;

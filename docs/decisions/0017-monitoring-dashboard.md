@@ -1,6 +1,6 @@
 # 0017: A monitoring dashboard
 
-- Status: accepted
+- Status: accepted, amended by [0018](0018-ingest-only.md): no uploads
 - Date: 2026-10-21
 - Amends: [0012](0012-pipeline-runs-recorder-and-probe.md)
 

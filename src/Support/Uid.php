@@ -7,8 +7,7 @@ use Folklore\Mediatheque\Exceptions\InvalidUid;
 use Illuminate\Support\Str;
 
 /**
- * Prefixed ULIDs: `med_01JAB3QX…` for media, `upl_…` for uploads
- * (docs/decisions/0003).
+ * Prefixed ULIDs, such as `med_01JAB3QX…` for media (docs/decisions/0003).
  */
 final class Uid
 {

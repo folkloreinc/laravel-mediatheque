@@ -12,7 +12,6 @@ final readonly class Overview
     /**
      * @param  array<string, int>  $media  Media that aren't deleted, by status
      * @param  array<string, int>  $runsEnded  Runs that ended in the period, by status
-     * @param  array<string, int>  $uploadsEnded  Uploads that ended in the period, by status
      */
     public function __construct(
         public Period $period,
@@ -22,7 +21,5 @@ final readonly class Overview
         public array $runsEnded,
         /** When the rendition that has waited the longest in the queue was queued */
         public ?CarbonImmutable $oldestQueuedAt,
-        public int $uploadsOpen,
-        public array $uploadsEnded,
     ) {}
 }

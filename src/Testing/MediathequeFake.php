@@ -26,7 +26,6 @@ use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
 use Folklore\Mediatheque\Ingest\SourceKind;
 use Folklore\Mediatheque\Metadata\MetadataKey;
-use Folklore\Mediatheque\Models\Upload;
 use Folklore\Mediatheque\Pipelines\PipelineDefinition;
 use Folklore\Mediatheque\Pipelines\Rendition;
 use Folklore\Mediatheque\References\MediaReference;
@@ -35,13 +34,11 @@ use Folklore\Mediatheque\Testing\Models\FakeFile;
 use Folklore\Mediatheque\Testing\Models\FakeMedia;
 use Folklore\Mediatheque\Testing\Models\FakePipelineRun;
 use Folklore\Mediatheque\Transcoders\TranscoderError;
-use Folklore\Mediatheque\Uploads\UploadOptions;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Filesystem\Factory as Filesystems;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\File as LocalFile;
-use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -177,18 +174,6 @@ class MediathequeFake implements Fake, Mediatheque
         $this->probe($media, $pipeline);
 
         return $media;
-    }
-
-    /**
-     * Set the options of the media that uploads create, from the
-     * application's own context (docs/decisions/0015): a tenant id, a
-     * visibility, a pipeline.
-     *
-     * @param  Closure(Request, Upload): (IngestOptions|null)  $resolver
-     */
-    public function uploadsUsing(Closure $resolver): void
-    {
-        app(UploadOptions::class)->using($resolver);
     }
 
     public function resolve(MediaReference|string $reference): ?Media

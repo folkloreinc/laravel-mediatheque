@@ -31,7 +31,7 @@ What the pilot's media library needs first, end to end.
 - [x] Schema: `medias` with `uid`, `status`, `visibility`, `metadata`, soft deletes; `files` with `media_id`, `handle`, `index`, `role`, 64-bit `size`; pipeline runs and jobs with statuses ([#42](https://github.com/folkloreinc/laravel-mediatheque/issues/42))
 - [x] Migrations owned by the application (`mediatheque:install` publishes them) ([#22](https://github.com/folkloreinc/laravel-mediatheque/issues/22), [#42](https://github.com/folkloreinc/laravel-mediatheque/issues/42))
 - [x] `Mediatheque::ingest()` from an uploaded file and from a file on a disk, with content-based types and validation ([#50](https://github.com/folkloreinc/laravel-mediatheque/issues/50))
-- [x] Presigned multipart uploads to an S3-compatible disk (opt-in routes, policy) ([#54](https://github.com/folkloreinc/laravel-mediatheque/issues/54))
+- [x] Presigned multipart uploads to an S3-compatible disk (opt-in routes, policy) ([#54](https://github.com/folkloreinc/laravel-mediatheque/issues/54)); moved to Panneau 5 since ([decisions/0018](decisions/0018-ingest-only.md))
 - [x] Path formatter that receives the media, with a prefix per run ([#44](https://github.com/folkloreinc/laravel-mediatheque/issues/44))
 - [x] Queued probe (ffprobe, Imagick) through the asynchronous `Prober` contract ([#48](https://github.com/folkloreinc/laravel-mediatheque/issues/48))
 - [x] `ffmpeg` transcoder: web video rendition (`h264`), poster and thumbnails ([#52](https://github.com/folkloreinc/laravel-mediatheque/issues/52))
@@ -44,7 +44,7 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 ## Alpha 2: content and protected playback
 
 - [x] `laravel-image` 2 resolver, so images ingested here get presets and signed URLs ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md), [#56](https://github.com/folkloreinc/laravel-mediatheque/issues/56)); moved from alpha 1, released in [2.0.0-alpha.2](https://github.com/folkloreinc/laravel-mediatheque/releases/tag/v2.0.0-alpha.2) once `laravel-image` v2.0.0-alpha.1 was tagged ([#62](https://github.com/folkloreinc/laravel-mediatheque/issues/62))
-- [x] Direct uploads for Uppy 6's `AwsS3` plugin (`signRequest`), next to Uppy 5's ([decisions/0016](decisions/0016-uploads-signed-for-uppy-6.md), [#65](https://github.com/folkloreinc/laravel-mediatheque/issues/65)); released in [2.0.0-alpha.3](https://github.com/folkloreinc/laravel-mediatheque/releases/tag/v2.0.0-alpha.3) ([#67](https://github.com/folkloreinc/laravel-mediatheque/issues/67))
+- [x] Direct uploads for Uppy 6's `AwsS3` plugin (`signRequest`), next to Uppy 5's ([decisions/0016](decisions/0016-uploads-signed-for-uppy-6.md), [#65](https://github.com/folkloreinc/laravel-mediatheque/issues/65)); released in [2.0.0-alpha.3](https://github.com/folkloreinc/laravel-mediatheque/releases/tag/v2.0.0-alpha.3) ([#67](https://github.com/folkloreinc/laravel-mediatheque/issues/67)); moved to Panneau 5 since
 - [ ] Visibility changes, CDN prefixes, `UrlSigner` contract
 - [ ] `HasMedias` with `attachMedia`, `syncMedias`, `media()`; usage graph; media in use protected from deletion
 - [ ] `media://` references: parser, batch resolution
@@ -53,6 +53,7 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] `MediaResource` and `FileResource`, in sync with Panneau 5's protocol
 - [ ] Contract for Panneau 5's media adapter ([laravel-panneau#35](https://github.com/folkloreinc/laravel-panneau/issues/35))
 - [ ] Images at ingest: HEIC, orientation, GPS removal, ThumbHash placeholder
+- [ ] Uploads leave the package: no upload routes, model or table; ingest from a file on a disk, as Panneau 5's direct uploads end ([decisions/0018](decisions/0018-ingest-only.md), [laravel-panneau#81](https://github.com/folkloreinc/laravel-panneau/issues/81))
 - [x] SVG sanitizing (shipped in alpha 1 with the ingest, [#50](https://github.com/folkloreinc/laravel-mediatheque/issues/50))
 
 ## Alpha 3: parity with 1.x
@@ -62,12 +63,11 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] Fonts: web fonts, family names
 - [ ] Animated GIF and WebP as video
 - [ ] URL import behind an SSRF guard
-- [ ] TUS adapter
 - [ ] `mediaconvert` transcoder, asynchronous, polled by `mediatheque:refresh`
 - [ ] `mediatheque:doctor`, `mediatheque:run-pipeline`, `mediatheque:refresh`
 - [ ] Custom types, renditions and operations through the config and `extend*()`
 - [ ] Monitoring ([decisions/0017](decisions/0017-monitoring-dashboard.md), [#69](https://github.com/folkloreinc/laravel-mediatheque/issues/69)):
-  - every probe recorded as a run, `queued_at` on renditions, a reason and an end time on uploads, `IngestRejected`, indexes for periods ([#71](https://github.com/folkloreinc/laravel-mediatheque/issues/71));
+  - every probe recorded as a run, `queued_at` on renditions, `IngestRejected`, indexes for periods ([#71](https://github.com/folkloreinc/laravel-mediatheque/issues/71));
   - ended runs pruned by `mediatheque:prune`, keeping each media's last run of each pipeline;
   - the `Monitoring` read model ([#75](https://github.com/folkloreinc/laravel-mediatheque/issues/75));
   - `retry()`, `cancel()`, `refresh()` and `probeAgain()` ([#73](https://github.com/folkloreinc/laravel-mediatheque/issues/73));
@@ -89,7 +89,7 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] HLS rendition, with private playback (signed segments)
 - [ ] Derived media: clips with start, end and crop
 - [ ] `captions` type; transcription through transcoders that support it
-- [ ] JSON resources for runs, renditions and uploads, reviewed with Panneau 5 (written in [#77](https://github.com/folkloreinc/laravel-mediatheque/issues/77); the review with Panneau 5 remains)
+- [ ] JSON resources for runs and renditions, reviewed with Panneau 5 (written in [#77](https://github.com/folkloreinc/laravel-mediatheque/issues/77); the review with Panneau 5 remains)
 - [ ] The monitoring dashboard ([decisions/0017](decisions/0017-monitoring-dashboard.md)):
   - a precompiled React SPA on `@panneau/ui`, with `Route::mediathequeDashboard()`;
   - its two gates, open in `local` until the application defines them;
@@ -122,6 +122,5 @@ Needed before the pilot launches: `laravel-mediatheque`, `laravel-image` and Pan
 
 ## Open questions
 
-- Which TUS server library to use (decided when alpha 3 starts).
 - How private HLS is signed: playlist rewriting or CDN tokens (decided in the beta).
 - Whether a `laravel-folklore` 1.x minor accepts `^1.1|^2.0` of this package, or projects wait for `laravel-folklore` 2.

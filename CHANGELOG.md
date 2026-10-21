@@ -6,17 +6,22 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
-What a monitoring view needs is recorded ([decisions/0017](docs/decisions/0017-monitoring-dashboard.md), #71). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new migration only.
+What a monitoring view needs is recorded ([decisions/0017](docs/decisions/0017-monitoring-dashboard.md), #71), and uploads leave the package: it ingests files, and applications take uploads, through Panneau 5's direct uploads or their own routes ([decisions/0018](docs/decisions/0018-ingest-only.md)). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new migrations only, and the last one drops the `uploads` table.
 
 ### Breaking changes
 
 - The `Mediatheque` contract has `retry()`, `cancel()`, `refresh()` and `probeAgain()`: a class that implements it implements them too (#73).
 - The `PipelineRun` and `PipelineJob` contracts have timestamp methods: a class that implements them implements them too (#77).
+- Uploads are removed ([decisions/0018](docs/decisions/0018-ingest-only.md)). Upload through Panneau 5's direct uploads, or your own routes, then ingest the file with `Mediatheque::ingest(Source::disk($disk, $path, $filename))`. Removed:
+  - `Route::mediatheque()` and its upload routes;
+  - `Mediatheque::uploadsUsing()`: pass the media's options to `ingest()`;
+  - `Folklore\Mediatheque\Models\Upload`, `Enums\UploadStatus` and `Folklore\Mediatheque\Uploads\*`;
+  - the `uploads` config and the `models.upload` key;
+  - the `uploads` table, dropped by the new `drop_mediatheque_uploads_table` migration.
 
 ### Added
 
 - `queued_at` on pipeline jobs: when the rendition can run, that is when its run is created, or when the rendition it reads from completes.
-- `reason` and `ended_at` on uploads: `aborted` by its creator, or the reason ingest rejected its file (`unknown_type`, `too_large`…).
 - `IngestRejected`, dispatched when ingest refuses a file, with its reason, message and file name. `Mediatheque::fake()` dispatches it too.
 - Indexes on `created_at` and `ended_at` of `pipelines` and `pipelines_jobs`.
 - Actions on runs in the `Mediatheque` contract (#73), on the manager and the fake:
@@ -24,11 +29,11 @@ What a monitoring view needs is recorded ([decisions/0017](docs/decisions/0017-m
   - `cancel($run)` and `refresh($run)`: through the transcoder's capabilities. They return false when the run has ended or the transcoder can't;
   - `probeAgain($media)`: a media whose probe failed goes back to `pending`, and its probe is queued with the pipeline ingest chose.
 - The `Monitoring` read model (#75):
-  - `overview()`, `runs()` with filters and cursor pagination, `uploads()`, `failures()` grouped by code, `durations()` with medians, p95 and queue waits, and `throughput()` per hour;
+  - `overview()`, `runs()` with filters and cursor pagination, `failures()` grouped by code, `durations()` with medians, p95 and queue waits, and `throughput()` per hour;
   - `Mediatheque::monitoringScope()` narrows what it reads, for a tenant;
   - new `monitoring.stuck_after` and `monitoring.max_rows` config keys.
 - `php artisan mediatheque:status`: media by status, runs in progress and stuck, what ended in the last hours, and the latest failures (#75).
-- `PipelineRunResource`, `PipelineJobResource` and `UploadResource`, the JSON shapes of runs, their renditions and uploads, with fixtures in `tests/fixtures/json/` (#77).
+- `PipelineRunResource` and `PipelineJobResource`, the JSON shapes of runs and their renditions, with fixtures in `tests/fixtures/json/` (#77).
 - `createdAt()`, `startedAt()` and `endedAt()` on the `PipelineRun` contract, and `queuedAt()`, `startedAt()` and `endedAt()` on the `PipelineJob` contract. The fake's recorder sets them as the Eloquent recorder does (#77).
 
 ### Changed
@@ -38,7 +43,6 @@ What a monitoring view needs is recorded ([decisions/0017](docs/decisions/0017-m
 
 ### Fixed
 
-- Presigned upload URLs live `uploads.url_ttl` seconds exactly: they could live a second less, or be off by however far the application's clock was frozen or traveled (#78).
 - A pending probe that completed through the recorder made the media `ready` without probing it, and its pipeline never started.
 
 ## [2.0.0-alpha.3] - 2026-10-21

@@ -1,6 +1,6 @@
 # 0016: Direct uploads signed for Uppy 6
 
-- Status: accepted
+- Status: replaced by [0018](0018-ingest-only.md): uploads left the package
 - Date: 2026-10-21
 - Amends: 0015
 

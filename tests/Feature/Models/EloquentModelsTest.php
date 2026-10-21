@@ -6,16 +6,13 @@ use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
 use Folklore\Mediatheque\Enums\JobStatus;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\PipelineStatus;
-use Folklore\Mediatheque\Enums\RejectionReason;
 use Folklore\Mediatheque\Enums\TranscoderErrorCode;
-use Folklore\Mediatheque\Enums\UploadStatus;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Events\MediaDeleted;
 use Folklore\Mediatheque\Events\MediaUpdated;
 use Folklore\Mediatheque\Models\Media;
 use Folklore\Mediatheque\Models\PipelineJob;
 use Folklore\Mediatheque\Models\PipelineRun;
-use Folklore\Mediatheque\Models\Upload;
 use Folklore\Mediatheque\Pipelines\PipelineDefinition;
 use Folklore\Mediatheque\Support\Models;
 use Folklore\Mediatheque\Support\Uid;
@@ -24,7 +21,6 @@ use Folklore\Mediatheque\Tests\Contracts\MediaContractTests;
 use Folklore\Mediatheque\Tests\DatabaseTestCase;
 use Folklore\Mediatheque\Tests\Feature\Models\Fixtures\TenantMedia;
 use Folklore\Mediatheque\Transcoders\TranscoderError;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -162,25 +158,5 @@ class EloquentModelsTest extends DatabaseTestCase
 
         $this->assertSame(TranscoderErrorCode::Timeout, $job->error()?->code);
         $this->assertSame('Too long', $job->error()->message);
-    }
-
-    #[Test]
-    public function an_upload_records_when_and_why_it_ended(): void
-    {
-        $this->travelTo('2026-10-21 10:00:00');
-        $upload = fn () => (new Upload)->forceFill(['disk' => 's3', 'path' => 'uploads/x', 'expires_at' => Date::now()->addDay()]);
-
-        $rejected = $upload();
-        $rejected->markAborted(RejectionReason::TooLarge);
-        $aborted = $upload();
-        $aborted->markAborted(Upload::ABORTED);
-        $completed = $upload();
-        $completed->markCompleted($this->createMedia()->id);
-
-        $this->assertSame([UploadStatus::Aborted, 'too_large'], [$rejected->refresh()->status, $rejected->reason]);
-        $this->assertSame([UploadStatus::Aborted, 'aborted'], [$aborted->refresh()->status, $aborted->reason]);
-        $this->assertSame([UploadStatus::Completed, null], [$completed->refresh()->status, $completed->reason]);
-        $this->assertNotNull($completed->media_id);
-        $this->assertSame('2026-10-21 10:00:00', $rejected->ended_at?->toDateTimeString());
     }
 }

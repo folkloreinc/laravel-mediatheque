@@ -55,7 +55,7 @@
     "suggest": {
         "ext-imagick": "Probes and renders images, documents and fonts",
         "aws/aws-sdk-php": "Required by the mediaconvert transcoder",
-        "league/flysystem-aws-s3-v3": "S3-compatible disks and presigned multipart uploads",
+        "league/flysystem-aws-s3-v3": "S3-compatible disks",
         "folklore/laravel-eclair": "The eclair transcoder",
         "folklore/laravel-image": "Image renditions on the fly, from media ids"
     },

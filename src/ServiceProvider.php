@@ -10,7 +10,6 @@ use Folklore\Mediatheque\Contracts\Mediatheque;
 use Folklore\Mediatheque\Contracts\Prober;
 use Folklore\Mediatheque\Contracts\Recorder;
 use Folklore\Mediatheque\Contracts\UrlGenerator;
-use Folklore\Mediatheque\Http\Routes;
 use Folklore\Mediatheque\Images\MediaResolver;
 use Folklore\Mediatheque\Ingest\MediaIngestor;
 use Folklore\Mediatheque\Monitoring\Monitoring;
@@ -19,11 +18,9 @@ use Folklore\Mediatheque\Probe\LocalProber;
 use Folklore\Mediatheque\Support\ConfigMerger;
 use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Transcoders\TranscoderManager;
-use Folklore\Mediatheque\Uploads\UploadOptions;
 use Folklore\Mediatheque\Urls\DiskUrlGenerator;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\CachesConfiguration;
-use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
 class ServiceProvider extends BaseServiceProvider
@@ -40,19 +37,12 @@ class ServiceProvider extends BaseServiceProvider
         $this->app->singleton(Ingestor::class, MediaIngestor::class);
         $this->app->singleton(Recorder::class, EloquentRecorder::class);
         $this->app->singleton(TranscoderManager::class);
-        $this->app->singleton(UploadOptions::class);
         $this->app->singleton(Monitoring::class);
     }
 
     public function boot(): void
     {
         $this->registerImageResolver();
-
-        // Registered by the application, inside its own middleware: Route::mediatheque()
-        Router::macro('mediatheque', function (string $prefix = 'mediatheque') {
-            /** @var Router $this */
-            Routes::register($this, $prefix);
-        });
 
         if ($this->app->runningInConsole()) {
             $this->commands([

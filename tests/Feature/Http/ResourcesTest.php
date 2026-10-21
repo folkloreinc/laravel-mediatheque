@@ -5,14 +5,11 @@ namespace Folklore\Mediatheque\Tests\Feature\Http;
 use Folklore\Mediatheque\Enums\JobStatus;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\PipelineStatus;
-use Folklore\Mediatheque\Enums\UploadStatus;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Facades\Mediatheque;
 use Folklore\Mediatheque\Http\Resources\PipelineRunResource;
-use Folklore\Mediatheque\Http\Resources\UploadResource;
 use Folklore\Mediatheque\Models\PipelineJob;
 use Folklore\Mediatheque\Models\PipelineRun;
-use Folklore\Mediatheque\Models\Upload;
 use Folklore\Mediatheque\Tests\Concerns\CreatesMedia;
 use Folklore\Mediatheque\Tests\DatabaseTestCase;
 use Illuminate\Http\Request;
@@ -29,7 +26,7 @@ class ResourcesTest extends DatabaseTestCase
      *
      * @return array<mixed>
      */
-    private static function rendered(PipelineRunResource|UploadResource $resource): array
+    private static function rendered(PipelineRunResource $resource): array
     {
         $json = json_decode((string) json_encode($resource->toArray(new Request)), true);
 
@@ -87,41 +84,6 @@ class ResourcesTest extends DatabaseTestCase
         // JSON writes 5.0 as 5: numbers compare by value, keys in order
         $this->assertEquals(self::fixture('pipeline-run'), $json);
         $this->assertSame(array_keys(self::fixture('pipeline-run')), array_keys($json));
-    }
-
-    #[Test]
-    public function an_upload_renders_how_it_ended_and_never_where_it_is_stored(): void
-    {
-        $this->travelTo('2026-10-21 14:00:00');
-        $upload = new Upload;
-        $upload->forceFill([
-            'uid' => 'upl_01JAB3QX5Z8Y7W6V5T4S3R2Q1P',
-            'disk' => 's3',
-            'path' => 'mediatheque-uploads/upl_01JAB3QX5Z8Y7W6V5T4S3R2Q1P',
-            'provider_upload_id' => 'secret-multipart-id',
-            'filename' => 'photo.jpg',
-            'size' => 52000,
-            'expires_at' => Date::now()->addDay(),
-        ])->save();
-        $this->travelTo('2026-10-21 14:05:00');
-        $upload->markAborted('unknown_type');
-
-        $json = self::rendered(new UploadResource($upload->refresh()));
-
-        $this->assertSame(self::fixture('upload'), $json);
-        $this->assertStringNotContainsString('secret-multipart-id', (string) json_encode($json));
-    }
-
-    #[Test]
-    public function a_completed_upload_names_its_media(): void
-    {
-        $media = $this->createMedia();
-        $upload = new Upload;
-        $upload->forceFill(['disk' => 's3', 'path' => 'x', 'expires_at' => Date::now()->addDay()])->save();
-        $upload->markCompleted($media->id);
-
-        $this->assertSame($media->uid, self::rendered(new UploadResource($upload->refresh()))['media']);
-        $this->assertSame(UploadStatus::Completed->value, self::rendered(new UploadResource($upload))['status']);
     }
 
     #[Test]

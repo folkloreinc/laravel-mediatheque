@@ -8,13 +8,11 @@ use Folklore\Mediatheque\Enums\JobStatus;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\PipelineStatus;
 use Folklore\Mediatheque\Enums\TranscoderErrorCode;
-use Folklore\Mediatheque\Enums\UploadStatus;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Facades\Mediatheque;
 use Folklore\Mediatheque\Models\Media;
 use Folklore\Mediatheque\Models\PipelineJob;
 use Folklore\Mediatheque\Models\PipelineRun;
-use Folklore\Mediatheque\Models\Upload;
 use Folklore\Mediatheque\Monitoring\FailureGroup;
 use Folklore\Mediatheque\Monitoring\Monitoring;
 use Folklore\Mediatheque\Monitoring\Period;
@@ -73,17 +71,6 @@ class MonitoringTest extends DatabaseTestCase
         return $run;
     }
 
-    /**
-     * @param  array<string, mixed>  $attributes
-     */
-    private function upload(UploadStatus $status, array $attributes = []): Upload
-    {
-        $upload = new Upload;
-        $upload->forceFill(['status' => $status, 'disk' => 's3', 'path' => 'uploads/x', 'expires_at' => Date::now()->addDay(), ...$attributes])->save();
-
-        return $upload;
-    }
-
     private function hoursAgo(int|float $hours): CarbonImmutable
     {
         return CarbonImmutable::instance(Date::now())->subMinutes((int) round($hours * 60));
@@ -98,15 +85,6 @@ class MonitoringTest extends DatabaseTestCase
         return array_map(fn (PipelineRunContract $run) => $run->key(), $runs);
     }
 
-    /**
-     * @param  list<Upload>  $uploads
-     * @return list<string>
-     */
-    private static function uids(array $uploads): array
-    {
-        return array_map(fn (Upload $upload) => $upload->uid, $uploads);
-    }
-
     #[Test]
     public function a_period_starts_before_it_ends(): void
     {
@@ -118,7 +96,7 @@ class MonitoringTest extends DatabaseTestCase
     }
 
     #[Test]
-    public function the_overview_counts_media_runs_and_uploads(): void
+    public function the_overview_counts_media_and_runs(): void
     {
         $ready = $this->createMedia(['status' => MediaStatus::Ready]);
         $this->createMedia(['status' => MediaStatus::Ready]);
@@ -131,9 +109,6 @@ class MonitoringTest extends DatabaseTestCase
         $this->createRun($ready, PipelineStatus::Completed, ['ended_at' => $this->hoursAgo(1)]);
         $this->createRun($ready, PipelineStatus::Failed, ['ended_at' => $this->hoursAgo(5)]);
         $this->createRun($ready, PipelineStatus::Failed, ['ended_at' => $this->hoursAgo(30)]);
-        $this->upload(UploadStatus::Pending);
-        $this->upload(UploadStatus::Completed, ['ended_at' => $this->hoursAgo(1)]);
-        $this->upload(UploadStatus::Aborted, ['ended_at' => $this->hoursAgo(48)]);
 
         $overview = $this->monitoring()->overview(Period::lastHours(24));
 
@@ -141,8 +116,6 @@ class MonitoringTest extends DatabaseTestCase
         $this->assertSame([3, 2], [$overview->runsInProgress, $overview->stuckRuns], 'Running for 3 h, and pending for 2 h, are stuck.');
         $this->assertSame(['completed' => 1, 'failed' => 1, 'canceled' => 0], $overview->runsEnded);
         $this->assertSame('2026-10-21 10:00:00', $overview->oldestQueuedAt?->toDateTimeString());
-        $this->assertSame(1, $overview->uploadsOpen);
-        $this->assertSame(['completed' => 1, 'aborted' => 0], $overview->uploadsEnded);
     }
 
     #[Test]
@@ -185,17 +158,6 @@ class MonitoringTest extends DatabaseTestCase
         $this->assertNull($last->nextCursor);
         $this->assertSame($media->uid, $first->items[0]->media()->uid());
         $this->assertNotNull($first->items[0]->job('h264'));
-    }
-
-    #[Test]
-    public function uploads_are_listed_by_status_and_period(): void
-    {
-        $open = $this->upload(UploadStatus::Pending);
-        $this->upload(UploadStatus::Aborted, ['created_at' => $this->hoursAgo(48)]);
-        $completed = $this->upload(UploadStatus::Completed);
-
-        $this->assertSame([$completed->uid, $open->uid], self::uids($this->monitoring()->uploads(period: Period::lastHours(24))->items));
-        $this->assertSame([$open->uid], self::uids($this->monitoring()->uploads(UploadStatus::Pending)->items));
     }
 
     #[Test]
@@ -259,26 +221,21 @@ class MonitoringTest extends DatabaseTestCase
     }
 
     #[Test]
-    public function the_monitoring_scope_narrows_media_runs_renditions_and_uploads(): void
+    public function the_monitoring_scope_narrows_media_runs_and_renditions(): void
     {
         $mine = $this->createMedia(['name' => 'Mine', 'status' => MediaStatus::Failed]);
         $theirs = $this->createMedia(['name' => 'Theirs', 'status' => MediaStatus::Failed]);
         $failed = ['h264' => ['status' => JobStatus::Failed, 'error' => ['code' => 'timeout', 'message' => 'x'], 'ended_at' => $this->hoursAgo(1)]];
         $this->createRun($mine, PipelineStatus::Failed, ['ended_at' => $this->hoursAgo(1)], $failed);
         $this->createRun($theirs, PipelineStatus::Failed, ['ended_at' => $this->hoursAgo(1)], $failed);
-        $this->upload(UploadStatus::Pending, ['filename' => 'mine.mp4']);
-        $this->upload(UploadStatus::Pending, ['filename' => 'theirs.mp4']);
 
-        Mediatheque::monitoringScope(fn (Builder $query, string $model) => $model === 'media'
-            ? $query->where('name', 'Mine')
-            : $query->where('filename', 'mine.mp4'));
+        Mediatheque::monitoringScope(fn (Builder $query, string $model) => $query->where('name', 'Mine'));
 
         $period = Period::lastHours(24);
         $overview = $this->monitoring()->overview($period);
-        $this->assertSame([1, 1, 1], [$overview->media['failed'], $overview->runsEnded['failed'], $overview->uploadsOpen]);
+        $this->assertSame([1, 1], [$overview->media['failed'], $overview->runsEnded['failed']]);
         $this->assertCount(1, $this->monitoring()->runs()->items);
         $this->assertSame($mine->uid, $this->monitoring()->runs()->items[0]->media()->uid());
         $this->assertSame(1, $this->monitoring()->failures($period)[0]->count);
-        $this->assertCount(1, $this->monitoring()->uploads()->items);
     }
 }
