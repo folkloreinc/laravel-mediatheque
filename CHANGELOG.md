@@ -22,6 +22,11 @@ What a monitoring view needs is recorded ([decisions/0017](docs/decisions/0017-m
   - `retry($run)`: a new run of the failed and canceled renditions of a run that ended, produced again even if a file exists. It returns null when there is nothing to retry, or while the media has a run of the same pipeline in progress;
   - `cancel($run)` and `refresh($run)`: through the transcoder's capabilities. They return false when the run has ended or the transcoder can't;
   - `probeAgain($media)`: a media whose probe failed goes back to `pending`, and its probe is queued with the pipeline ingest chose.
+- The `Monitoring` read model (#75):
+  - `overview()`, `runs()` with filters and cursor pagination, `uploads()`, `failures()` grouped by code, `durations()` with medians, p95 and queue waits, and `throughput()` per hour;
+  - `Mediatheque::monitoringScope()` narrows what it reads, for a tenant;
+  - new `monitoring.stuck_after` and `monitoring.max_rows` config keys.
+- `php artisan mediatheque:status`: media by status, runs in progress and stuck, what ended in the last hours, and the latest failures (#75).
 
 ### Changed
 

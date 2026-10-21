@@ -69,9 +69,9 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] Monitoring ([decisions/0017](decisions/0017-monitoring-dashboard.md), [#69](https://github.com/folkloreinc/laravel-mediatheque/issues/69)):
   - every probe recorded as a run, `queued_at` on renditions, a reason and an end time on uploads, `IngestRejected`, indexes for periods ([#71](https://github.com/folkloreinc/laravel-mediatheque/issues/71));
   - ended runs pruned by `mediatheque:prune`, keeping each media's last run of each pipeline;
-  - the `Monitoring` read model;
+  - the `Monitoring` read model ([#75](https://github.com/folkloreinc/laravel-mediatheque/issues/75));
   - `retry()`, `cancel()`, `refresh()` and `probeAgain()` ([#73](https://github.com/folkloreinc/laravel-mediatheque/issues/73));
-  - `mediatheque:status`.
+  - `mediatheque:status` ([#75](https://github.com/folkloreinc/laravel-mediatheque/issues/75)).
 
 ## Beta: upgrade path and Eclair
 

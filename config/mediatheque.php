@@ -244,4 +244,19 @@ return [
     'urls' => [
         'temporary_ttl' => 3600,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Monitoring
+    |--------------------------------------------------------------------------
+    |
+    | What the Monitoring read model and `mediatheque:status` report. A run
+    | still running after `stuck_after` seconds is stuck. Durations are
+    | computed over at most `max_rows` renditions of the period.
+    |
+    */
+    'monitoring' => [
+        'stuck_after' => 3600,
+        'max_rows' => 10000,
+    ],
 ];

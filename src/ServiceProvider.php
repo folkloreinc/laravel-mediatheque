@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque;
 
 use Folklore\Image\Contracts\SourceResolver;
 use Folklore\Mediatheque\Console\InstallCommand;
+use Folklore\Mediatheque\Console\StatusCommand;
 use Folklore\Mediatheque\Contracts\Ingestor;
 use Folklore\Mediatheque\Contracts\Mediatheque;
 use Folklore\Mediatheque\Contracts\Prober;
@@ -12,6 +13,7 @@ use Folklore\Mediatheque\Contracts\UrlGenerator;
 use Folklore\Mediatheque\Http\Routes;
 use Folklore\Mediatheque\Images\MediaResolver;
 use Folklore\Mediatheque\Ingest\MediaIngestor;
+use Folklore\Mediatheque\Monitoring\Monitoring;
 use Folklore\Mediatheque\Pipelines\EloquentRecorder;
 use Folklore\Mediatheque\Probe\LocalProber;
 use Folklore\Mediatheque\Support\ConfigMerger;
@@ -39,6 +41,7 @@ class ServiceProvider extends BaseServiceProvider
         $this->app->singleton(Recorder::class, EloquentRecorder::class);
         $this->app->singleton(TranscoderManager::class);
         $this->app->singleton(UploadOptions::class);
+        $this->app->singleton(Monitoring::class);
     }
 
     public function boot(): void
@@ -54,6 +57,7 @@ class ServiceProvider extends BaseServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 InstallCommand::class,
+                StatusCommand::class,
             ]);
 
             $this->publishes([

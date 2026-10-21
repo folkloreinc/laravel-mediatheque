@@ -237,6 +237,22 @@ final class MediathequeConfig
     }
 
     /**
+     * Seconds after which a run that is still running is stuck.
+     */
+    public function monitoringStuckAfter(): int
+    {
+        return $this->positiveInt('monitoring.stuck_after', 3600);
+    }
+
+    /**
+     * The most renditions the monitoring durations are computed over.
+     */
+    public function monitoringMaxRows(): int
+    {
+        return $this->positiveInt('monitoring.max_rows', 10000);
+    }
+
+    /**
      * Seconds a temporary URL lives when url() returns one.
      */
     public function temporaryTtl(): int
@@ -357,6 +373,8 @@ final class MediathequeConfig
         $this->jobsQueue();
         $this->jobsTries();
         $this->jobsTimeout();
+        $this->monitoringStuckAfter();
+        $this->monitoringMaxRows();
         $this->types();
         $this->pipelines();
     }
