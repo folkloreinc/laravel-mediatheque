@@ -12,6 +12,7 @@ use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
 use Folklore\Mediatheque\Models\Upload;
 use Folklore\Mediatheque\Pipelines\PipelineRunner;
+use Folklore\Mediatheque\Pipelines\RunActions;
 use Folklore\Mediatheque\References\MediaReference;
 use Folklore\Mediatheque\Support\Models;
 use Folklore\Mediatheque\Support\Uid;
@@ -116,6 +117,26 @@ class MediathequeManager implements Mediatheque
     public function runPipeline(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false): ?PipelineRun
     {
         return $this->container->make(PipelineRunner::class)->run($media, $pipeline, $renditions, $force);
+    }
+
+    public function retry(PipelineRun $run): ?PipelineRun
+    {
+        return $this->container->make(RunActions::class)->retry($run);
+    }
+
+    public function cancel(PipelineRun $run): bool
+    {
+        return $this->container->make(RunActions::class)->cancel($run);
+    }
+
+    public function refresh(PipelineRun $run): bool
+    {
+        return $this->container->make(RunActions::class)->refresh($run);
+    }
+
+    public function probeAgain(Media $media): bool
+    {
+        return $this->container->make(RunActions::class)->probeAgain($media);
     }
 
     /**

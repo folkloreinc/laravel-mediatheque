@@ -60,4 +60,34 @@ interface Mediatheque
      * @phpstan-impure
      */
     public function runPipeline(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false): ?PipelineRun;
+
+    /**
+     * Retry a run that ended: a new run of its failed and canceled
+     * renditions, produced again even if a file exists for them
+     * (docs/decisions/0012, 0017). Null when the run hasn't ended, has
+     * nothing to retry, or when its media already has a run of the same
+     * pipeline in progress. A probe is retried with probeAgain().
+     *
+     * @phpstan-impure
+     */
+    public function retry(PipelineRun $run): ?PipelineRun;
+
+    /**
+     * Cancel a run that hasn't ended, through its transcoder's `cancel`
+     * capability. False when the run has ended or can't be canceled.
+     */
+    public function cancel(PipelineRun $run): bool;
+
+    /**
+     * Ask the run's transcoder for its state, through its `refresh`
+     * capability. False when the run has ended or can't be refreshed.
+     */
+    public function refresh(PipelineRun $run): bool;
+
+    /**
+     * Probe a media whose probe failed again: it is `pending` until the new
+     * probe completes, then its pipeline runs, the one ingest chose. False
+     * for a media that isn't `failed`, or that was probed.
+     */
+    public function probeAgain(Media $media): bool;
 }

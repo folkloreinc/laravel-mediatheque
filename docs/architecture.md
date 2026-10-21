@@ -275,6 +275,17 @@ $media->ensureRendition('vertical');          // queued if missing
 Mediatheque::runPipeline($media, 'video');    // the whole pipeline again
 ```
 
+Applications, commands and the monitoring dashboard act on runs through the same entry point ([decisions/0017](decisions/0017-monitoring-dashboard.md)):
+
+```php
+Mediatheque::retry($run);         // a new run of its failed and canceled renditions, forced; null if there is nothing to retry
+Mediatheque::cancel($run);        // through the transcoder's cancel capability; false if it can't
+Mediatheque::refresh($run);       // through the transcoder's refresh capability; false if it can't
+Mediatheque::probeAgain($media);  // a media whose probe failed goes back to pending; false for any other
+```
+
+`retry()` returns null for a run that hasn't ended, and while the media has a run of the same pipeline in progress, so retrying twice doesn't create two runs. A probe that runs in the application's queue is canceled through the recorder; one pending with its driver isn't.
+
 ### Derived media
 
 A clip is a new media derived from another one, with its own pipeline:

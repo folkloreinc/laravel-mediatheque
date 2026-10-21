@@ -255,6 +255,69 @@ class MediathequeFake implements Fake, Mediatheque
         return $run;
     }
 
+    public function retry(PipelineRun $run): ?PipelineRun
+    {
+        $run = $this->findRun($run);
+
+        if (! $run->status->isFinal() || $this->hasRunInProgress($run->media, $run->name())) {
+            return null;
+        }
+
+        $pipeline = $this->pipeline($run->name());
+        $renditions = [];
+        foreach ($run->jobs as $name => $job) {
+            if (in_array($job->status(), [JobStatus::Failed, JobStatus::Canceled], true) && $pipeline->rendition($name) !== null) {
+                $renditions[] = $name;
+            }
+        }
+
+        return $renditions === [] ? null : $this->runPipeline($run->media, $run->name(), $renditions, force: true);
+    }
+
+    public function cancel(PipelineRun $run): bool
+    {
+        $run = $this->findRun($run);
+
+        if ($run->status->isFinal() || ! $this->transcoder->capabilities()->cancel) {
+            return false;
+        }
+
+        $this->transcoder->cancel($run);
+
+        return true;
+    }
+
+    public function refresh(PipelineRun $run): bool
+    {
+        $run = $this->findRun($run);
+
+        if ($run->status->isFinal() || ! $this->transcoder->capabilities()->refresh) {
+            return false;
+        }
+
+        $this->transcoder->refresh($run);
+
+        return true;
+    }
+
+    /**
+     * The fake probes again at once, with what probeWith() and failProbe()
+     * set.
+     */
+    public function probeAgain(Media $media): bool
+    {
+        $media = $this->find($media);
+
+        if ($media->status !== MediaStatus::Failed || $media->metadata(MetadataKey::Kind->value) !== null) {
+            return false;
+        }
+
+        $media->status = MediaStatus::Pending;
+        $this->probe($media, $this->pipelineOf($media->type));
+
+        return true;
+    }
+
     /**
      * Make a rendition fail, with this error code.
      */
@@ -628,6 +691,28 @@ class MediathequeFake implements Fake, Mediatheque
         $file = $media->file($rendition->name);
 
         return $file instanceof FakeFile && $file->definitionHash === $rendition->definitionHash();
+    }
+
+    private function findRun(PipelineRun $run): FakePipelineRun
+    {
+        foreach ($this->runs as $candidate) {
+            if ($candidate->key === $run->key()) {
+                return $candidate;
+            }
+        }
+
+        throw new InvalidArgumentException(sprintf('The run %s was not created by Mediatheque::fake().', $run->key()));
+    }
+
+    private function hasRunInProgress(FakeMedia $media, string $pipeline): bool
+    {
+        foreach ($this->runs as $run) {
+            if ($run->media === $media && $run->name() === $pipeline && ! $run->status->isFinal()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function find(Media $media): FakeMedia

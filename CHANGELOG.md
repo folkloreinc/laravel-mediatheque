@@ -8,12 +8,20 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 What a monitoring view needs is recorded ([decisions/0017](docs/decisions/0017-monitoring-dashboard.md), #71). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new migration only.
 
+### Breaking changes
+
+- The `Mediatheque` contract has `retry()`, `cancel()`, `refresh()` and `probeAgain()`: a class that implements it implements them too (#73).
+
 ### Added
 
 - `queued_at` on pipeline jobs: when the rendition can run, that is when its run is created, or when the rendition it reads from completes.
 - `reason` and `ended_at` on uploads: `aborted` by its creator, or the reason ingest rejected its file (`unknown_type`, `too_large`…).
 - `IngestRejected`, dispatched when ingest refuses a file, with its reason, message and file name. `Mediatheque::fake()` dispatches it too.
 - Indexes on `created_at` and `ended_at` of `pipelines` and `pipelines_jobs`.
+- Actions on runs in the `Mediatheque` contract (#73), on the manager and the fake:
+  - `retry($run)`: a new run of the failed and canceled renditions of a run that ended, produced again even if a file exists. It returns null when there is nothing to retry, or while the media has a run of the same pipeline in progress;
+  - `cancel($run)` and `refresh($run)`: through the transcoder's capabilities. They return false when the run has ended or the transcoder can't;
+  - `probeAgain($media)`: a media whose probe failed goes back to `pending`, and its probe is queued with the pipeline ingest chose.
 
 ### Changed
 
