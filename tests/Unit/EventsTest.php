@@ -6,6 +6,7 @@ use Folklore\Mediatheque\Contracts\Models\File;
 use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob;
 use Folklore\Mediatheque\Contracts\Models\PipelineRun;
+use Folklore\Mediatheque\Enums\RejectionReason;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Pipelines\Outputs;
 use Folklore\Mediatheque\Transcoders\TranscoderError;
@@ -25,11 +26,12 @@ class EventsTest extends TestCase
         'MediaReady', 'MediaFailed', 'MediaVisibilityChanged', 'OriginalReplaced',
         'PipelineStarted', 'PipelineCompleted', 'PipelineFailed', 'PipelineCanceled',
         'RenditionCompleted', 'RenditionFailed', 'RenditionSkipped', 'RenditionCanceled',
+        'IngestRejected',
     ];
 
     private const array ALLOWED_TYPES = [
         Media::class, File::class, PipelineRun::class, PipelineJob::class,
-        Outputs::class, TranscoderError::class, Visibility::class, 'array', 'string',
+        Outputs::class, TranscoderError::class, Visibility::class, RejectionReason::class, 'array', 'string',
     ];
 
     #[Test]

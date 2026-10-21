@@ -25,6 +25,7 @@ use LogicException;
  * @property int $attempts
  * @property array{code?: mixed, message?: mixed}|null $error
  * @property string|null $reason
+ * @property Carbon|null $queued_at
  * @property Carbon|null $started_at
  * @property Carbon|null $ended_at
  * @property Carbon|null $created_at
@@ -52,6 +53,7 @@ class PipelineJob extends Model implements PipelineJobContract
             'progress' => 'float',
             'attempts' => 'integer',
             'error' => 'array',
+            'queued_at' => 'datetime',
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
         ];

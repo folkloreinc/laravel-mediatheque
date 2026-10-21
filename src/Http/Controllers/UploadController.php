@@ -242,16 +242,14 @@ class UploadController
                 );
             } catch (FileRejected $exception) {
                 $disk->delete($upload->path);
-                $upload->forceFill(['status' => UploadStatus::Aborted])->save();
+                $upload->markAborted($exception->reason);
 
                 return Problem::response(422, 'The file was rejected.', $exception->getMessage(), ['reason' => $exception->reason->value]);
             }
 
             $disk->delete($upload->path);
-            $upload->forceFill([
-                'status' => UploadStatus::Completed,
-                'media_id' => $media instanceof Model ? $media->getKey() : null,
-            ])->save();
+            $mediaId = $media instanceof Model ? $media->getKey() : null;
+            $upload->markCompleted(is_int($mediaId) || is_string($mediaId) ? $mediaId : null);
 
             return $this->media($media, 201);
         });
@@ -269,7 +267,7 @@ class UploadController
             }
 
             $this->storage->abort($upload->disk, $upload->path, (string) $upload->provider_upload_id);
-            $upload->forceFill(['status' => UploadStatus::Aborted])->save();
+            $upload->markAborted(Upload::ABORTED);
 
             return new Response(null, 204);
         });

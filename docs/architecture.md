@@ -131,7 +131,7 @@ A **pipeline run** (`pipelines` table) records one execution:
 | `status` | `PipelineStatus` enum: `pending`, `running`, `completed`, `failed`, `canceled` |
 | `progress`, `attempts`, `error` (`{code, message}`), `started_at`, `ended_at` | |
 
-Each rendition gets a **pipeline job** (`pipelines_jobs`) with its own `status` (`queued`, `running`, `completed`, `failed`, `skipped`, `canceled`), `progress`, `attempts` and `error`. Statuses only move forward ([Recorder](#transcoders)). A failed job fails the jobs that read from it (`dependency_failed`); a skipped job skips them; independent jobs continue. `skipped` is a normal outcome: a condition did not match the probed input (an audio-only video, a short clip).
+Each rendition gets a **pipeline job** (`pipelines_jobs`) with its own `status` (`queued`, `running`, `completed`, `failed`, `skipped`, `canceled`), `progress`, `attempts`, `error`, and `queued_at`, `started_at` and `ended_at`. `queued_at` is when the rendition can run: when its run is created, or when the rendition it reads from completes ([decisions/0017](decisions/0017-monitoring-dashboard.md)). Statuses only move forward ([Recorder](#transcoders)). A failed job fails the jobs that read from it (`dependency_failed`); a skipped job skips them; independent jobs continue. `skipped` is a normal outcome: a condition did not match the probed input (an audio-only video, a short clip).
 
 A run is never retried in place: retrying failed renditions creates a new run, with its own driver job ([decisions/0012](decisions/0012-pipeline-runs-recorder-and-probe.md)). Queue retries of the `ffmpeg` driver's jobs stay within their run and count in `attempts`.
 
@@ -211,7 +211,7 @@ Large files should not go through PHP. The package provides, as opt-in HTTP endp
 - **Presigned multipart uploads** to an S3-compatible disk, for Uppy's `AwsS3` plugin: create an upload (`upl_…`), sign its parts, complete it, then ingest from the disk. Interrupted uploads resume from the last part. With Uppy 6, the client sends every S3 request itself, presigned by one route, then completes the upload to ingest it ([decisions/0016](decisions/0016-uploads-signed-for-uppy-6.md)).
 - **A TUS adapter** (later alpha), for clients that need the TUS protocol. It writes to a disk and ends with the same ingest step.
 
-Uploads are tracked in an `uploads` table (status, disk, path, expected size, creator, expiry). Each step is authorized by the `Media` policy's `create` ability, and only the user who created an upload can continue it. The application sets the options of the media an upload creates (its attributes, such as a tenant id) with `Mediatheque::uploadsUsing()`, from its own context ([decisions/0015](decisions/0015-new-install-schema-attributes-and-uploads.md)). `mediatheque:prune` removes abandoned uploads.
+Uploads are tracked in an `uploads` table (status, disk, path, expected size, creator, expiry, and when and why it ended: `aborted` by its creator, `expired`, or the reason ingest rejected its file). Each step is authorized by the `Media` policy's `create` ability, and only the user who created an upload can continue it. The application sets the options of the media an upload creates (its attributes, such as a tenant id) with `Mediatheque::uploadsUsing()`, from its own context ([decisions/0015](decisions/0015-new-install-schema-attributes-and-uploads.md)). `mediatheque:prune` removes abandoned uploads.
 
 ## Probe
 
@@ -230,7 +230,7 @@ interface Prober
 }
 ```
 
-A pending probe is recorded as a run of the `probe` pipeline (one rendition, operation `probe`, no files) and completes through the recorder, like any run. The media stays `pending` until then. `MediaProbed` is dispatched when the results are stored, and the pipeline starts then, never before: the one ingest chose (`pipeline:`), or the type's. A failed probe fails the media.
+Every probe is recorded as a run of the `probe` pipeline (one rendition, operation `probe`, no files) and completes through the recorder, like any run, so its duration, attempts and error are recorded ([decisions/0017](decisions/0017-monitoring-dashboard.md)). A prober that answers at once completes it in the probe job; a pending one records its external id, and its driver completes it. A retried probe job reuses its run. The media stays `pending` until then. `MediaProbed` is dispatched when the results are stored, and the pipeline starts then, never before: the one ingest chose (`pipeline:`), or the type's. A failed probe fails the media.
 
 Probe results fill the media's `metadata`, with the [canonical keys](#metadata-keys), and the original's `width`, `height`, `duration` and `bitrate`.
 
@@ -459,6 +459,7 @@ The bucket's CORS rules must allow `PUT` from the application's origin and expos
 | `MediaReady` | Every rendition of the default pipeline ended, at least the main one completed |
 | `MediaFailed` | The probe failed, or the main rendition did not complete |
 | `MediaVisibilityChanged`, `OriginalReplaced` | |
+| `IngestRejected` | Ingest refused a file: its reason, message and file name. Nothing was stored |
 
 Events carry contracts, not concrete classes, so they work with the application's models.
 

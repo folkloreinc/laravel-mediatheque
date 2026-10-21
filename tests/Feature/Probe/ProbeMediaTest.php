@@ -4,16 +4,22 @@ namespace Folklore\Mediatheque\Tests\Feature\Probe;
 
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Prober;
+use Folklore\Mediatheque\Contracts\Recorder;
 use Folklore\Mediatheque\Enums\JobStatus;
 use Folklore\Mediatheque\Enums\MediaStatus;
+use Folklore\Mediatheque\Enums\PipelineStatus;
 use Folklore\Mediatheque\Enums\TranscoderErrorCode;
 use Folklore\Mediatheque\Events\MediaFailed;
 use Folklore\Mediatheque\Events\MediaProbed;
 use Folklore\Mediatheque\Events\MediaReady;
+use Folklore\Mediatheque\Events\PipelineCompleted;
+use Folklore\Mediatheque\Events\PipelineStarted;
 use Folklore\Mediatheque\Jobs\ProbeMedia;
 use Folklore\Mediatheque\Jobs\RunRendition;
 use Folklore\Mediatheque\Models\Media;
+use Folklore\Mediatheque\Models\PipelineJob;
 use Folklore\Mediatheque\Models\PipelineRun;
+use Folklore\Mediatheque\Pipelines\Outputs;
 use Folklore\Mediatheque\Probe\ProbeOutcome;
 use Folklore\Mediatheque\Tests\Concerns\CreatesMedia;
 use Folklore\Mediatheque\Tests\DatabaseTestCase;
@@ -180,8 +186,122 @@ class ProbeMediaTest extends DatabaseTestCase
         $run = PipelineRun::query()->sole();
         $this->assertSame(MediaStatus::Pending, $this->fresh($media)->status());
         $this->assertSame(['probe', 'job-42', $media->uid], [$run->name(), $run->externalId(), $run->media()->uid()]);
-        $this->assertSame(JobStatus::Queued, $run->job('probe')?->status());
+        $this->assertSame(JobStatus::Running, $run->job('probe')?->status(), 'The probe was sent to its driver.');
         $this->assertStringContainsString($run->key(), $run->pathPrefix());
+    }
+
+    #[Test]
+    public function every_probe_is_recorded_as_a_run_of_the_probe_pipeline(): void
+    {
+        $this->fakeProber(fn () => ProbeOutcome::done(['kind' => 'video']));
+        $media = $this->pendingMedia('video', 'media/test.mp4', 'video/mp4');
+
+        $this->probe($media);
+
+        $run = PipelineRun::query()->where('name', 'probe')->sole();
+        $job = PipelineJob::query()->where('pipeline_id', $run->id)->sole();
+        $this->assertSame([PipelineStatus::Completed, null, $media->uid], [$run->status(), $run->externalId(), $run->media()->uid()]);
+        $this->assertSame([JobStatus::Completed, 1], [$job->status(), $job->attempts()]);
+        $this->assertNotNull($job->queued_at);
+        $this->assertNotNull($job->started_at);
+        $this->assertNotNull($job->ended_at);
+        $this->assertSame(MediaStatus::Processing, $this->fresh($media)->status());
+    }
+
+    #[Test]
+    public function the_probe_run_ends_before_the_media_is_probed_and_its_pipeline_starts(): void
+    {
+        $this->fakeProber(fn () => ProbeOutcome::done(['kind' => 'video']));
+        $media = $this->pendingMedia('video', 'media/test.mp4', 'video/mp4');
+        $order = [];
+        Event::listen(PipelineCompleted::class, function (PipelineCompleted $event) use (&$order) {
+            $order[] = 'completed:'.$event->run->name();
+        });
+        Event::listen(MediaProbed::class, function () use (&$order) {
+            $order[] = 'probed';
+        });
+        Event::listen(PipelineStarted::class, function (PipelineStarted $event) use (&$order) {
+            $order[] = 'started:'.$event->run->name();
+        });
+
+        $this->probe($media);
+
+        $this->assertSame(['started:probe', 'completed:probe', 'probed'], $order);
+    }
+
+    #[Test]
+    public function a_failed_probe_records_its_error_on_its_run(): void
+    {
+        $this->fakeProber(fn () => ProbeOutcome::failed(new TranscoderError(TranscoderErrorCode::InputUnreadable, 'Unreadable')));
+        $media = $this->pendingMedia('video', 'media/test.mp4', 'video/mp4');
+
+        $this->probe($media);
+
+        $run = PipelineRun::query()->sole();
+        $this->assertSame([PipelineStatus::Failed, TranscoderErrorCode::InputUnreadable, 'Unreadable'], [$run->status(), $run->error()?->code, $run->error()?->message]);
+        $this->assertSame(TranscoderErrorCode::InputUnreadable, $run->job('probe')?->error()?->code);
+    }
+
+    #[Test]
+    public function a_retried_probe_job_reuses_its_run_and_counts_its_attempts(): void
+    {
+        $calls = 0;
+        $this->fakeProber(function () use (&$calls) {
+            if (++$calls === 1) {
+                throw new RuntimeException('ffprobe crashed');
+            }
+
+            return ProbeOutcome::done(['kind' => 'video']);
+        });
+        $media = $this->pendingMedia('video', 'media/test.mp4', 'video/mp4');
+
+        try {
+            $this->probe($media);
+            $this->fail('The first try throws.');
+        } catch (RuntimeException) {
+        }
+        $this->probe($media);
+
+        $run = PipelineRun::query()->where('name', 'probe')->sole();
+        $this->assertSame(PipelineStatus::Completed, $run->status());
+        $this->assertSame(2, $run->job('probe')?->attempts());
+    }
+
+    #[Test]
+    public function a_probe_pending_with_its_driver_is_not_sent_again(): void
+    {
+        $calls = 0;
+        $this->fakeProber(function () use (&$calls) {
+            $calls++;
+
+            return ProbeOutcome::pending('job-42');
+        });
+        $media = $this->pendingMedia('video', 'media/test.mp4', 'video/mp4');
+
+        $this->probe($media);
+        $this->probe($media);
+
+        $this->assertSame(1, $calls);
+        $this->assertSame(1, PipelineRun::query()->count());
+    }
+
+    #[Test]
+    public function a_pending_probe_that_completes_through_the_recorder_starts_the_pipeline(): void
+    {
+        Event::fake([MediaProbed::class, MediaReady::class]);
+        $this->fakeProber(fn () => ProbeOutcome::pending('job-42'));
+        $media = $this->pendingMedia('video', 'media/test.mp4', 'video/mp4');
+        $this->probe($media);
+        $job = PipelineRun::query()->sole()->job('probe');
+        $this->assertNotNull($job);
+
+        app(Recorder::class)->completed($job, new Outputs(metadata: ['kind' => 'video', 'duration' => 1.0]));
+
+        $this->assertSame(MediaStatus::Processing, $this->fresh($media)->status());
+        $this->assertSame(1.0, $this->fresh($media)->metadata('duration'));
+        $this->assertSame(['probe', 'video'], PipelineRun::query()->orderBy('id')->pluck('name')->all());
+        Event::assertDispatched(MediaProbed::class);
+        Event::assertNotDispatched(MediaReady::class);
     }
 
     #[Test]
@@ -194,6 +314,9 @@ class ProbeMediaTest extends DatabaseTestCase
 
         $this->assertSame(MediaStatus::Failed, $this->fresh($media)->status());
         Event::assertDispatched(MediaFailed::class, fn (MediaFailed $event) => str_contains((string) $event->error?->message, 'ffprobe is missing'));
+        $run = PipelineRun::query()->sole();
+        $this->assertSame(PipelineStatus::Failed, $run->status());
+        $this->assertStringContainsString('ffprobe is missing', (string) $run->error()?->message);
     }
 
     #[Test]

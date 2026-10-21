@@ -153,7 +153,8 @@ class UploadRoutesTest extends UploadRoutesTestCase
         $this->assertSame(hash_file('sha256', self::fixturePath('media/test.mp4')), hash('sha256', (string) Storage::disk('s3')->get((string) $original?->path())));
         $this->assertSame('private', Storage::disk('s3')->getVisibility((string) $original?->path()));
         $upload = Upload::query()->sole();
-        $this->assertSame([UploadStatus::Completed, $media->id], [$upload->status, $upload->media_id]);
+        $this->assertSame([UploadStatus::Completed, $media->id, null], [$upload->status, $upload->media_id, $upload->reason]);
+        $this->assertNotNull($upload->ended_at);
         Storage::disk('s3')->assertMissing($upload->path);
         Bus::assertDispatched(ProbeMedia::class);
 
@@ -201,7 +202,9 @@ class UploadRoutesTest extends UploadRoutesTestCase
             ->assertJsonPath('reason', 'unknown_type');
 
         $this->assertSame(0, Media::query()->count());
-        $this->assertSame(UploadStatus::Aborted, Upload::query()->sole()->status);
+        $upload = Upload::query()->sole();
+        $this->assertSame([UploadStatus::Aborted, 'unknown_type'], [$upload->status, $upload->reason], 'The upload says why it ended.');
+        $this->assertNotNull($upload->ended_at);
         $this->assertSame([], Storage::disk('s3')->allFiles());
     }
 
@@ -228,6 +231,9 @@ class UploadRoutesTest extends UploadRoutesTestCase
 
         $this->deleteJson('/mediatheque/uploads/'.$aborted)->assertNoContent();
         $this->postJson('/mediatheque/uploads/'.$aborted.'/parts', ['part_numbers' => [1]])->assertNotFound();
+        $upload = Upload::query()->where('uid', $aborted)->sole();
+        $this->assertSame([UploadStatus::Aborted, Upload::ABORTED], [$upload->status, $upload->reason]);
+        $this->assertNotNull($upload->ended_at);
 
         Date::setTestNow(Date::now()->addDays(2));
         $this->postJson('/mediatheque/uploads/'.$expired.'/parts', ['part_numbers' => [1]])->assertStatus(410);

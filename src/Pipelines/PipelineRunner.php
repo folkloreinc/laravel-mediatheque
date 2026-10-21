@@ -12,6 +12,7 @@ use Folklore\Mediatheque\Support\Uid;
 use Folklore\Mediatheque\Transcoders\TranscoderManager;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Date;
 use InvalidArgumentException;
 
 /**
@@ -63,7 +64,8 @@ class PipelineRunner
     }
 
     /**
-     * A run with its jobs queued, not submitted.
+     * A run with its jobs queued, not submitted. A job that reads from
+     * another rendition gets its `queued_at` when its input completes.
      *
      * @param  list<string>  $renditions
      */
@@ -109,9 +111,14 @@ class PipelineRunner
                 'visibility' => $media->visibility(),
             ])->save();
 
-            foreach (array_keys($selected) as $name) {
+            $now = Date::now();
+            foreach ($selected as $name => $rendition) {
                 $job = Models::pipelineJob()::query()->getModel()->newInstance();
-                $job->forceFill(['pipeline_id' => $run->getKey(), 'name' => $name])->save();
+                $job->forceFill([
+                    'pipeline_id' => $run->getKey(),
+                    'name' => $name,
+                    'queued_at' => $rendition->from === null ? $now : null,
+                ])->save();
             }
         });
 

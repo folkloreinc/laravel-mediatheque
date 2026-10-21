@@ -49,6 +49,9 @@ class EloquentRecorder implements Recorder
     /** @var list<object> */
     private array $events = [];
 
+    /** @var list<Closure(): void> */
+    private array $callbacks = [];
+
     /** @var list<array{string, list<string>}> */
     private array $replaced = [];
 
@@ -98,6 +101,7 @@ class EloquentRecorder implements Recorder
                 $this->afterCommit(fn () => $this->probes->done($this->media($run), $outputs->metadata, $run->nextPipeline()));
             } else {
                 $this->attach($job, $run, $outputs);
+                $this->queueDependents($job, $run);
             }
 
             $this->events[] = new RenditionCompleted($job, $outputs);
@@ -245,6 +249,19 @@ class EloquentRecorder implements Recorder
         return array_values($run->pipelineJobs
             ->filter(fn (PipelineJob $other) => $other->rendition()->from === $name)
             ->all());
+    }
+
+    /**
+     * The renditions that read from a completed one can run from now on:
+     * their wait in the queue starts (docs/decisions/0017).
+     */
+    private function queueDependents(PipelineJob $job, PipelineRun $run): void
+    {
+        foreach ($this->dependents($job, $run) as $dependent) {
+            if ($dependent->status() === JobStatus::Queued && $dependent->getAttribute('queued_at') === null) {
+                $dependent->forceFill(['queued_at' => Date::now()])->save();
+            }
+        }
     }
 
     private function runStarted(PipelineRun $run): void
@@ -408,10 +425,15 @@ class EloquentRecorder implements Recorder
     /**
      * After a run that includes the media's main rendition: `ready` if it
      * completed, `failed` otherwise, unless the media is ready and still has
-     * a file for it (docs/decisions/0014).
+     * a file for it (docs/decisions/0014). A probe's outcome is stored by
+     * ProbeResults instead, which starts the pipeline.
      */
     private function updateMedia(PipelineRun $run): void
     {
+        if ($run->name() === PipelineDefinition::PROBE) {
+            return;
+        }
+
         $main = $run->mainRendition();
         $job = $main !== null ? $run->job($main) : null;
 
@@ -440,17 +462,21 @@ class EloquentRecorder implements Recorder
     }
 
     /**
+     * Run once committed, after the events of the call: a probe's outcome is
+     * stored, and its pipeline started, once its run has ended.
+     *
      * @param  Closure(): void  $callback
      */
     private function afterCommit(Closure $callback): void
     {
-        $this->events[] = $callback;
+        $this->callbacks[] = $callback;
     }
 
     private function flush(): void
     {
-        [$events, $replaced] = [$this->events, $this->replaced];
+        [$events, $callbacks, $replaced] = [$this->events, $this->callbacks, $this->replaced];
         $this->events = [];
+        $this->callbacks = [];
         $this->replaced = [];
 
         foreach ($replaced as [$source, $paths]) {
@@ -458,7 +484,11 @@ class EloquentRecorder implements Recorder
         }
 
         foreach ($events as $event) {
-            $event instanceof Closure ? $event() : $this->dispatcher->dispatch($event);
+            $this->dispatcher->dispatch($event);
+        }
+
+        foreach ($callbacks as $callback) {
+            $callback();
         }
     }
 }

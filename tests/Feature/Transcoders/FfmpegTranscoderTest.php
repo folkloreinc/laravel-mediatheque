@@ -90,7 +90,7 @@ class FfmpegTranscoderTest extends DatabaseTestCase
         $media = $this->ingest('media/test.mp4', 'clip.mp4');
 
         $this->assertSame(MediaStatus::Ready, $media->status());
-        $run = PipelineRun::query()->sole();
+        $run = PipelineRun::query()->where('name', '!=', 'probe')->sole();
         $this->assertSame(PipelineStatus::Completed, $run->status());
         $this->assertSame(['h264', 'poster', 'thumbnails'], array_keys($run->renditions()));
 
@@ -116,8 +116,9 @@ class FfmpegTranscoderTest extends DatabaseTestCase
         }
 
         Event::assertDispatchedTimes(MediaReady::class, 1);
-        Event::assertDispatchedTimes(PipelineCompleted::class, 1);
-        Event::assertDispatchedTimes(RenditionCompleted::class, 3);
+        Event::assertDispatchedTimes(PipelineCompleted::class, 2);
+        Event::assertDispatched(PipelineCompleted::class, fn (PipelineCompleted $event) => $event->run->name() === 'probe');
+        Event::assertDispatchedTimes(RenditionCompleted::class, 4);
         $this->assertSame($before, glob(LocalFiles::root().'/*') ?: [], 'No temporary file is left.');
     }
 
@@ -188,7 +189,7 @@ class FfmpegTranscoderTest extends DatabaseTestCase
 
         $media = $this->ingest('media/test.mp4', 'clip.mp4');
 
-        $run = PipelineRun::query()->sole();
+        $run = PipelineRun::query()->where('name', '!=', 'probe')->sole();
         $this->assertSame(MediaStatus::Failed, $media->status());
         $this->assertSame(PipelineStatus::Failed, $run->status());
         $this->assertSame(TranscoderErrorCode::DependencyFailed, $run->job('poster')?->error()?->code);
@@ -206,7 +207,7 @@ class FfmpegTranscoderTest extends DatabaseTestCase
 
         $media = $this->ingest('media/test.mp4', 'clip.mp4');
 
-        $run = PipelineRun::query()->sole();
+        $run = PipelineRun::query()->where('name', '!=', 'probe')->sole();
         $this->assertSame(JobStatus::Skipped, $run->job('long')?->status());
         $this->assertSame(PipelineStatus::Completed, $run->status());
         $this->assertSame(MediaStatus::Ready, $media->status());
@@ -216,7 +217,7 @@ class FfmpegTranscoderTest extends DatabaseTestCase
     public function a_retried_job_of_an_ended_rendition_changes_nothing(): void
     {
         $media = $this->ingest('media/test.mp4', 'clip.mp4');
-        $run = PipelineRun::query()->sole();
+        $run = PipelineRun::query()->where('name', '!=', 'probe')->sole();
         $files = $media->files()->map(fn (File $file) => $file->path())->all();
 
         app()->call([new RunRendition($run->id, 'h264'), 'handle']);
@@ -251,7 +252,7 @@ class FfmpegTranscoderTest extends DatabaseTestCase
 
         $media = $this->ingest('media/test.mp4', 'clip.mp4', pipeline: 'clip');
 
-        $this->assertSame('clip', PipelineRun::query()->sole()->name());
+        $this->assertSame('clip', PipelineRun::query()->where('name', '!=', 'probe')->sole()->name());
         $this->assertNotNull($media->file('poster'));
         $this->assertSame(MediaStatus::Ready, $media->status(), 'A pipeline without a main rendition makes the media ready once probed.');
     }

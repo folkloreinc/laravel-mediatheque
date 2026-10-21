@@ -51,9 +51,10 @@ class InstallCommandTest extends TestCase
         $this->assertFileExists(config_path('mediatheque.php'));
         $published = $this->published();
         sort($published);
-        $this->assertCount(2, $published);
+        $this->assertCount(3, $published);
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_create_mediatheque_tables\.php$/', $published[0]);
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_create_mediatheque_uploads_table\.php$/', $published[1], 'Later migrations run after the first one.');
+        $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_update_mediatheque_tables_for_monitoring\.php$/', $published[2]);
     }
 
     #[Test]
@@ -64,8 +65,24 @@ class InstallCommandTest extends TestCase
 
         $this->install();
 
-        $this->assertCount(2, $this->published());
+        $this->assertCount(3, $this->published());
         $this->assertStringContainsString("'local'", (string) file_get_contents(config_path('mediatheque.php')));
+    }
+
+    #[Test]
+    public function an_application_installed_by_an_earlier_alpha_gets_the_new_migrations_only(): void
+    {
+        $this->install();
+        foreach (glob($this->migrations.'/*_update_mediatheque_tables_for_monitoring.php') ?: [] as $later) {
+            unlink($later);
+        }
+        $earlier = $this->published();
+
+        $this->install();
+
+        $published = $this->published();
+        $this->assertCount(3, $published);
+        $this->assertSame($earlier, array_values(array_intersect($published, $earlier)), 'Published migrations are left as they are.');
     }
 
     #[Test]
@@ -79,6 +96,9 @@ class InstallCommandTest extends TestCase
             $this->assertTrue(Schema::hasTable('mediatheque_'.$table), $table);
         }
         $this->assertTrue(Schema::hasColumns('mediatheque_files', ['media_id', 'handle', 'index', 'role', 'size', 'checksum', 'definition_hash']));
+        $this->assertTrue(Schema::hasColumns('mediatheque_pipelines_jobs', ['queued_at']));
+        $this->assertTrue(Schema::hasColumns('mediatheque_uploads', ['reason', 'ended_at']));
+        $this->assertTrue(Schema::hasIndex('mediatheque_pipelines', ['ended_at']));
 
         Artisan::call('migrate:rollback', ['--path' => $this->migrations, '--realpath' => true]);
 

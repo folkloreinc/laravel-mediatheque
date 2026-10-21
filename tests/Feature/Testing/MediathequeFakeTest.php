@@ -10,6 +10,7 @@ use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\RejectionReason;
 use Folklore\Mediatheque\Enums\TranscoderErrorCode;
 use Folklore\Mediatheque\Enums\Visibility;
+use Folklore\Mediatheque\Events\IngestRejected;
 use Folklore\Mediatheque\Events\MediaCreated;
 use Folklore\Mediatheque\Events\MediaFailed;
 use Folklore\Mediatheque\Events\MediaProbed;
@@ -155,6 +156,7 @@ class MediathequeFakeTest extends TestCase
     #[Test]
     public function a_file_that_matches_no_type_is_rejected(): void
     {
+        Event::fake([IngestRejected::class]);
         Mediatheque::fake();
 
         try {
@@ -165,6 +167,7 @@ class MediathequeFakeTest extends TestCase
         }
 
         Mediatheque::assertNothingIngested();
+        Event::assertDispatched(IngestRejected::class, fn (IngestRejected $event) => $event->reason === RejectionReason::UnknownType && $event->filename === 'archive.zip');
     }
 
     #[Test]
