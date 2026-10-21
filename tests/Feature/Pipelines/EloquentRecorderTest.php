@@ -2,14 +2,17 @@
 
 namespace Folklore\Mediatheque\Tests\Feature\Pipelines;
 
+use Carbon\CarbonInterface;
 use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob;
 use Folklore\Mediatheque\Contracts\Models\PipelineRun as PipelineRunContract;
 use Folklore\Mediatheque\Contracts\Recorder;
 use Folklore\Mediatheque\Contracts\Transcoder;
 use Folklore\Mediatheque\Enums\MediaStatus;
+use Folklore\Mediatheque\Enums\TranscoderErrorCode;
 use Folklore\Mediatheque\Jobs\DeleteStoredFiles;
 use Folklore\Mediatheque\Models\Media;
+use Folklore\Mediatheque\Models\PipelineJob as PipelineJobModel;
 use Folklore\Mediatheque\Models\PipelineRun;
 use Folklore\Mediatheque\Pipelines\EloquentRecorder;
 use Folklore\Mediatheque\Pipelines\OutputFile;
@@ -20,6 +23,7 @@ use Folklore\Mediatheque\Tests\Concerns\CreatesMedia;
 use Folklore\Mediatheque\Tests\Contracts\RecorderContractTests;
 use Folklore\Mediatheque\Tests\DatabaseTestCase;
 use Folklore\Mediatheque\Transcoders\Capabilities;
+use Folklore\Mediatheque\Transcoders\TranscoderError;
 use Folklore\Mediatheque\Transcoders\TranscoderManager;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
@@ -145,5 +149,36 @@ class EloquentRecorderTest extends DatabaseTestCase
         $this->assertSame($run->media()->visibility(), $run->visibility());
         $this->assertInstanceOf(PipelineRun::class, $run);
         $this->assertSame('h264', $run->mainRendition());
+    }
+
+    #[Test]
+    public function a_rendition_waits_in_the_queue_from_its_run_or_from_when_its_input_completes(): void
+    {
+        $this->travelTo('2026-10-21 10:00:00');
+        $run = $this->createRun($this->videoPipeline());
+        $queuedAt = fn (string $rendition) => $this->queuedAt($run, $rendition)?->toDateTimeString();
+
+        $this->assertSame(['2026-10-21 10:00:00', '2026-10-21 10:00:00', null, null], [$queuedAt('normalized'), $queuedAt('poster'), $queuedAt('h264'), $queuedAt('webm')]);
+
+        $this->travelTo('2026-10-21 10:05:00');
+        $this->recorder()->completed($this->freshJob($run, 'normalized'), Outputs::none());
+
+        $this->assertSame(['2026-10-21 10:05:00', null], [$queuedAt('h264'), $queuedAt('webm')]);
+        $this->assertSame('2026-10-21 10:00:00', $queuedAt('poster'));
+    }
+
+    #[Test]
+    public function a_rendition_whose_input_failed_never_waits_in_the_queue(): void
+    {
+        $run = $this->createRun($this->videoPipeline());
+
+        $this->recorder()->failed($this->freshJob($run, 'normalized'), new TranscoderError(TranscoderErrorCode::OperationFailed, 'Failed'));
+
+        $this->assertNull($this->queuedAt($run, 'h264'));
+    }
+
+    private function queuedAt(PipelineRunContract $run, string $rendition): ?CarbonInterface
+    {
+        return PipelineJobModel::query()->where('pipeline_id', $this->freshRun($run)->id)->where('name', $rendition)->sole()->queued_at;
     }
 }

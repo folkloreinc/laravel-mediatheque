@@ -67,11 +67,7 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] `mediatheque:doctor`, `mediatheque:run-pipeline`, `mediatheque:refresh`
 - [ ] Custom types, renditions and operations through the config and `extend*()`
 - [ ] Monitoring ([decisions/0017](decisions/0017-monitoring-dashboard.md), [#69](https://github.com/folkloreinc/laravel-mediatheque/issues/69)):
-  - every probe recorded as a run;
-  - `queued_at` on renditions;
-  - a reason and an end time on uploads;
-  - `IngestRejected`;
-  - indexes for periods;
+  - every probe recorded as a run, `queued_at` on renditions, a reason and an end time on uploads, `IngestRejected`, indexes for periods ([#71](https://github.com/folkloreinc/laravel-mediatheque/issues/71));
   - ended runs pruned by `mediatheque:prune`, keeping each media's last run of each pipeline;
   - the `Monitoring` read model;
   - `retry()`, `cancel()`, `refresh()` and `probeAgain()`;

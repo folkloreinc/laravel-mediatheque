@@ -6,6 +6,7 @@ use Folklore\Mediatheque\Contracts\Ingestor;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\RejectionReason;
 use Folklore\Mediatheque\Enums\Visibility;
+use Folklore\Mediatheque\Events\IngestRejected;
 use Folklore\Mediatheque\Events\MediaCreated;
 use Folklore\Mediatheque\Exceptions\FileRejected;
 use Folklore\Mediatheque\Exceptions\InvalidPath;
@@ -176,6 +177,20 @@ class MediaIngestorTest extends DatabaseTestCase
         $this->assertRejected(RejectionReason::TooLarge, fn () => Mediatheque::ingest($this->upload('media/image.jpg', 'photo.jpg')));
 
         $this->assertNothingStored();
+    }
+
+    #[Test]
+    public function a_rejected_file_dispatches_ingest_rejected(): void
+    {
+        Event::fake([IngestRejected::class]);
+        config(['mediatheque.types.image.max_size' => 1000]);
+
+        $this->assertRejected(RejectionReason::TooLarge, fn () => Mediatheque::ingest($this->upload('media/image.jpg', 'photo.jpg')));
+
+        Event::assertDispatchedTimes(IngestRejected::class, 1);
+        Event::assertDispatched(IngestRejected::class, fn (IngestRejected $event) => $event->reason === RejectionReason::TooLarge
+            && $event->filename === 'photo.jpg'
+            && str_contains($event->message, 'photo.jpg'));
     }
 
     #[Test]

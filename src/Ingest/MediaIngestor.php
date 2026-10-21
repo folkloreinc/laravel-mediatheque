@@ -7,6 +7,7 @@ use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\RejectionReason;
+use Folklore\Mediatheque\Events\IngestRejected;
 use Folklore\Mediatheque\Events\MediaCreated;
 use Folklore\Mediatheque\Exceptions\FileRejected;
 use Folklore\Mediatheque\Jobs\ProbeMedia;
@@ -92,6 +93,10 @@ class MediaIngestor implements Ingestor
             }
 
             return $this->store($source, $options, $type, $mime, $size, $local, $sanitized !== null);
+        } catch (FileRejected $exception) {
+            $this->events->dispatch(new IngestRejected($exception->reason, $exception->getMessage(), $source->filename));
+
+            throw $exception;
         } finally {
             foreach ($temporary as $path) {
                 @unlink($path);

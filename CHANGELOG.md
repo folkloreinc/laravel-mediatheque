@@ -6,6 +6,24 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+What a monitoring view needs is recorded ([decisions/0017](docs/decisions/0017-monitoring-dashboard.md), #71). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new migration only.
+
+### Added
+
+- `queued_at` on pipeline jobs: when the rendition can run, that is when its run is created, or when the rendition it reads from completes.
+- `reason` and `ended_at` on uploads: `aborted` by its creator, or the reason ingest rejected its file (`unknown_type`, `too_large`…).
+- `IngestRejected`, dispatched when ingest refuses a file, with its reason, message and file name. `Mediatheque::fake()` dispatches it too.
+- Indexes on `created_at` and `ended_at` of `pipelines` and `pipelines_jobs`.
+
+### Changed
+
+- Every probe is a run of the `probe` pipeline, not only pending ones: a probe's duration, attempts and error are recorded, and `PipelineStarted`, `RenditionCompleted` or `RenditionFailed`, and `PipelineCompleted` or `PipelineFailed` are dispatched for it, before `MediaProbed` or `MediaFailed`. A listener that only cares about renditions skips runs named `probe`.
+- A probe sent to a driver that answers later is `running`, not `queued`. A retried probe job reuses its run, and doesn't send a probe that is pending with its driver again.
+
+### Fixed
+
+- A pending probe that completed through the recorder made the media `ready` without probing it, and its pipeline never started.
+
 ## [2.0.0-alpha.3] - 2026-10-21
 
 Direct uploads with Uppy 6.

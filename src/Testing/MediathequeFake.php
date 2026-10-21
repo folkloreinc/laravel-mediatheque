@@ -16,6 +16,7 @@ use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\RejectionReason;
 use Folklore\Mediatheque\Enums\TranscoderErrorCode;
 use Folklore\Mediatheque\Enums\Visibility;
+use Folklore\Mediatheque\Events\IngestRejected;
 use Folklore\Mediatheque\Events\MediaCreated;
 use Folklore\Mediatheque\Events\MediaFailed;
 use Folklore\Mediatheque\Events\MediaProbed;
@@ -114,15 +115,21 @@ class MediathequeFake implements Fake, Mediatheque
 
     /**
      * The ingest step of the fake. A file whose mime matches no type is
-     * rejected, as the package does.
+     * rejected, as the package does, with `IngestRejected`.
      */
     public function ingestSource(Source $source, IngestOptions $options): Media
     {
-        [$localPath, $mime] = $this->read($source);
-        $type = $this->detectType($mime) ?? throw FileRejected::because(
-            RejectionReason::UnknownType,
-            sprintf('The file "%s" (%s) matches no media type.', $source->filename ?? 'file', $mime),
-        );
+        try {
+            [$localPath, $mime] = $this->read($source);
+            $type = $this->detectType($mime) ?? throw FileRejected::because(
+                RejectionReason::UnknownType,
+                sprintf('The file "%s" (%s) matches no media type.', $source->filename ?? 'file', $mime),
+            );
+        } catch (FileRejected $exception) {
+            $this->events->dispatch(new IngestRejected($exception->reason, $exception->getMessage(), $source->filename));
+
+            throw $exception;
+        }
 
         $visibility = $options->visibility ?? Visibility::tryFrom($this->string('mediatheque.ingest.visibility', 'public')) ?? Visibility::Public;
         $storage = $options->source ?? $this->string('mediatheque.source', 'public');
