@@ -208,7 +208,7 @@ Ingest runs in a transaction: a failure leaves neither a stored file nor a row b
 
 Large files should not go through PHP. The package provides, as opt-in HTTP endpoints ([decisions/0006](decisions/0006-ingest-and-uploads.md)):
 
-- **Presigned multipart uploads** to an S3-compatible disk, for Uppy's `AwsS3` plugin: create an upload (`upl_…`), sign its parts, complete it, then ingest from the disk. Interrupted uploads resume from the last part.
+- **Presigned multipart uploads** to an S3-compatible disk, for Uppy's `AwsS3` plugin: create an upload (`upl_…`), sign its parts, complete it, then ingest from the disk. Interrupted uploads resume from the last part. With Uppy 6, the client sends every S3 request itself, presigned by one route, then completes the upload to ingest it ([decisions/0016](decisions/0016-uploads-signed-for-uppy-6.md)).
 - **A TUS adapter** (later alpha), for clients that need the TUS protocol. It writes to a disk and ends with the same ingest step.
 
 Uploads are tracked in an `uploads` table (status, disk, path, expected size, creator, expiry). Each step is authorized by the `Media` policy's `create` ability, and only the user who created an upload can continue it. The application sets the options of the media an upload creates (its attributes, such as a tenant id) with `Mediatheque::uploadsUsing()`, from its own context ([decisions/0015](decisions/0015-new-install-schema-attributes-and-uploads.md)). `mediatheque:prune` removes abandoned uploads.
@@ -406,13 +406,16 @@ Route::middleware(['web', 'auth'])->group(function () {
 | Route | Purpose |
 |---|---|
 | `POST uploads`, `GET uploads/{upload}/parts`, `POST uploads/{upload}/parts`, `POST uploads/{upload}/complete`, `DELETE uploads/{upload}` | Presigned multipart uploads: create, list the parts received (to resume), sign parts, complete, abort |
+| `POST uploads/sign` | Presign one S3 request the client sends itself (Uppy 6) |
 | `POST medias` | Small uploads through PHP |
 | `GET medias/{media}`, `PATCH medias/{media}`, `DELETE medias/{media}` | Read, rename, change visibility, delete |
 | `GET files/{file}` | Signed streaming of private files on local disks |
 
 Every action is authorized through a `Media` policy (`create`, `view`, `update`, `delete`). Without a policy, everything is denied. Requests are validated, responses use the JSON resource, and errors are `application/problem+json`.
 
-Alpha 1 ships the upload routes. With Uppy's `AwsS3` plugin (`shouldUseMultipart: true`), each of its functions calls one route:
+Alpha 1 ships the upload routes. The routes work under a prefix with its own parameters (`workspaces/{workspace}/uploads`).
+
+**Uppy 5.** With the `AwsS3` plugin (`shouldUseMultipart: true`), each of its functions calls one route, and the server creates and completes the multipart upload:
 
 | Uppy | Route | Request → response |
 |---|---|---|
@@ -422,7 +425,28 @@ Alpha 1 ships the upload routes. With Uppy's `AwsS3` plugin (`shouldUseMultipart
 | `completeMultipartUpload` | `POST uploads/{id}/complete` | `{parts: [{number, etag}]}` → `{id, type, name, status, visibility}` of the media |
 | `abortMultipartUpload` | `DELETE uploads/{id}` | → `204` |
 
-The bucket's CORS rules must allow `PUT` from the application's origin and expose the `ETag` header. Parts are 5 MB at least, except the last one (S3's rule).
+**Uppy 6.** The `AwsS3` plugin (6.1 or later) sends every S3 request to the storage itself, and its `signRequest` option calls `POST uploads/sign` for each one ([decisions/0016](decisions/0016-uploads-signed-for-uppy-6.md)):
+
+| S3 request | Uppy's request → response |
+|---|---|
+| `CreateMultipartUpload`, `PutObject` | `{method: "POST" or "PUT", key}` → `{url, key}`: a new upload, with its own key `{uploads.path}/{upl_…}`; Uppy uses that key from then on |
+| `UploadPart` | `{method: "PUT", key, uploadId, partNumber}` → `{url, key}` |
+| `ListParts` | `{method: "GET", key, uploadId}` → `{url, key}` |
+| `CompleteMultipartUpload`, `AbortMultipartUpload` | `{method: "POST" or "DELETE", key, uploadId}` → `{url, key}` |
+| `DeleteObject` | `{method: "DELETE", key}` → `{url, key}` |
+
+A request other than the first is signed only for the key of an open upload of the same user, and for the first `uploadId` signed for it: anything else gets a `404`. When Uppy reports `upload-success`, the client completes the upload with `POST uploads/{id}/complete` and `{filename}`, without `parts`: `id` is the last segment of the key. The route checks that the file is on the storage (`409` otherwise), then ingests it.
+
+```js
+uppy.use(AwsS3, {
+  shouldUseMultipart: true,
+  signRequest: (request) => api.post('uploads/sign', request),
+})
+uppy.on('upload-success', (file, { body }) =>
+  api.post(`uploads/${body.key.split('/').pop()}/complete`, { filename: file.name }))
+```
+
+The bucket's CORS rules must allow `PUT` from the application's origin and expose the `ETag` header; with Uppy 6, they must also allow `POST`, `GET` and `DELETE`, and the `Content-Type` header. Parts are 5 MB at least, except the last one (S3's rule). The type the client sends with the file is never kept: the media's file gets the type detected from its content.
 
 ## Events
 

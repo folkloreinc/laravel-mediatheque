@@ -2,7 +2,6 @@
 
 namespace Folklore\Mediatheque\Tests\Feature\Http;
 
-use Aws\S3\S3Client;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\UploadStatus;
 use Folklore\Mediatheque\Enums\Visibility;
@@ -11,112 +10,24 @@ use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Jobs\ProbeMedia;
 use Folklore\Mediatheque\Models\Media;
 use Folklore\Mediatheque\Models\Upload;
-use Folklore\Mediatheque\Tests\DatabaseTestCase;
-use Folklore\Mediatheque\Tests\Support\MediaPolicy;
 use Folklore\Mediatheque\Tests\Support\User;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * The upload routes, against an S3-compatible server (moto in CI, MinIO or
- * any S3 API locally). The tests that reach the storage are skipped unless
- * MEDIATHEQUE_TEST_S3_ENDPOINT is set, for example:
- *
- *     MEDIATHEQUE_TEST_S3_ENDPOINT=http://127.0.0.1:9000 vendor/bin/phpunit --filter UploadRoutesTest
+ * The upload routes for Uppy 5 and other clients that let the server create
+ * and complete the multipart upload.
  */
-class UploadRoutesTest extends DatabaseTestCase
+class UploadRoutesTest extends UploadRoutesTestCase
 {
-    private string $bucket;
-
-    /**
-     * @param  Application  $app
-     */
-    protected function defineEnvironment($app): void
-    {
-        parent::defineEnvironment($app);
-
-        $this->bucket = 'mediatheque-'.bin2hex(random_bytes(4));
-        $app['config']->set('filesystems.disks.s3', [
-            'driver' => 's3',
-            'key' => getenv('MEDIATHEQUE_TEST_S3_KEY') ?: 'testing',
-            'secret' => getenv('MEDIATHEQUE_TEST_S3_SECRET') ?: 'testing',
-            'region' => 'us-east-1',
-            'bucket' => $this->bucket,
-            'endpoint' => getenv('MEDIATHEQUE_TEST_S3_ENDPOINT') ?: 'http://127.0.0.1:1',
-            'use_path_style_endpoint' => true,
-            'throw' => true,
-        ]);
-        $app['config']->set('mediatheque.source', 's3');
-    }
-
-    /**
-     * @param  Router  $router
-     */
-    protected function defineRoutes($router): void
-    {
-        // As an application does it, in its routes file: Route::mediatheque()
-        $router->middleware([])->group(fn () => $router->__call('mediatheque', []));
-    }
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->boolean('can_upload')->default(true);
-            $table->unsignedBigInteger('space_id')->nullable();
-        });
-        Schema::table('mediatheque_medias', fn (Blueprint $table) => $table->unsignedBigInteger('space_id')->nullable());
-        Gate::policy(Media::class, MediaPolicy::class);
-        Bus::fake([ProbeMedia::class]);
-    }
-
-    private function requiresStorage(): void
-    {
-        if (! getenv('MEDIATHEQUE_TEST_S3_ENDPOINT')) {
-            $this->markTestSkipped('Set MEDIATHEQUE_TEST_S3_ENDPOINT to run the tests against an S3-compatible server.');
-        }
-
-        $client = new S3Client([
-            'version' => 'latest',
-            'region' => 'us-east-1',
-            'endpoint' => getenv('MEDIATHEQUE_TEST_S3_ENDPOINT'),
-            'use_path_style_endpoint' => true,
-            'credentials' => ['key' => getenv('MEDIATHEQUE_TEST_S3_KEY') ?: 'testing', 'secret' => getenv('MEDIATHEQUE_TEST_S3_SECRET') ?: 'testing'],
-        ]);
-        $client->createBucket(['Bucket' => $this->bucket]);
-    }
-
-    /**
-     * @param  array<string, mixed>  $attributes
-     */
-    private function user(array $attributes = []): User
-    {
-        $user = new User;
-        $user->forceFill(['can_upload' => true, ...$attributes])->save();
-
-        return $user;
-    }
-
-    private function string(mixed $value): string
-    {
-        $this->assertIsString($value);
-
-        return $value;
-    }
-
     /**
      * Upload a file through the routes, as Uppy does: create, sign each part,
      * send it, complete.
@@ -153,6 +64,20 @@ class UploadRoutesTest extends DatabaseTestCase
     {
         $this->assertTrue(app('router')->has('mediatheque.uploads.store'));
         $this->assertTrue(app('router')->has('mediatheque.uploads.complete'));
+    }
+
+    #[Test]
+    public function the_routes_work_under_a_prefix_with_its_own_parameters(): void
+    {
+        // As an application that puts the routes under a tenant: the {workspace} parameter comes first
+        $router = app('router');
+        $router->prefix('workspaces/{workspace}')->group(fn () => $router->__call('mediatheque', ['uploads']));
+        $user = $this->user();
+        $upload = $this->pendingUpload($user);
+
+        $this->actingAs($user)->postJson('/workspaces/42/uploads/uploads/'.$upload->uid.'/parts', ['part_numbers' => [1]])
+            ->assertOk()
+            ->assertJsonPath('parts.0.number', 1);
     }
 
     #[Test]

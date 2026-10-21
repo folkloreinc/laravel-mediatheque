@@ -307,8 +307,14 @@ class MediaIngestor implements Ingestor
         $target = $this->filesystems->disk($toDisk);
 
         if ($fromDisk === $toDisk && $target instanceof FilesystemAdapter) {
-            // One request on S3: the copy gets the media's visibility, without reading the source's
-            $target->getDriver()->copy($from, $to, ['retain_visibility' => false, 'visibility' => $options['visibility']]);
+            // One request on S3: the copy gets the media's visibility, without reading the source's, and
+            // the detected type rather than the one the client sent with the upload (docs/decisions/0016)
+            $target->getDriver()->copy($from, $to, [
+                'retain_visibility' => false,
+                'visibility' => $options['visibility'],
+                'ContentType' => $options['ContentType'],
+                'MetadataDirective' => 'REPLACE',
+            ]);
 
             return;
         }
