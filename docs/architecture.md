@@ -510,6 +510,29 @@ The fake stores files on fake disks, returns probe fixtures, and completes rendi
 | `mediatheque:run-pipeline` | Run a pipeline on media, by type or uid |
 | `mediatheque:refresh` | Scheduled: fetch the state of runs that have been running too long, and the progress of drivers that only report it by polling |
 | `mediatheque:prune` | Force-delete soft-deleted media after the grace period, abandoned uploads, orphan files |
+| `mediatheque:status` | Media by status, runs in progress and stuck, what ended in the last hours, and the latest failures (`--hours`, 24 by default) |
+
+## Monitoring
+
+`Folklore\Mediatheque\Monitoring\Monitoring` is the read model that the monitoring dashboard, `mediatheque:status` and an application's own views read ([decisions/0017](decisions/0017-monitoring-dashboard.md)). It returns readonly value objects:
+
+| Method | Returns |
+|---|---|
+| `overview(Period)` | Media by status, runs in progress, stuck runs (not ended `monitoring.stuck_after` seconds after they started), runs that ended in the period by status, the oldest queued rendition, open uploads, and uploads that ended in the period |
+| `runs(RunFilters, cursor, limit)` | Runs, newest first, with their jobs and media. The filters are status, pipeline, transcoder, media type, error code, media uid, period, and stuck. Pages are cursor-paginated |
+| `uploads(status, Period, cursor, limit)` | Uploads, newest first |
+| `failures(Period)` | Failed renditions grouped by error code, pipeline, transcoder and rendition, with a count and the last message |
+| `durations(Period)` | How long each rendition takes and waits in the queue (median, p95), by pipeline, rendition and transcoder, over at most `monitoring.max_rows` renditions |
+| `throughput(Period)` | Runs ended per hour by status, and bytes ingested and produced |
+
+The queries ignore the application's global scopes, as the package's workers do. An application narrows them with `Mediatheque::monitoringScope()`, which receives a query of media or of uploads; runs and renditions are narrowed through their media:
+
+```php
+Mediatheque::monitoringScope(fn (Builder $query, string $model) => match ($model) {
+    'media' => $query->where('tenant_id', $tenant->id),
+    'upload' => $query->whereIn('creator_id', $tenant->users()->select('id')),
+});
+```
 
 ## Deletion and replacement
 
@@ -519,7 +542,7 @@ The fake stores files on fake disks, returns probe fixtures, and completes rendi
 
 ## Configuration
 
-The 1.x keys keep their meaning where the concept is unchanged (`table_prefix`, `source`, `file_path_format`, `types`, `pipelines`, `routes`, `jobs`). A source is a Laravel disk name, so 2.0 has no `sources` key: `mediatheque:upgrade --config` turns 1.x sources into disks ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)). New keys: `models`, `ingest`, `urls`, `transcoders`, `probe`, `uploads`, `prune`, `run_path_format`.
+The 1.x keys keep their meaning where the concept is unchanged (`table_prefix`, `source`, `file_path_format`, `types`, `pipelines`, `routes`, `jobs`). A source is a Laravel disk name, so 2.0 has no `sources` key: `mediatheque:upgrade --config` turns 1.x sources into disks ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)). New keys: `models`, `ingest`, `urls`, `transcoders`, `probe`, `uploads`, `prune`, `monitoring`, `run_path_format`.
 
 The package merges its defaults deeply with the application's file, so a published config only needs its overrides. Lists (`mimes`) and a pipeline's `renditions` replace the defaults as a whole, and `false` removes a default type or pipeline. Every value is validated when it is read, with the key that is wrong. The 1.x shapes of `types` and `pipelines` are read with deprecation warnings (see [upgrade.md](upgrade.md)).
 
@@ -547,6 +570,7 @@ src/                                  PSR-4: Folklore\Mediatheque\
   Concerns/                           HasMedias
   Compat/                             1.x compatibility layer (deprecated)
   Testing/                            MediathequeFake, and the in-memory models, recorder, prober and URLs it uses
+  Monitoring/                         The read model: overview, runs, uploads, failures, durations, throughput
   Console/
 config/mediatheque.php
 database/migrations/
