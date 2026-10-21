@@ -66,6 +66,15 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] `mediaconvert` transcoder, asynchronous, polled by `mediatheque:refresh`
 - [ ] `mediatheque:doctor`, `mediatheque:run-pipeline`, `mediatheque:refresh`
 - [ ] Custom types, renditions and operations through the config and `extend*()`
+- [ ] Monitoring, proposed in [decisions/0017](decisions/0017-monitoring-dashboard.md) ([#69](https://github.com/folkloreinc/laravel-mediatheque/issues/69)):
+  - every probe recorded as a run;
+  - `queued_at` on renditions;
+  - a reason and an end time on uploads;
+  - `IngestRejected`;
+  - indexes for periods;
+  - the `Monitoring` read model;
+  - `retry()`, `cancel()`, `refresh()` and `probeAgain()`;
+  - `mediatheque:status`.
 
 ## Beta: upgrade path and Eclair
 
@@ -83,6 +92,7 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] HLS rendition, with private playback (signed segments)
 - [ ] Derived media: clips with start, end and crop
 - [ ] `captions` type; transcription through transcoders that support it
+- [ ] JSON resources for runs, renditions and uploads, reviewed with Panneau 5. The first `0.x` of `laravel-mediatheque-dashboard` builds on them and is validated on the pilot project ([decisions/0017](decisions/0017-monitoring-dashboard.md))
 
 ## Release candidate
 
@@ -105,10 +115,12 @@ Needed before the pilot launches: `laravel-mediatheque`, `laravel-image` and Pan
 - Cloudflare Stream transcoder, with remote renditions, if a project needs it
 - Storyboards, vertical reframing (9:16), scene detection, highlights, through Eclair
 - Upgrade of the active 1.x projects, through `laravel-folklore` first
+- Monitoring, if a project needs it: a Pulse recorder, an aggregates table, events broadcast over Reverb ([decisions/0017](decisions/0017-monitoring-dashboard.md))
 - 3.0, later: remove the compatibility layer and the unused 1.x tables
 
 ## Open questions
 
 - Which TUS server library to use (decided when alpha 3 starts).
 - How private HLS is signed: playlist rewriting or CDN tokens (decided in the beta).
+- Whether the monitoring dashboard ships as its own package or inside this one ([decisions/0017](decisions/0017-monitoring-dashboard.md), decided before alpha 3 starts).
 - Whether a `laravel-folklore` 1.x minor accepts `^1.1|^2.0` of this package, or projects wait for `laravel-folklore` 2.

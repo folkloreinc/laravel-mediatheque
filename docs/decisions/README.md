@@ -20,6 +20,7 @@ One file per decision. A decision is not edited once accepted: a later one repla
 | [0014](0014-run-outcomes-and-model-contracts.md) | How runs end, the media's status, and model contracts | Accepted |
 | [0015](0015-new-install-schema-attributes-and-uploads.md) | The schema of a new install, application attributes, and uploads | Amended by 0016 |
 | [0016](0016-uploads-signed-for-uppy-6.md) | Direct uploads signed for Uppy 6 | Accepted |
+| [0017](0017-monitoring-dashboard.md) | A monitoring dashboard | Proposed |
 
 Template:
 
