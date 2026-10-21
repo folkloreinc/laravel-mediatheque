@@ -134,7 +134,7 @@ class Monitoring
      */
     public function uploads(?UploadStatus $status = null, ?Period $period = null, ?string $cursor = null, int $limit = 50): Page
     {
-        $query = $this->uploadQuery();
+        $query = $this->uploadQuery()->with(['media' => fn ($media) => $media->withoutGlobalScopes()]);
 
         if ($status !== null) {
             $query->where('status', $status);

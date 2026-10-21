@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque\Testing;
 
+use Carbon\CarbonImmutable;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob;
 use Folklore\Mediatheque\Contracts\Recorder;
 use Folklore\Mediatheque\Contracts\UrlGenerator;
@@ -24,6 +25,7 @@ use Folklore\Mediatheque\Testing\Models\FakePipelineJob;
 use Folklore\Mediatheque\Testing\Models\FakePipelineRun;
 use Folklore\Mediatheque\Transcoders\TranscoderError;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Facades\Date;
 use InvalidArgumentException;
 
 /**
@@ -46,6 +48,7 @@ class InMemoryRecorder implements Recorder
         }
 
         $job->status = JobStatus::Running;
+        $job->startedAt = self::now();
         $this->runStarted($job->run);
     }
 
@@ -69,8 +72,15 @@ class InMemoryRecorder implements Recorder
 
         $this->runStarted($job->run);
         $job->status = JobStatus::Completed;
+        $job->endedAt = self::now();
         $job->progress = 1.0;
         $this->record($job, $outputs);
+
+        foreach ($this->dependents($job) as $dependent) {
+            if ($dependent->status === JobStatus::Queued && $dependent->queuedAt === null) {
+                $dependent->queuedAt = self::now();
+            }
+        }
 
         $this->events->dispatch(new RenditionCompleted($job, $outputs));
         $this->afterFinalStatus($job->run);
@@ -85,6 +95,7 @@ class InMemoryRecorder implements Recorder
 
         $this->runStarted($job->run);
         $job->status = JobStatus::Skipped;
+        $job->endedAt = self::now();
         $job->reason = $reason;
         $this->events->dispatch(new RenditionSkipped($job, $reason));
 
@@ -104,6 +115,7 @@ class InMemoryRecorder implements Recorder
 
         $this->runStarted($job->run);
         $job->status = JobStatus::Failed;
+        $job->endedAt = self::now();
         $job->error = $error;
         $this->events->dispatch(new RenditionFailed($job, $error));
 
@@ -122,6 +134,7 @@ class InMemoryRecorder implements Recorder
         }
 
         $job->status = JobStatus::Canceled;
+        $job->endedAt = self::now();
         $this->events->dispatch(new RenditionCanceled($job));
 
         foreach ($this->dependents($job) as $dependent) {
@@ -160,6 +173,7 @@ class InMemoryRecorder implements Recorder
         }
 
         $run->status = PipelineStatus::Running;
+        $run->startedAt = self::now();
         $this->events->dispatch(new PipelineStarted($run));
     }
 
@@ -216,6 +230,7 @@ class InMemoryRecorder implements Recorder
         }
 
         $this->runStarted($run);
+        $run->endedAt = self::now();
 
         if (in_array(JobStatus::Failed, $statuses, true)) {
             $run->status = PipelineStatus::Failed;
@@ -258,5 +273,10 @@ class InMemoryRecorder implements Recorder
         $this->events->dispatch($status === MediaStatus::Ready
             ? new MediaReady($media)
             : new MediaFailed($media, $job->error));
+    }
+
+    private static function now(): CarbonImmutable
+    {
+        return CarbonImmutable::instance(Date::now());
     }
 }

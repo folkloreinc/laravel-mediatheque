@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque\Tests\Contracts;
 
+use Carbon\CarbonInterface;
 use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob;
 use Folklore\Mediatheque\Contracts\Models\PipelineRun;
@@ -104,6 +105,35 @@ trait RecorderContractTests
         $this->assertSame(JobStatus::Running, $this->job($run, 'normalized')->status());
         $this->assertSame(PipelineStatus::Running, $this->freshRun($run)->status());
         Event::assertDispatchedTimes(PipelineStarted::class, 1);
+    }
+
+    #[Test]
+    public function renditions_and_runs_record_when_they_were_queued_started_and_ended(): void
+    {
+        $this->travelTo('2026-10-21 10:00:00');
+        $run = $this->createRun($this->videoPipeline());
+        $at = fn (?CarbonInterface $time) => $time?->format('H:i');
+
+        $this->assertSame('10:00', $at($this->freshRun($run)->createdAt()));
+        $this->assertSame(['10:00', '10:00', null], [$at($this->job($run, 'normalized')->queuedAt()), $at($this->job($run, 'poster')->queuedAt()), $at($this->job($run, 'h264')->queuedAt())]);
+
+        $this->travelTo('2026-10-21 10:01:00');
+        $this->recorder()->started($this->job($run, 'normalized'));
+        $this->travelTo('2026-10-21 10:03:00');
+        $this->complete($run, 'normalized');
+
+        $normalized = $this->job($run, 'normalized');
+        $this->assertSame(['10:01', '10:03'], [$at($normalized->startedAt()), $at($normalized->endedAt())]);
+        $this->assertSame('10:03', $at($this->job($run, 'h264')->queuedAt()), 'It could run once its input completed.');
+        $this->assertSame(['10:01', null], [$at($this->freshRun($run)->startedAt()), $at($this->freshRun($run)->endedAt())]);
+
+        $this->travelTo('2026-10-21 10:05:00');
+        foreach (['h264', 'webm', 'poster', 'thumbnails', 'palette'] as $rendition) {
+            $this->complete($run, $rendition);
+        }
+
+        $this->assertSame('10:05', $at($this->freshRun($run)->endedAt()));
+        $this->assertNull($this->job($run, 'poster')->startedAt(), 'It completed without reporting that it started.');
     }
 
     #[Test]

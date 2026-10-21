@@ -1,0 +1,72 @@
+{
+    "id": "run_01JAB3QX5Z8Y7W6V5T4S3R2Q1P",
+    "pipeline": "video",
+    "status": "failed",
+    "transcoder": "ffmpeg",
+    "external_id": null,
+    "progress": 1.0,
+    "error": {
+        "code": "timeout",
+        "message": "The poster took too long."
+    },
+    "media": {
+        "id": "med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P",
+        "type": "video",
+        "name": "Episode 1",
+        "status": "ready"
+    },
+    "renditions": [
+        {
+            "rendition": "h264",
+            "operation": "video.transcode",
+            "from": null,
+            "status": "completed",
+            "progress": 1.0,
+            "attempts": 1,
+            "error": null,
+            "reason": null,
+            "queued_at": "2026-10-21T14:00:00Z",
+            "started_at": "2026-10-21T14:00:05Z",
+            "ended_at": "2026-10-21T14:02:05Z",
+            "wait": 5.0,
+            "duration": 120.0
+        },
+        {
+            "rendition": "poster",
+            "operation": "video.poster",
+            "from": null,
+            "status": "failed",
+            "progress": 0.0,
+            "attempts": 3,
+            "error": {
+                "code": "timeout",
+                "message": "The poster took too long."
+            },
+            "reason": null,
+            "queued_at": "2026-10-21T14:00:00Z",
+            "started_at": "2026-10-21T14:00:05Z",
+            "ended_at": "2026-10-21T14:01:00Z",
+            "wait": 5.0,
+            "duration": 55.0
+        },
+        {
+            "rendition": "thumbnails",
+            "operation": "video.thumbnails",
+            "from": "h264",
+            "status": "skipped",
+            "progress": 0.0,
+            "attempts": 0,
+            "error": null,
+            "reason": "The input doesn't match the rendition's condition.",
+            "queued_at": "2026-10-21T14:02:05Z",
+            "started_at": null,
+            "ended_at": "2026-10-21T14:02:06Z",
+            "wait": null,
+            "duration": null
+        }
+    ],
+    "created_at": "2026-10-21T14:00:00Z",
+    "started_at": "2026-10-21T14:00:05Z",
+    "ended_at": "2026-10-21T14:02:06Z",
+    "duration": 121.0
+}

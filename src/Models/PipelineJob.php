@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque\Models;
 
+use Carbon\CarbonInterface;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineRun as PipelineRunContract;
 use Folklore\Mediatheque\Enums\JobStatus;
@@ -106,5 +107,20 @@ class PipelineJob extends Model implements PipelineJobContract
     public function reason(): ?string
     {
         return $this->reason;
+    }
+
+    public function queuedAt(): ?CarbonInterface
+    {
+        return $this->queued_at;
+    }
+
+    public function startedAt(): ?CarbonInterface
+    {
+        return $this->started_at;
+    }
+
+    public function endedAt(): ?CarbonInterface
+    {
+        return $this->ended_at;
     }
 }

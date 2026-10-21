@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque\Models;
 
+use Carbon\CarbonInterface;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
@@ -262,6 +263,21 @@ class PipelineRun extends Model implements PipelineRunContract
     public function error(): ?TranscoderError
     {
         return $this->error !== null ? TranscoderError::fromArray($this->error) : null;
+    }
+
+    public function createdAt(): ?CarbonInterface
+    {
+        return $this->created_at;
+    }
+
+    public function startedAt(): ?CarbonInterface
+    {
+        return $this->started_at;
+    }
+
+    public function endedAt(): ?CarbonInterface
+    {
+        return $this->ended_at;
     }
 
     /**

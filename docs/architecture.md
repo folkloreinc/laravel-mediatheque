@@ -404,6 +404,29 @@ The package ships the canonical JSON shape of a media ([decisions/0010](decision
 
 `files` is an object keyed by handle; groups are lists. A `legacy` option emits the 1.x `laravel-folklore` shape (`id` as the internal id, `files` as a list) during the upgrade.
 
+Runs, their renditions and uploads have their own resources, for monitoring ([decisions/0017](decisions/0017-monitoring-dashboard.md)): `PipelineRunResource`, `PipelineJobResource` and `UploadResource`. A run gives its media in short (`id`, `type`, `name`, `status`) and its renditions in the order of its definition. Times are ISO 8601 in UTC; `duration` and a rendition's `wait` in the queue are in seconds. An upload never gives its disk, path or multipart upload id. The shapes are in [`tests/fixtures/json/`](../tests/fixtures/json/):
+
+```json
+{
+  "id": "run_01JAB…",
+  "pipeline": "video",
+  "status": "failed",
+  "transcoder": "ffmpeg",
+  "external_id": null,
+  "progress": 1,
+  "error": { "code": "timeout", "message": "The poster took too long." },
+  "media": { "id": "med_01JAB…", "type": "video", "name": "Episode 1", "status": "ready" },
+  "renditions": [
+    { "rendition": "h264", "operation": "video.transcode", "from": null, "status": "completed", "progress": 1, "attempts": 1, "error": null, "reason": null,
+      "queued_at": "2026-10-21T14:00:00Z", "started_at": "2026-10-21T14:00:05Z", "ended_at": "2026-10-21T14:02:05Z", "wait": 5, "duration": 120 }
+  ],
+  "created_at": "2026-10-21T14:00:00Z",
+  "started_at": "2026-10-21T14:00:05Z",
+  "ended_at": "2026-10-21T14:02:06Z",
+  "duration": 121
+}
+```
+
 ## HTTP
 
 Routes are off by default ([decisions/0008](decisions/0008-secure-http.md)). An application that wants them registers them in its own routes file, inside its own middleware:

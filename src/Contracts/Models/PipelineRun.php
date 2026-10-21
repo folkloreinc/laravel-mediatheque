@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque\Contracts\Models;
 
+use Carbon\CarbonInterface;
 use Folklore\Mediatheque\Enums\PipelineStatus;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Pipelines\Rendition;
@@ -81,4 +82,12 @@ interface PipelineRun
     public function progress(): float;
 
     public function error(): ?TranscoderError;
+
+    public function createdAt(): ?CarbonInterface;
+
+    /** When its first rendition started or ended. */
+    public function startedAt(): ?CarbonInterface;
+
+    /** When every rendition had a final status. */
+    public function endedAt(): ?CarbonInterface;
 }
