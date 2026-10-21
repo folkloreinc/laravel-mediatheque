@@ -1,7 +1,8 @@
 # 0017: A monitoring dashboard
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10-21
+- Amends: [0012](0012-pipeline-runs-recorder-and-probe.md)
 
 ## Context
 

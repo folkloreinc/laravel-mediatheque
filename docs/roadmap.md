@@ -66,7 +66,7 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] `mediaconvert` transcoder, asynchronous, polled by `mediatheque:refresh`
 - [ ] `mediatheque:doctor`, `mediatheque:run-pipeline`, `mediatheque:refresh`
 - [ ] Custom types, renditions and operations through the config and `extend*()`
-- [ ] Monitoring, proposed in [decisions/0017](decisions/0017-monitoring-dashboard.md) ([#69](https://github.com/folkloreinc/laravel-mediatheque/issues/69)):
+- [ ] Monitoring ([decisions/0017](decisions/0017-monitoring-dashboard.md), [#69](https://github.com/folkloreinc/laravel-mediatheque/issues/69)):
   - every probe recorded as a run;
   - `queued_at` on renditions;
   - a reason and an end time on uploads;
