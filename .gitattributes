@@ -1,0 +1,6 @@
+# The dashboard's sources stay out of the Composer archive: applications get
+# the bundle in dist/, built and committed by the package.
+/dashboard export-ignore
+
+# Built files: no line-ending changes, and folded in diffs
+/dist/** -text linguist-generated

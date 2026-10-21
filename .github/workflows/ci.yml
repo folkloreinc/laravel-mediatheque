@@ -47,6 +47,37 @@ jobs:
             - name: Run static analysis
               run: composer analyse -- --no-progress
 
+    dashboard:
+        name: Dashboard
+        runs-on: ubuntu-24.04
+        defaults:
+            run:
+                working-directory: dashboard
+        steps:
+            - uses: actions/checkout@v5
+
+            - uses: actions/setup-node@v5
+              with:
+                  node-version: 24
+                  cache: npm
+                  cache-dependency-path: dashboard/package-lock.json
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Type check and test
+              run: |
+                  npm run typecheck
+                  npm test
+
+            # dist/ is committed and served by the package: it must be the
+            # build of the sources it ships with
+            - name: Check that dist/ is up to date
+              run: |
+                  npm run build
+                  git status --porcelain -- ../dist
+                  test -z "$(git status --porcelain -- ../dist)" || { echo "dist/ doesn't match the sources: run npm run build in dashboard/ and commit it."; exit 1; }
+
     tests:
         name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }}
         runs-on: ubuntu-24.04
@@ -96,7 +127,7 @@ jobs:
     # releases it. See "Releases" in AGENTS.md.
     release:
         name: Release
-        needs: [lint, tests]
+        needs: [lint, tests, dashboard]
         if: github.event_name == 'push' && github.ref == 'refs/heads/v2.x'
         runs-on: ubuntu-24.04
         permissions:

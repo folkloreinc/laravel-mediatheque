@@ -50,7 +50,7 @@ class Monitoring
     {
         $media = [];
         foreach (MediaStatus::cases() as $status) {
-            $media[$status->value] = $this->media()->whereNull('deleted_at')->where('status', $status)->count();
+            $media[$status->value] = $this->mediaQuery()->whereNull('deleted_at')->where('status', $status)->count();
         }
 
         $runsEnded = [];
@@ -115,6 +115,27 @@ class Monitoring
         $items = array_values($page->items());
 
         return new Page($items, $page->nextCursor()?->encode());
+    }
+
+    /**
+     * A run by its uid, with its jobs and its media, within the monitoring
+     * scope.
+     */
+    public function run(string $uid): ?PipelineRunContract
+    {
+        $run = $this->runQuery()->with(['pipelineJobs', 'pipelinable'])->where('uid', $uid)->first();
+
+        return $run instanceof PipelineRunContract ? $run : null;
+    }
+
+    /**
+     * A media by its uid, deleted or not, within the monitoring scope.
+     */
+    public function media(string $uid): ?MediaContract
+    {
+        $media = $this->mediaQuery()->where('uid', $uid)->first();
+
+        return $media instanceof MediaContract ? $media : null;
     }
 
     /**
@@ -263,7 +284,7 @@ class Monitoring
     /**
      * @return Builder<Model&MediaContract>
      */
-    private function media(): Builder
+    private function mediaQuery(): Builder
     {
         return $this->scopeMedia(Models::media()::query()->withoutGlobalScopes());
     }

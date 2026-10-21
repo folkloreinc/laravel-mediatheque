@@ -106,6 +106,18 @@ trait RunActionsContractTests
     }
 
     #[Test]
+    public function a_run_retried_once_has_nothing_left_to_retry(): void
+    {
+        $media = $this->probedVideo();
+        $this->failRenditions(['poster']);
+        $failed = $this->runVideo($media);
+        $this->failRenditions([]);
+
+        $this->assertNotNull($this->mediatheque()->retry($failed));
+        $this->assertNull($this->mediatheque()->retry($failed), 'A later run completed its poster.');
+    }
+
+    #[Test]
     public function retry_creates_nothing_while_the_media_has_a_run_of_the_pipeline_in_progress(): void
     {
         $media = $this->probedVideo();

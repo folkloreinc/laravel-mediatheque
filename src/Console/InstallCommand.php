@@ -7,6 +7,7 @@ use Folklore\Mediatheque\Support\MediathequeConfig;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Symfony\Component\Console\Attribute\AsCommand;
 
@@ -19,7 +20,8 @@ use Symfony\Component\Console\Attribute\AsCommand;
 class InstallCommand extends Command
 {
     protected $signature = 'mediatheque:install
-                            {--force : Overwrite the published config}';
+                            {--force : Overwrite the published config}
+                            {--dashboard : Publish a provider that defines who can use the monitoring dashboard}';
 
     protected $description = 'Publish the mediatheque config and migrations';
 
@@ -27,6 +29,10 @@ class InstallCommand extends Command
     {
         $this->publishConfig($files);
         $published = $this->publishMigrations($files);
+
+        if ($this->option('dashboard')) {
+            $this->publishDashboardProvider($files);
+        }
 
         try {
             $config->validate();
@@ -55,6 +61,28 @@ class InstallCommand extends Command
 
         $files->copy(self::packagePath('config/mediatheque.php'), $target);
         $this->components->twoColumnDetail('config/mediatheque.php', '<fg=green;options=bold>PUBLISHED</>');
+    }
+
+    /**
+     * The provider that defines the dashboard's gates (docs/decisions/0017),
+     * registered in `bootstrap/providers.php`. Its gates let no one in until
+     * the application lists who can; without them, the dashboard is open in
+     * `local` only.
+     */
+    private function publishDashboardProvider(Filesystem $files): void
+    {
+        $target = $this->laravel->path('Providers/MediathequeServiceProvider.php');
+
+        if ($files->exists($target)) {
+            $this->components->twoColumnDetail('app/Providers/MediathequeServiceProvider.php', '<fg=yellow;options=bold>EXISTS</>');
+
+            return;
+        }
+
+        $files->ensureDirectoryExists(dirname($target));
+        $files->copy(self::packagePath('stubs/MediathequeServiceProvider.stub'), $target);
+        ServiceProvider::addProviderToBootstrapFile('App\\Providers\\MediathequeServiceProvider');
+        $this->components->twoColumnDetail('app/Providers/MediathequeServiceProvider.php', '<fg=green;options=bold>PUBLISHED</>');
     }
 
     /**

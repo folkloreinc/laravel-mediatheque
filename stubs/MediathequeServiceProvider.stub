@@ -1,0 +1,26 @@
+<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\ServiceProvider;
+
+class MediathequeServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        // Who can open the mediatheque's monitoring dashboard (Route::mediathequeDashboard())
+        Gate::define('viewMediathequeDashboard', function ($user) {
+            return in_array($user->email, [
+                //
+            ], true);
+        });
+
+        // Who can retry, cancel and refresh runs, and probe media again, from it
+        Gate::define('operateMediathequeDashboard', function ($user) {
+            return in_array($user->email, [
+                //
+            ], true);
+        });
+    }
+}

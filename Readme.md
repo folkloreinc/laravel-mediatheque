@@ -70,6 +70,22 @@ $media = Mediatheque::ingest(
 
 The type comes from the file's content, never from the type the browser stored it with.
 
+### Monitoring dashboard
+
+A dashboard of probes, pipeline runs and renditions, with retry, cancel and refresh, in the spirit of Horizon. It is precompiled: your application builds nothing. Register its routes in your own middleware, and say who can use it:
+
+```php
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::mediathequeDashboard();   // at /mediatheque
+});
+```
+
+```bash
+php artisan mediatheque:install --dashboard
+```
+
+The command publishes `app/Providers/MediathequeServiceProvider.php`, which defines the `viewMediathequeDashboard` and `operateMediathequeDashboard` gates. Until they are defined, the dashboard is open in the `local` environment only. `php artisan mediatheque:status` shows the same overview in the terminal.
+
 ### Images with laravel-image
 
 With `folklore/laravel-image` 2 installed, the package registers its `media` resolver: image URLs name a media, never a storage path. `med_…` is an image's original, or the poster of a video; `med_…/thumbnails/2` is one of its files. Each URL's version is the file's checksum, so new content gets new URLs, and private media get signed URLs. See [decisions/0013](docs/decisions/0013-media-resolver-for-laravel-image.md).

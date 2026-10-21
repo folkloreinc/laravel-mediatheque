@@ -66,7 +66,9 @@ interface Mediatheque
      * renditions, produced again even if a file exists for them
      * (docs/decisions/0012, 0017). Null when the run hasn't ended, has
      * nothing to retry, or when its media already has a run of the same
-     * pipeline in progress. A probe is retried with probeAgain().
+     * pipeline in progress. A rendition that a later run of the pipeline
+     * completed is not retried: retrying twice creates one run. A probe is
+     * retried with probeAgain().
      *
      * @phpstan-impure
      */
