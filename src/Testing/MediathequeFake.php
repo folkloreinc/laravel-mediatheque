@@ -249,9 +249,20 @@ class MediathequeFake implements Fake, Mediatheque
         }
 
         $pipeline = $this->pipeline($run->name());
+        $produced = [];
+        foreach (array_slice($this->runs, (int) array_search($run, $this->runs, true) + 1) as $later) {
+            if ($later->media === $run->media && $later->name() === $run->name()) {
+                foreach ($later->jobs as $name => $job) {
+                    if ($job->status() === JobStatus::Completed) {
+                        $produced[] = $name;
+                    }
+                }
+            }
+        }
+
         $renditions = [];
         foreach ($run->jobs as $name => $job) {
-            if (in_array($job->status(), [JobStatus::Failed, JobStatus::Canceled], true) && $pipeline->rendition($name) !== null) {
+            if (in_array($job->status(), [JobStatus::Failed, JobStatus::Canceled], true) && $pipeline->rendition($name) !== null && ! in_array($name, $produced, true)) {
                 $renditions[] = $name;
             }
         }

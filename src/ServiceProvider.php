@@ -10,6 +10,7 @@ use Folklore\Mediatheque\Contracts\Mediatheque;
 use Folklore\Mediatheque\Contracts\Prober;
 use Folklore\Mediatheque\Contracts\Recorder;
 use Folklore\Mediatheque\Contracts\UrlGenerator;
+use Folklore\Mediatheque\Dashboard\Routes as DashboardRoutes;
 use Folklore\Mediatheque\Images\MediaResolver;
 use Folklore\Mediatheque\Ingest\MediaIngestor;
 use Folklore\Mediatheque\Monitoring\Monitoring;
@@ -21,6 +22,7 @@ use Folklore\Mediatheque\Transcoders\TranscoderManager;
 use Folklore\Mediatheque\Urls\DiskUrlGenerator;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\CachesConfiguration;
+use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
 class ServiceProvider extends BaseServiceProvider
@@ -43,6 +45,12 @@ class ServiceProvider extends BaseServiceProvider
     public function boot(): void
     {
         $this->registerImageResolver();
+
+        // Registered by the application, inside its own middleware: Route::mediathequeDashboard()
+        Router::macro('mediathequeDashboard', function (string $prefix = 'mediatheque') {
+            /** @var Router $this */
+            DashboardRoutes::register($this, $prefix);
+        });
 
         if ($this->app->runningInConsole()) {
             $this->commands([

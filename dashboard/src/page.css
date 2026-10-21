@@ -1,0 +1,5 @@
+/* The page belongs to the dashboard alone. */
+html,
+body {
+    margin: 0;
+}

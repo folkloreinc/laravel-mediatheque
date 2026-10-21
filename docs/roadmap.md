@@ -90,7 +90,7 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] Derived media: clips with start, end and crop
 - [ ] `captions` type; transcription through transcoders that support it
 - [ ] JSON resources for runs and renditions, reviewed with Panneau 5 (written in [#77](https://github.com/folkloreinc/laravel-mediatheque/issues/77); the review with Panneau 5 remains)
-- [ ] The monitoring dashboard ([decisions/0017](decisions/0017-monitoring-dashboard.md)):
+- [ ] The monitoring dashboard ([decisions/0017](decisions/0017-monitoring-dashboard.md), [#81](https://github.com/folkloreinc/laravel-mediatheque/issues/81); its validation on the pilot project remains):
   - a precompiled React SPA on `@panneau/ui`, with `Route::mediathequeDashboard()`;
   - its two gates, open in `local` until the application defines them;
   - its CI job;

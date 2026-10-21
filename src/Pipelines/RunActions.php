@@ -39,8 +39,8 @@ class RunActions
     /**
      * A new run of the failed and canceled renditions of a run that ended,
      * forced, so a rendition that still has a file from an earlier run is
-     * produced again. Renditions the pipeline doesn't have any more are left
-     * out.
+     * produced again. Renditions the pipeline doesn't have any more, and
+     * those a later run of the pipeline completed, are left out.
      */
     public function retry(PipelineRunContract $run): ?PipelineRunContract
     {
@@ -56,15 +56,36 @@ class RunActions
         }
 
         $pipeline = $this->config->pipeline($run->name());
+        $produced = $media instanceof Model ? $this->producedSince($media, $run) : [];
         $renditions = [];
         foreach ($run->jobs() as $job) {
             $name = $job->rendition()->name;
-            if (in_array($job->status(), [JobStatus::Failed, JobStatus::Canceled], true) && $pipeline->rendition($name) !== null) {
+            if (in_array($job->status(), [JobStatus::Failed, JobStatus::Canceled], true) && $pipeline->rendition($name) !== null && ! in_array($name, $produced, true)) {
                 $renditions[] = $name;
             }
         }
 
         return $renditions === [] ? null : $this->runner->run($media, $run->name(), $renditions, force: true);
+    }
+
+    /**
+     * The renditions that later runs of the same pipeline completed: a run
+     * retried once, or run again, has nothing left to retry for them.
+     *
+     * @return list<string>
+     */
+    private function producedSince(Model&Media $media, PipelineRun $run): array
+    {
+        $names = [];
+        foreach ($this->runs($media, $run->name())->where('id', '>', $run->getKey())->with('pipelineJobs')->get() as $later) {
+            foreach ($later->jobs() as $job) {
+                if ($job->status() === JobStatus::Completed) {
+                    $names[] = $job->rendition()->name;
+                }
+            }
+        }
+
+        return $names;
     }
 
     /**

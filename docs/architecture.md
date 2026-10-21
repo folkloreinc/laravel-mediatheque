@@ -479,6 +479,7 @@ The fake stores files on fake disks, returns probe fixtures, and completes rendi
 | `mediatheque:run-pipeline` | Run a pipeline on media, by type or uid |
 | `mediatheque:refresh` | Scheduled: fetch the state of runs that have been running too long, and the progress of drivers that only report it by polling |
 | `mediatheque:prune` | Force-delete soft-deleted media after the grace period, and orphan files |
+| `mediatheque:install --dashboard` | Also publish and register the provider of the dashboard's gates |
 | `mediatheque:status` | Media by status, runs in progress and stuck, what ended in the last hours, and the latest failures (`--hours`, 24 by default) |
 
 ## Monitoring
@@ -498,6 +499,20 @@ The queries ignore the application's global scopes, as the package's workers do.
 ```php
 Mediatheque::monitoringScope(fn (Builder $query, string $model) => $query->where('tenant_id', $tenant->id));
 ```
+
+### The dashboard
+
+A precompiled React SPA, shipped in `dist/` and built from `dashboard/`, on `@panneau/ui` at an exact version ([decisions/0017](decisions/0017-monitoring-dashboard.md)). It shows an overview (media by status, runs in progress and stuck, what ended in the period, storage, runs per hour, durations), runs with their filters and details, and failures, and acts on runs. It polls: every 5 seconds while something is in progress, every 30 otherwise.
+
+```php
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::mediathequeDashboard();              // /mediatheque, or a prefix of your own
+});
+```
+
+- **Gates.** `viewMediathequeDashboard` covers every route, and `operateMediathequeDashboard` also covers the actions (retry, cancel, refresh, probe again), which send the page's CSRF token. Until the application defines a gate, it is open in the `local` environment and closed everywhere else. `mediatheque:install --dashboard` publishes `app/Providers/MediathequeServiceProvider.php`, which defines both, and registers it.
+- **Endpoints** under `api/` serve the page only, and change with it: they are not a versioned API. They find runs and media within `monitoringScope()`, actions included.
+- **Building it.** `npm ci && npm run build` in `dashboard/` writes `dist/`, which is committed; CI fails when it doesn't match the sources. `dashboard/` is left out of the Composer archive.
 
 ## Deletion and replacement
 
@@ -536,9 +551,13 @@ src/                                  PSR-4: Folklore\Mediatheque\
   Compat/                             1.x compatibility layer (deprecated)
   Testing/                            MediathequeFake, and the in-memory models, recorder, prober and URLs it uses
   Monitoring/                         The read model: overview, runs, failures, durations, throughput
+  Dashboard/                          Route::mediathequeDashboard(), its gates, page and JSON endpoints
   Console/
 config/mediatheque.php
 database/migrations/
+dashboard/                            The dashboard's sources (React, TypeScript, Vite)
+dist/                                 The built dashboard, committed
+stubs/                                The provider of the dashboard's gates
 ```
 
 ## Dependencies

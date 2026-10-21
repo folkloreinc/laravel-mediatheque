@@ -112,4 +112,36 @@ class InstallCommandTest extends TestCase
 
         $this->assertNotContains($package, array_map(fn (string $path) => realpath($path), app()->make('migrator')->paths()));
     }
+
+    #[Test]
+    public function with_dashboard_it_publishes_and_registers_a_provider_of_the_dashboard_gates(): void
+    {
+        $root = sys_get_temp_dir().'/mediatheque-app-'.bin2hex(random_bytes(4));
+        $files = new Filesystem;
+        $files->ensureDirectoryExists($root.'/bootstrap');
+        file_put_contents($root.'/bootstrap/providers.php', "<?php\n\nreturn [\n    App\\Providers\\AppServiceProvider::class,\n];\n");
+        app()->useAppPath($root.'/app');
+        app()->useBootstrapPath($root.'/bootstrap');
+
+        try {
+            $first = Artisan::call('mediatheque:install', ['--dashboard' => true]);
+            $again = Artisan::call('mediatheque:install', ['--dashboard' => true]);
+            $this->assertSame([0, 0], [$first, $again]);
+
+            $provider = (string) file_get_contents($root.'/app/Providers/MediathequeServiceProvider.php');
+            $this->assertStringContainsString("Gate::define('viewMediathequeDashboard'", $provider);
+            $this->assertStringContainsString("Gate::define('operateMediathequeDashboard'", $provider);
+            $this->assertSame(1, substr_count((string) file_get_contents($root.'/bootstrap/providers.php'), 'MediathequeServiceProvider'));
+        } finally {
+            $files->deleteDirectory($root);
+        }
+    }
+
+    #[Test]
+    public function without_dashboard_it_publishes_no_provider(): void
+    {
+        $this->install();
+
+        $this->assertFileDoesNotExist(app_path('Providers/MediathequeServiceProvider.php'));
+    }
 }

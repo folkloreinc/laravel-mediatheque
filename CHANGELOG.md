@@ -25,7 +25,7 @@ What a monitoring view needs is recorded ([decisions/0017](docs/decisions/0017-m
 - `IngestRejected`, dispatched when ingest refuses a file, with its reason, message and file name. `Mediatheque::fake()` dispatches it too.
 - Indexes on `created_at` and `ended_at` of `pipelines` and `pipelines_jobs`.
 - Actions on runs in the `Mediatheque` contract (#73), on the manager and the fake:
-  - `retry($run)`: a new run of the failed and canceled renditions of a run that ended, produced again even if a file exists. It returns null when there is nothing to retry, or while the media has a run of the same pipeline in progress;
+  - `retry($run)`: a new run of the failed and canceled renditions of a run that ended, produced again even if a file exists. It returns null when there is nothing to retry, or while the media has a run of the same pipeline in progress. Renditions that a later run of the pipeline completed are not retried, so retrying twice creates one run;
   - `cancel($run)` and `refresh($run)`: through the transcoder's capabilities. They return false when the run has ended or the transcoder can't;
   - `probeAgain($media)`: a media whose probe failed goes back to `pending`, and its probe is queued with the pipeline ingest chose.
 - The `Monitoring` read model (#75):
@@ -34,6 +34,11 @@ What a monitoring view needs is recorded ([decisions/0017](docs/decisions/0017-m
   - new `monitoring.stuck_after` and `monitoring.max_rows` config keys.
 - `php artisan mediatheque:status`: media by status, runs in progress and stuck, what ended in the last hours, and the latest failures (#75).
 - `PipelineRunResource` and `PipelineJobResource`, the JSON shapes of runs and their renditions, with fixtures in `tests/fixtures/json/` (#77).
+- The monitoring dashboard (#81):
+  - `Route::mediathequeDashboard()` serves a precompiled React SPA on `@panneau/ui`, with an overview, runs and their details, and failures;
+  - from it, runs can be retried, canceled and refreshed, and media probed again;
+  - the `viewMediathequeDashboard` and `operateMediathequeDashboard` gates are open in `local` until the application defines them;
+  - `mediatheque:install --dashboard` publishes a provider that defines them.
 - `createdAt()`, `startedAt()` and `endedAt()` on the `PipelineRun` contract, and `queuedAt()`, `startedAt()` and `endedAt()` on the `PipelineJob` contract. The fake's recorder sets them as the Eloquent recorder does (#77).
 
 ### Changed
