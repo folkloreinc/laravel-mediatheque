@@ -62,13 +62,13 @@ State checked on 2026-10-21 on Packagist and the projects' repositories:
 | **F. Pulse cards and a recorder** | Pulse and Livewire; MySQL, MariaDB or PostgreSQL | `viewPulse` | `wire:poll` | Low | Small: a recorder and a few cards | Only if it installs Pulse, which no Folklore project uses | No |
 | **G. A shared interface with Eclair's dashboard** | — | — | — | — | Eclair's dashboard is planned after its 1.0, technology not chosen; it is cross-project, behind an admin token, on Node | Not before Eclair 1.0 | — |
 
-E is not a technology but where B lives. F is good at what Pulse does, aggregates next to the application's other metrics, and poor at drilling into a run or acting on it. G already shares what matters most: run and task statuses and error codes are the same on both sides ([0012](0012-pipeline-runs-recorder-and-probe.md)).
+E is not a technology but where B lives. A separate package for the dashboard alone adds a repository and a release line for little gain: if the dashboard ever leaves this package, it becomes a Panneau 5 add-on (C) instead. F is good at what Pulse does, aggregates next to the application's other metrics, and poor at drilling into a run or acting on it. G already shares what matters most: run and task statuses and error codes are the same on both sides ([0012](0012-pipeline-runs-recorder-and-probe.md)).
 
 ## Decision
 
-**A precompiled React SPA, in a separate package `folklore/laravel-mediatheque-dashboard`, over a read model and actions that live in this package.** Three layers.
+**A precompiled React SPA, shipped in this package, over a read model and actions of the package.** Three layers, all in this repository.
 
-### 1. Data, read model and actions: in this package
+### 1. Data, read model and actions
 
 - **Collect what is missing**, in alpha 3, before the beta's upgrade migration settles the schema:
   - **Every probe is a run** of the `probe` pipeline, synchronous ones included, created when it starts and completed through the recorder. This amends [0012](0012-pipeline-runs-recorder-and-probe.md), where only a pending probe is. Probe durations, attempts and errors live where every other run's do.
@@ -76,6 +76,7 @@ E is not a technology but where B lives. F is good at what Pulse does, aggregate
   - **`reason` and `ended_at` on `uploads`**: `aborted`, `expired`, or the `RejectionReason` of a rejected file.
   - **An `IngestRejected` event**, with the reason, for ingests that write no row.
   - **Indexes** on `ended_at` and `created_at` of `pipelines` and `pipelines_jobs`.
+- **Pruning runs:** `mediatheque:prune` deletes ended runs older than `prune.runs_after_days`, and keeps each media's last run of each pipeline, so the dashboard and a media's history always show why it is in its current state. The default is longer than the 24 hours Eclair retries its webhooks for, since a late webhook needs its run.
 - **A read model**, `Folklore\Mediatheque\Monitoring\`, through the model contracts:
   - query objects for runs, renditions, media and uploads, with filters, cursor pagination and a period;
   - an overview, failures grouped by code, durations and throughput over a bounded period;
@@ -84,22 +85,21 @@ E is not a technology but where B lives. F is good at what Pulse does, aggregate
 - **JSON resources** for runs, renditions and uploads, next to the media's ([0010](0010-json-resource.md)), so the dashboard, an application's own API and Panneau read the same shape. They are reviewed with Panneau 5, like `MediaResource`.
 - **Actions in the `Mediatheque` contract**, next to `runPipeline()`: `retry(PipelineRun)`, `cancel(PipelineRun)`, `refresh(PipelineRun)` and `probeAgain(Media)`. The alpha 3 commands (`mediatheque:run-pipeline`, `mediatheque:refresh`) and the dashboard call them.
 - **`mediatheque:status`**: the overview and the latest failures in the terminal. Cheap, useful as soon as alpha 3 ships, and it tests the read model before any UI.
-- This package registers **no dashboard route** ([0008](0008-secure-http.md)).
 
-### 2. HTTP and authorization: in the dashboard package
+### 2. HTTP and authorization
 
-- **JSON endpoints for its SPA only**, like `/horizon/api`, built from this package's read model and resources. They are not a public, versioned API: an application that wants the same data in its own front uses the read model and the resources in its own routes, under its own policies.
-- **Opt-in route:** the application calls `Route::mediathequeDashboard()` in its routes file, inside its own middleware (`web`, `auth`).
-- **Two gates, closed by default in every environment**, like `viewPanneau`:
+- **JSON endpoints for the dashboard only**, like `/horizon/api`, built from the read model and the resources. They are not a public, versioned API: an application that wants the same data in its own front uses the read model and the resources in its own routes, under its own policies.
+- **Opt-in route**, as every route of the package ([0008](0008-secure-http.md)): the application calls `Route::mediathequeDashboard()` in its routes file, inside its own middleware (`web`, `auth`). The package's tests keep asserting that a fresh install exposes no route.
+- **Two gates:**
   - `viewMediathequeDashboard` for every read;
   - `operateMediathequeDashboard` for the actions, which are `POST` requests with CSRF protection.
-  - The install command writes a stub of both.
+  - **Open in the `local` environment and closed everywhere else** until the application defines them, as Horizon and Pulse do. The install command writes a stub of both.
 - **The data is cross-tenant** unless `monitoringScope()` narrows it. Error messages and paths are shown as stored; file URLs go through `temporaryUrl()`, for users who pass the gate only.
 
-### 3. UI: a precompiled SPA in the dashboard package
+### 3. UI: a precompiled SPA
 
-- React 19, TypeScript and Vite. The bundle is built in CI, committed in `dist/` and served by the package: nothing to install or build in the application, nothing added to its front.
-- `@panneau/ui` primitives and tokens (light and dark themes, chart colors), bundled at an exact version: the dashboard looks like the stack, whatever Panneau version the application runs, if any.
+- React 19, TypeScript and Vite, in a `dashboard/` folder of this repository. The bundle is built in CI, committed in `dist/` and served by the package: nothing to install or build in the application, nothing added to its front. `dashboard/` is left out of the Composer archive (`export-ignore`); `dist/` is not.
+- `@panneau/ui` primitives and tokens (light and dark themes, chart colors), bundled at an exact version, alpha included: the dashboard looks like the stack, whatever Panneau version the application runs, if any.
 - **Realtime by polling**: every few seconds on active runs, slower elsewhere, with a cursor on `updated_at`. No SSE, which holds a PHP worker per open tab. Broadcasting the package's events over Reverb can come later if polling isn't enough.
 
 ### What stays outside
@@ -111,15 +111,9 @@ E is not a technology but where B lives. F is good at what Pulse does, aggregate
 ## Consequences
 
 - Applications without the dashboard still gain the read model, the actions, the resources and `mediatheque:status`, and their failures get a recorded cause, probes included.
-- Every probe writes a run: one or two more rows per media, and a failed media always has a run that says why.
-- The read model and the resources are public API of 2.0, frozen at the release candidate with the rest. The dashboard's HTTP endpoints are not. The dashboard package has its own versions (`0.x`, then `1.0` after 2.0.0), so its UI keeps moving once 2.0 is frozen.
-- The dashboard package carries a Node toolchain and a committed `dist/`, with a CI check that the bundle matches its sources. Updating React and `@panneau/ui` is part of each of its releases: that is how it avoids aging like Telescope.
-- Until the dashboard package exists, `mediatheque:status` and the read model are the only views. That is enough to debug alpha 3.
-- If Panneau 5 later has pages and widgets that fit an operator's view, the dashboard's components can also be published as a Panneau plugin over the same endpoints.
-
-## Open questions
-
-- **A separate package, or not.** The dashboard could live in this repository (a `dashboard/` folder, a `dist/` shipped with the package, an opt-in route), as Horizon ships its UI with its queue code: one repository fewer, but this package's CI and releases would carry a Node toolchain, and the UI would be frozen with 2.0. The proposal is a separate package.
-- **Pruning runs.** `mediatheque:prune` could delete ended runs after `prune.runs_after_days`, keeping each media's last run per pipeline. A late webhook only needs its run for Eclair's 24 hours of retries.
-- **The gates in `local`.** Horizon and Pulse open their dashboard in the `local` environment by default; this proposal keeps the gates closed everywhere, like Panneau's.
-- **`@panneau/ui` while it is in alpha:** bundled at an exact version, or a few components of the dashboard's own until Panneau 5.0.
+- Every probe writes a run: one or two more rows per media, and a failed media always has a run that says why. Pruning keeps the tables bounded.
+- The read model and the resources are public API of 2.0, frozen at the release candidate with the rest. The dashboard's HTTP endpoints and its UI are not: they keep changing in 2.x minors.
+- This repository gains a Node toolchain (Node 24, as the stack) and a committed `dist/`, with a CI job that builds the dashboard, runs its tests and checks that `dist/` matches its sources. Updating React and `@panneau/ui` is part of the package's releases: that is how the dashboard avoids aging like Telescope.
+- The bundle follows `@panneau/ui`'s alphas at an exact version, so a breaking alpha of Panneau only costs an update of the dashboard, never a broken page in an application.
+- Until the dashboard ships, `mediatheque:status` and the read model are the only views. That is enough to debug alpha 3.
+- If the dashboard ever leaves this package, it becomes a Panneau 5 add-on over the same read model, not a standalone package.

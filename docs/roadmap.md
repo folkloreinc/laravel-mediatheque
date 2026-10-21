@@ -72,6 +72,7 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
   - a reason and an end time on uploads;
   - `IngestRejected`;
   - indexes for periods;
+  - ended runs pruned by `mediatheque:prune`, keeping each media's last run of each pipeline;
   - the `Monitoring` read model;
   - `retry()`, `cancel()`, `refresh()` and `probeAgain()`;
   - `mediatheque:status`.
@@ -92,7 +93,12 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] HLS rendition, with private playback (signed segments)
 - [ ] Derived media: clips with start, end and crop
 - [ ] `captions` type; transcription through transcoders that support it
-- [ ] JSON resources for runs, renditions and uploads, reviewed with Panneau 5. The first `0.x` of `laravel-mediatheque-dashboard` builds on them and is validated on the pilot project ([decisions/0017](decisions/0017-monitoring-dashboard.md))
+- [ ] JSON resources for runs, renditions and uploads, reviewed with Panneau 5
+- [ ] The monitoring dashboard ([decisions/0017](decisions/0017-monitoring-dashboard.md)):
+  - a precompiled React SPA on `@panneau/ui`, with `Route::mediathequeDashboard()`;
+  - its two gates, open in `local` until the application defines them;
+  - its CI job;
+  - validated on the pilot project.
 
 ## Release candidate
 
@@ -122,5 +128,4 @@ Needed before the pilot launches: `laravel-mediatheque`, `laravel-image` and Pan
 
 - Which TUS server library to use (decided when alpha 3 starts).
 - How private HLS is signed: playlist rewriting or CDN tokens (decided in the beta).
-- Whether the monitoring dashboard ships as its own package or inside this one ([decisions/0017](decisions/0017-monitoring-dashboard.md), decided before alpha 3 starts).
 - Whether a `laravel-folklore` 1.x minor accepts `^1.1|^2.0` of this package, or projects wait for `laravel-folklore` 2.
