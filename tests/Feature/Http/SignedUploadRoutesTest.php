@@ -111,6 +111,17 @@ class SignedUploadRoutesTest extends UploadRoutesTestCase
     }
 
     #[Test]
+    public function urls_live_the_configured_lifetime_whatever_the_application_clock(): void
+    {
+        config(['mediatheque.uploads.url_ttl' => 600]);
+        $this->travel(-30)->minutes();
+
+        ['url' => $url] = $this->start($this->user());
+
+        $this->assertSame('600', $this->presignedQuery($url)['X-Amz-Expires'] ?? null, 'The SDK signs with its own clock.');
+    }
+
+    #[Test]
     public function a_multipart_upload_gets_its_own_key(): void
     {
         config(['mediatheque.uploads.url_ttl' => 600]);

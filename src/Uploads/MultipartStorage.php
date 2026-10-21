@@ -6,7 +6,6 @@ use Aws\S3\S3Client;
 use Folklore\Mediatheque\Exceptions\InvalidConfig;
 use Illuminate\Contracts\Filesystem\Factory as Filesystems;
 use Illuminate\Filesystem\AwsS3V3Adapter;
-use Illuminate\Support\Facades\Date;
 
 /**
  * Multipart uploads on an S3-compatible disk, through the disk's own client:
@@ -71,7 +70,10 @@ class MultipartStorage
 
         $command = $client->getCommand($operation->value, $parameters);
 
-        return (string) $client->createPresignedRequest($command, Date::now()->addSeconds($ttl))->getUri();
+        // Relative to the SDK's clock, which computes X-Amz-Expires: an
+        // absolute time from Laravel's clock is off by any time between the
+        // two reads, or by a frozen or traveled clock
+        return (string) $client->createPresignedRequest($command, '+'.$ttl.' seconds')->getUri();
     }
 
     /**
