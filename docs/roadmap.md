@@ -53,7 +53,7 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] `MediaResource` and `FileResource`, in sync with Panneau 5's protocol
 - [ ] Contract for Panneau 5's media adapter ([laravel-panneau#35](https://github.com/folkloreinc/laravel-panneau/issues/35))
 - [ ] Images at ingest: HEIC, orientation, GPS removal, ThumbHash placeholder
-- [ ] Uploads leave the package: no upload routes, model or table; ingest from a file on a disk, as Panneau 5's direct uploads end ([decisions/0018](decisions/0018-ingest-only.md), [laravel-panneau#81](https://github.com/folkloreinc/laravel-panneau/issues/81))
+- [x] Uploads leave the package: no upload routes, model or table; ingest from a file on a disk, as Panneau 5's direct uploads end ([decisions/0018](decisions/0018-ingest-only.md), [laravel-panneau#81](https://github.com/folkloreinc/laravel-panneau/issues/81), [#84](https://github.com/folkloreinc/laravel-mediatheque/pull/84)); released in [2.0.0-alpha.4](https://github.com/folkloreinc/laravel-mediatheque/releases/tag/v2.0.0-alpha.4) ([#85](https://github.com/folkloreinc/laravel-mediatheque/issues/85))
 - [x] SVG sanitizing (shipped in alpha 1 with the ingest, [#50](https://github.com/folkloreinc/laravel-mediatheque/issues/50))
 
 ## Alpha 3: parity with 1.x
@@ -66,7 +66,7 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] `mediaconvert` transcoder, asynchronous, polled by `mediatheque:refresh`
 - [ ] `mediatheque:doctor`, `mediatheque:run-pipeline`, `mediatheque:refresh`
 - [ ] Custom types, renditions and operations through the config and `extend*()`
-- [ ] Monitoring ([decisions/0017](decisions/0017-monitoring-dashboard.md), [#69](https://github.com/folkloreinc/laravel-mediatheque/issues/69)):
+- [ ] Monitoring ([decisions/0017](decisions/0017-monitoring-dashboard.md), [#69](https://github.com/folkloreinc/laravel-mediatheque/issues/69)); what is done here, the JSON resources and the dashboard are released in [2.0.0-alpha.4](https://github.com/folkloreinc/laravel-mediatheque/releases/tag/v2.0.0-alpha.4) ([#85](https://github.com/folkloreinc/laravel-mediatheque/issues/85)):
   - every probe recorded as a run, `queued_at` on renditions, `IngestRejected`, indexes for periods ([#71](https://github.com/folkloreinc/laravel-mediatheque/issues/71));
   - ended runs pruned by `mediatheque:prune`, keeping each media's last run of each pipeline;
   - the `Monitoring` read model ([#75](https://github.com/folkloreinc/laravel-mediatheque/issues/75));
