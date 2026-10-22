@@ -38,7 +38,8 @@ use Throwable;
  * The media is loaded without the application's global scopes, so a tenant
  * scope that depends on the request doesn't hide it. A media that is not
  * `pending` any more is left alone, and a retried job reuses its run, so a
- * retry changes nothing that already happened.
+ * retry changes nothing that already happened. An original replaced while
+ * it is read records nothing.
  */
 class ProbeMedia implements ShouldQueue
 {
@@ -88,7 +89,14 @@ class ProbeMedia implements ShouldQueue
         $path = $original->path();
         if ($original instanceof Model && $original->checksum() === null && $source !== null && $path !== null) {
             $checksum = $files->checksum($source, $path);
-            $original->forceFill(['checksum' => $checksum])->save();
+
+            // An original replaced while it was read is gone: its run is canceled, and the new
+            // original has its own probe (docs/decisions/0019)
+            if (Models::file()::query()->whereKey($original->getKey())->whereNull('checksum')->update(['checksum' => $checksum]) === 0) {
+                return;
+            }
+
+            $original->forceFill(['checksum' => $checksum])->syncOriginalAttribute('checksum');
             $media->forceFill(['metadata' => [...$media->metadata(), MetadataKey::Checksum->value => $checksum]])->save();
         }
 

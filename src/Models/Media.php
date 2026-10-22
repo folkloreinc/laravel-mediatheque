@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque\Models;
 
 use DateTimeInterface;
 use Folklore\Mediatheque\Casts\Json;
+use Folklore\Mediatheque\Contracts\Mediatheque;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineRun;
@@ -12,6 +13,9 @@ use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Events\MediaDeleted;
 use Folklore\Mediatheque\Events\MediaRestored;
 use Folklore\Mediatheque\Events\MediaUpdated;
+use Folklore\Mediatheque\Exceptions\FileRejected;
+use Folklore\Mediatheque\Ingest\IngestOptions;
+use Folklore\Mediatheque\Ingest\Source;
 use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Support\Models;
 use Folklore\Mediatheque\Support\Uid;
@@ -21,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -213,6 +218,19 @@ class Media extends Model implements MediaContract
     public function temporaryUrl(?string $handle, DateTimeInterface $expiration): ?string
     {
         return $this->playedFile($handle)?->temporaryUrl($expiration);
+    }
+
+    /**
+     * Replace its original with another file, keeping its uid: see
+     * Mediatheque::replaceOriginal(). This media is updated in place.
+     *
+     * @param  UploadedFile|Source|string|resource  $source
+     *
+     * @throws FileRejected
+     */
+    public function replaceOriginal(mixed $source, ?IngestOptions $options = null, bool $allowTypeChange = false): MediaContract
+    {
+        return app(Mediatheque::class)->replaceOriginal($this, $source, $options, $allowTypeChange);
     }
 
     /**

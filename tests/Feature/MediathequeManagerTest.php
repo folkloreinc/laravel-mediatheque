@@ -14,6 +14,7 @@ use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\PipelineStatus;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Facades\Mediatheque;
+use Folklore\Mediatheque\Ingest\Source;
 use Folklore\Mediatheque\Jobs\ProbeMedia;
 use Folklore\Mediatheque\MediathequeManager;
 use Folklore\Mediatheque\Models\Media;
@@ -21,12 +22,14 @@ use Folklore\Mediatheque\Models\PipelineJob;
 use Folklore\Mediatheque\Models\PipelineRun;
 use Folklore\Mediatheque\Probe\ProbeOutcome;
 use Folklore\Mediatheque\Tests\Concerns\CreatesMedia;
+use Folklore\Mediatheque\Tests\Contracts\ReplacesOriginalsContractTests;
 use Folklore\Mediatheque\Tests\Contracts\ResolvesReferencesContractTests;
 use Folklore\Mediatheque\Tests\Contracts\RunActionsContractTests;
 use Folklore\Mediatheque\Tests\DatabaseTestCase;
 use Folklore\Mediatheque\Tests\Support\ScriptedTranscoder;
 use Folklore\Mediatheque\Transcoders\Capabilities;
 use Folklore\Mediatheque\Transcoders\TranscoderManager;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -36,6 +39,7 @@ use PHPUnit\Framework\Attributes\Test;
 class MediathequeManagerTest extends DatabaseTestCase
 {
     use CreatesMedia;
+    use ReplacesOriginalsContractTests;
     use ResolvesReferencesContractTests;
     use RunActionsContractTests;
 
@@ -101,6 +105,34 @@ class MediathequeManagerTest extends DatabaseTestCase
     protected function freshMedia(MediaContract $media): MediaContract
     {
         return Media::query()->where('uid', $media->uid())->sole();
+    }
+
+    protected function videoFile(string $variant): UploadedFile|Source|string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'replace');
+        file_put_contents((string) $path, file_get_contents(self::fixturePath('media/test.mp4')).$variant);
+
+        return Source::path((string) $path, 'new-cut.mp4');
+    }
+
+    protected function imageFile(): UploadedFile|Source|string
+    {
+        return self::fixturePath('media/image.jpg');
+    }
+
+    protected function unknownFile(): UploadedFile|Source|string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'replace');
+        file_put_contents((string) $path, 'Just some text');
+
+        return (string) $path;
+    }
+
+    protected function runsOf(MediaContract $media, string $pipeline): array
+    {
+        $this->assertInstanceOf(Media::class, $media);
+
+        return array_values(PipelineRun::query()->whereMorphedTo('pipelinable', $media)->where('name', $pipeline)->with('pipelineJobs')->orderBy('id')->get()->all());
     }
 
     protected function internalId(MediaContract $media): int

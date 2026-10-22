@@ -37,15 +37,31 @@ final class PathFormatter
     ) {}
 
     /**
-     * The path of a media's original.
+     * The path of a media's original. A replaced original has a version,
+     * added to its file name (`original-{version}.mp4`), so it never takes
+     * the path of the file it replaces (docs/decisions/0019).
      */
-    public function original(Media $media, string $extension): string
+    public function original(Media $media, string $extension, ?string $version = null): string
     {
-        return $this->format($this->config->filePathFormat(), $media, [
+        $path = $this->format($this->config->filePathFormat(), $media, [
             'handle' => 'original',
             'index' => null,
             'extension' => $extension,
         ]);
+
+        if ($version === null) {
+            return $path;
+        }
+
+        if (preg_match('/^[a-z0-9]+$/', $version) !== 1) {
+            throw new InvalidPath(sprintf('The version "%s" of an original is not lowercase letters and digits.', $version));
+        }
+
+        $suffix = '.'.$extension;
+
+        return str_ends_with($path, $suffix)
+            ? substr($path, 0, -strlen($suffix)).'-'.$version.$suffix
+            : $path.'-'.$version;
     }
 
     /**

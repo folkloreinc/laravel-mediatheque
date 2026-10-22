@@ -6,6 +6,26 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Breaking changes
+
+- The `Mediatheque` contract has `replaceOriginal()`: a class that implements it implements it too (#87).
+- `OriginalReplaced` carries `previousChecksum` and `checksum` instead of the previous `File`, whose row is removed when the original is replaced. It was not dispatched before (#87).
+
+### Added
+
+- `Mediatheque::replaceOriginal($media, $source, $options, allowTypeChange: false)`, on the manager and the fake, and `$media->replaceOriginal($source)` on the package's `Media` model and the fake's media ([decisions/0019](docs/decisions/0019-replace-original.md), #87):
+  - the new file is validated as ingest validates it, and a file ingest would refuse changes nothing;
+  - a file of another type is refused with `RejectionReason::TypeChanged`, unless `allowTypeChange` is set;
+  - the media keeps its uid, visibility, data, attributes and usages, and its name unless the options give one;
+  - the renditions are removed and their files deleted in a queued job, runs in progress are canceled, and the media is probed, then its pipeline runs again;
+  - `OriginalReplaced` is dispatched with the previous and the new checksum, so `laravel-image` URLs change;
+  - replacing an original with the same file again changes nothing.
+
+### Changed
+
+- `DeleteStoredFiles` keeps a path that a file records again by the time it runs.
+- A probe job that reads an original replaced in the meantime records nothing.
+
 ## [2.0.0-alpha.4] - 2026-10-22
 
 What a monitoring view needs is recorded ([decisions/0017](docs/decisions/0017-monitoring-dashboard.md), #71), and uploads leave the package: it ingests files, and applications take uploads, through Panneau 5's direct uploads or their own routes ([decisions/0018](docs/decisions/0018-ingest-only.md)). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new migrations only, and the last one drops the `uploads` table.

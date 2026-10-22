@@ -3,10 +3,15 @@
 namespace Folklore\Mediatheque\Testing\Models;
 
 use DateTimeInterface;
+use Folklore\Mediatheque\Contracts\Mediatheque;
 use Folklore\Mediatheque\Contracts\Models\File;
 use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\Visibility;
+use Folklore\Mediatheque\Exceptions\FileRejected;
+use Folklore\Mediatheque\Ingest\IngestOptions;
+use Folklore\Mediatheque\Ingest\Source;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
@@ -102,6 +107,19 @@ class FakeMedia implements Media
     public function temporaryUrl(?string $handle, DateTimeInterface $expiration): ?string
     {
         return $this->playedFile($handle)?->temporaryUrl($expiration);
+    }
+
+    /**
+     * Replace its original with another file, keeping its uid: see
+     * Mediatheque::replaceOriginal(), through the fake.
+     *
+     * @param  UploadedFile|Source|string|resource  $source
+     *
+     * @throws FileRejected
+     */
+    public function replaceOriginal(mixed $source, ?IngestOptions $options = null, bool $allowTypeChange = false): Media
+    {
+        return app(Mediatheque::class)->replaceOriginal($this, $source, $options, $allowTypeChange);
     }
 
     /**

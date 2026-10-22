@@ -3,7 +3,7 @@
 namespace Folklore\Mediatheque\Enums;
 
 /**
- * Why ingest refused a file.
+ * Why ingest, or the replacement of an original, refused a file.
  */
 enum RejectionReason: string
 {
@@ -24,4 +24,7 @@ enum RejectionReason: string
 
     /** A URL that the SSRF guard refuses. */
     case ForbiddenUrl = 'forbidden_url';
+
+    /** A replacement of a media's original of another type, without `allowTypeChange`. */
+    case TypeChanged = 'type_changed';
 }

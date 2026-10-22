@@ -2,11 +2,13 @@
 
 namespace Folklore\Mediatheque\Ingest;
 
+use Closure;
 use Folklore\Mediatheque\Contracts\Ingestor;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\RejectionReason;
+use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Events\IngestRejected;
 use Folklore\Mediatheque\Events\MediaCreated;
 use Folklore\Mediatheque\Exceptions\FileRejected;
@@ -66,6 +68,24 @@ class MediaIngestor implements Ingestor
 
     public function ingest(Source $source, IngestOptions $options = new IngestOptions): Media
     {
+        return $this->accept($source, fn (IncomingFile $file) => $this->store($file, $options));
+    }
+
+    /**
+     * Read and validate a file as ingest does, and hand it to `$then`, which
+     * stores it. A rejected file dispatches `IngestRejected` and throws
+     * FileRejected, also when `$then` rejects it. Temporary files are
+     * removed once `$then` returns.
+     *
+     * @template TResult
+     *
+     * @param  Closure(IncomingFile): TResult  $then
+     * @return TResult
+     *
+     * @throws FileRejected
+     */
+    public function accept(Source $source, Closure $then): mixed
+    {
         if ($source->kind === SourceKind::Url) {
             throw new InvalidArgumentException('Ingest from a URL comes with the SSRF guard, in a later alpha. Download the file, then ingest it.');
         }
@@ -85,14 +105,14 @@ class MediaIngestor implements Ingestor
 
             $this->checkSize($source, $type, $size);
 
-            $sanitized = null;
+            $sanitized = false;
             if (ContentType::isSvg($mime)) {
-                $sanitized = $this->sanitizeSvg($source, $local, $temporary);
-                $local = $sanitized;
-                $size = (int) filesize($sanitized);
+                $local = $this->sanitizeSvg($source, $local, $temporary);
+                $size = (int) filesize($local);
+                $sanitized = true;
             }
 
-            return $this->store($source, $options, $type, $mime, $size, $local, $sanitized !== null);
+            return $then(new IncomingFile($source, $type, $mime, $size, $local, $sanitized));
         } catch (FileRejected $exception) {
             $this->events->dispatch(new IngestRejected($exception->reason, $exception->getMessage(), $source->filename));
 
@@ -100,6 +120,30 @@ class MediaIngestor implements Ingestor
         } finally {
             foreach ($temporary as $path) {
                 @unlink($path);
+            }
+        }
+    }
+
+    /**
+     * Store an accepted file at a path, with a visibility: from its local
+     * file, or copied from its disk.
+     */
+    public function write(IncomingFile $file, string $disk, string $path, Visibility $visibility): void
+    {
+        $put = ['visibility' => $visibility->value, 'ContentType' => $file->mime];
+
+        if (! $file->readsLocally()) {
+            $this->copyFromDisk((string) $file->source->disk, (string) $file->source->path, $disk, $path, $put);
+
+            return;
+        }
+
+        $stream = fopen($file->local, 'rb') ?: throw FileRejected::because(RejectionReason::Unreadable, 'The file can\'t be read.');
+        try {
+            $this->filesystems->disk($disk)->writeStream($path, $stream, $put);
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
             }
         }
     }
@@ -226,49 +270,32 @@ class MediaIngestor implements Ingestor
         return $path;
     }
 
-    private function store(Source $source, IngestOptions $options, TypeDefinition $type, string $mime, int $size, string $local, bool $sanitized): Media
+    private function store(IncomingFile $file, IngestOptions $options): Media
     {
+        $source = $file->source;
         $visibility = $options->visibility ?? $this->config->defaultVisibility();
         $pipeline = $options->pipeline !== null ? $this->config->pipeline($options->pipeline)->name : null;
         $disk = $options->source !== null ? $this->config->disk('source', $options->source) : $this->config->defaultSource();
-        $extension = ContentType::extension($mime);
-        $readsLocally = $source->kind !== SourceKind::Disk || $sanitized;
-        $checksum = $readsLocally ? (string) hash_file('sha256', $local) : null;
+        $mime = $file->mime;
+        $size = $file->size;
+        $extension = $file->extension();
+        $checksum = $file->checksum();
 
         $media = Models::media()::query()->getModel()->newInstance();
         $media->forceFill([
             ...$options->attributes,
             'uid' => Uid::generate($this->config->mediaPrefix()),
-            'type' => $type->name,
+            'type' => $file->type->name,
             'name' => $options->name ?? $source->filename,
             'status' => MediaStatus::Pending,
             'visibility' => $visibility,
             'data' => $options->data === [] ? null : $options->data,
-            'metadata' => array_filter([
-                MetadataKey::Filename->value => $source->filename,
-                MetadataKey::Mime->value => $mime,
-                MetadataKey::Extension->value => $extension,
-                MetadataKey::Size->value => $size,
-                MetadataKey::Checksum->value => $checksum,
-            ], fn (mixed $value) => $value !== null),
+            'metadata' => self::metadata($file, $checksum),
         ]);
 
         $path = $this->paths->original($media, $extension);
         $filesystem = $this->filesystems->disk($disk);
-        $put = ['visibility' => $visibility->value, 'ContentType' => $mime];
-
-        if ($readsLocally) {
-            $stream = fopen($local, 'rb') ?: throw FileRejected::because(RejectionReason::Unreadable, 'The file can\'t be read.');
-            try {
-                $filesystem->writeStream($path, $stream, $put);
-            } finally {
-                if (is_resource($stream)) {
-                    fclose($stream);
-                }
-            }
-        } else {
-            $this->copyFromDisk((string) $source->disk, (string) $source->path, $disk, $path, $put);
-        }
+        $this->write($file, $disk, $path, $visibility);
 
         try {
             $this->database->connection($media->getConnectionName())->transaction(function () use ($media, $source, $disk, $path, $mime, $size, $checksum) {
@@ -299,6 +326,22 @@ class MediaIngestor implements Ingestor
         $this->afterCommit($media, $pipeline);
 
         return $media;
+    }
+
+    /**
+     * The metadata of a media from its original, until it is probed.
+     *
+     * @return array<string, mixed>
+     */
+    public static function metadata(IncomingFile $file, ?string $checksum): array
+    {
+        return array_filter([
+            MetadataKey::Filename->value => $file->source->filename,
+            MetadataKey::Mime->value => $file->mime,
+            MetadataKey::Extension->value => $file->extension(),
+            MetadataKey::Size->value => $file->size,
+            MetadataKey::Checksum->value => $checksum,
+        ], fn (mixed $value) => $value !== null);
     }
 
     /**

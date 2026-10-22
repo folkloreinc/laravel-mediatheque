@@ -9,6 +9,7 @@ use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Contracts\Models\PipelineRun;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Ingest\IngestOptions;
+use Folklore\Mediatheque\Ingest\OriginalReplacer;
 use Folklore\Mediatheque\Ingest\Source;
 use Folklore\Mediatheque\Monitoring\Monitoring;
 use Folklore\Mediatheque\Pipelines\PipelineRunner;
@@ -46,6 +47,11 @@ class MediathequeManager implements Mediatheque
             data: $data,
             attributes: $attributes,
         ));
+    }
+
+    public function replaceOriginal(Media $media, mixed $source, ?IngestOptions $options = null, bool $allowTypeChange = false): Media
+    {
+        return $this->container->make(OriginalReplacer::class)->replace($media, Source::from($source), $options ?? new IngestOptions, $allowTypeChange);
     }
 
     /**
