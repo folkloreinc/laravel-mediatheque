@@ -10,7 +10,7 @@
 
 ## The alphas: upload and play a video, images through laravel-image
 
-The alphas are for new projects; the upgrade from 1.x comes in the beta. 2.0.0-alpha.1 uploads and plays videos; 2.0.0-alpha.2 adds image URLs through `laravel-image` 2; 2.0.0-alpha.3 added direct uploads with Uppy 6, which 2.0.0-alpha.4 moves to the application, or to Panneau 5 ([decisions/0018](docs/decisions/0018-ingest-only.md)), and 2.0.0-alpha.4 adds monitoring: `mediatheque:status`, actions on runs and a dashboard.
+The alphas are for new projects; the upgrade from 1.x comes in the beta. 2.0.0-alpha.1 uploads and plays videos; 2.0.0-alpha.2 adds image URLs through `laravel-image` 2; 2.0.0-alpha.3 added direct uploads with Uppy 6, which 2.0.0-alpha.4 moves to the application, or to Panneau 5 ([decisions/0018](docs/decisions/0018-ingest-only.md)), and 2.0.0-alpha.4 adds monitoring: `mediatheque:status`, actions on runs and a dashboard. 2.0.0-alpha.5 replaces a media's file while the media keeps its uid.
 
 ### Requirements
 
@@ -69,6 +69,15 @@ $media = Mediatheque::ingest(
 ```
 
 The type comes from the file's content, never from the type the browser stored it with.
+
+### Replace a media's file
+
+```php
+Mediatheque::replaceOriginal($media, $request->file('file'));
+$media->replaceOriginal(Source::disk('s3', $upload->path, $upload->name));
+```
+
+The media keeps its uid, so `media://` references keep working. It also keeps its visibility, its data and your attributes. The new file is validated as at ingest, and a file of another type is refused unless you pass `allowTypeChange: true`. The media goes back to `pending`: its renditions are produced again from the new file, and `OriginalReplaced` is dispatched. See [decisions/0019](docs/decisions/0019-replace-original.md).
 
 ### Monitoring dashboard
 
