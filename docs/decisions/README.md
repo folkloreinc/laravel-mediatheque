@@ -22,6 +22,7 @@ One file per decision. A decision is not edited once accepted: a later one repla
 | [0016](0016-uploads-signed-for-uppy-6.md) | Direct uploads signed for Uppy 6 | Replaced by 0018 |
 | [0017](0017-monitoring-dashboard.md) | A monitoring dashboard | Amended by 0018 |
 | [0018](0018-ingest-only.md) | The package ingests files; applications take uploads | Accepted |
+| [0019](0019-replace-original.md) | Replacing a media's original | Accepted |
 
 Template:
 

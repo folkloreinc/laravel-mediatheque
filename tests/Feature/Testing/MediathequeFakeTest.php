@@ -29,6 +29,7 @@ use Folklore\Mediatheque\Support\Uid;
 use Folklore\Mediatheque\Testing\FakeProber;
 use Folklore\Mediatheque\Testing\MediathequeFake;
 use Folklore\Mediatheque\Testing\Models\FakeMedia;
+use Folklore\Mediatheque\Tests\Contracts\ReplacesOriginalsContractTests;
 use Folklore\Mediatheque\Tests\Contracts\ResolvesReferencesContractTests;
 use Folklore\Mediatheque\Tests\Contracts\RunActionsContractTests;
 use Folklore\Mediatheque\Tests\TestCase;
@@ -40,6 +41,7 @@ use PHPUnit\Framework\Attributes\Test;
 
 class MediathequeFakeTest extends TestCase
 {
+    use ReplacesOriginalsContractTests;
     use ResolvesReferencesContractTests;
     use RunActionsContractTests;
 
@@ -99,6 +101,26 @@ class MediathequeFakeTest extends TestCase
     protected function freshMedia(Media $media): Media
     {
         return $media;
+    }
+
+    protected function videoFile(string $variant): UploadedFile|Source|string
+    {
+        return UploadedFile::fake()->createWithContent('new-cut.mp4', 'video '.$variant)->mimeType('video/mp4');
+    }
+
+    protected function imageFile(): UploadedFile|Source|string
+    {
+        return UploadedFile::fake()->createWithContent('photo.jpg', 'image')->mimeType('image/jpeg');
+    }
+
+    protected function unknownFile(): UploadedFile|Source|string
+    {
+        return UploadedFile::fake()->createWithContent('notes.txt', 'Just some text');
+    }
+
+    protected function runsOf(Media $media, string $pipeline): array
+    {
+        return array_values(Mediatheque::fake()->runs($media, $pipeline)->all());
     }
 
     private function video(string $name = 'clip.mp4'): UploadedFile
@@ -338,6 +360,26 @@ class MediathequeFakeTest extends TestCase
         Storage::fake('uploads');
         Storage::disk('uploads')->put('incoming/no-extension', (string) file_get_contents(self::fixturePath('media/image.jpg')));
         $this->assertSame('image', Mediatheque::ingest(Source::disk('uploads', 'incoming/no-extension'))->type());
+    }
+
+    #[Test]
+    public function the_fake_replaces_an_original_through_the_media_and_deletes_the_previous_files(): void
+    {
+        $media = Mediatheque::fake()->ingest($this->video());
+        $this->assertInstanceOf(FakeMedia::class, $media);
+        $previous = $media->files()->map(fn ($file) => (string) $file->path())->all();
+        $this->assertCount(8, $previous, 'The original, h264, the poster and five thumbnails.');
+
+        $replaced = $media->replaceOriginal($this->videoFile('new cut'), new IngestOptions(name: 'New cut'));
+
+        $this->assertSame($media, $replaced);
+        $this->assertSame(['New cut', MediaStatus::Ready], [$media->name(), $media->status()]);
+        $this->assertStringStartsWith($media->uid.'/original-', (string) $media->original()?->path());
+        Storage::disk('public')->assertExists((string) $media->original()?->path());
+        foreach ($previous as $path) {
+            Storage::disk('public')->assertMissing($path);
+        }
+        Mediatheque::assertPipelineRan($media, 'video');
     }
 
     #[Test]

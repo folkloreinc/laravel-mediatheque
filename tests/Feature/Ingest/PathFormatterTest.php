@@ -45,6 +45,20 @@ class PathFormatterTest extends TestCase
     }
 
     #[Test]
+    public function a_replaced_original_has_a_version_in_its_file_name(): void
+    {
+        $media = $this->media();
+
+        $this->assertSame('video/med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P/original-0a1b2c3d4e5f6789.mov', $this->formatter()->original($media, 'mov', '0a1b2c3d4e5f6789'));
+
+        config(['mediatheque.file_path_format' => '{media.uid}/{handle}{index}']);
+        $this->assertSame('med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P/original-0a1b2c3d', $this->formatter()->original($media, 'mov', '0a1b2c3d'));
+
+        $this->expectException(InvalidPath::class);
+        $this->formatter()->original($media, 'mov', '../x');
+    }
+
+    #[Test]
     public function application_attributes_and_dates_are_placeholders(): void
     {
         Date::setTestNow('2026-10-16 12:00:00');

@@ -27,6 +27,9 @@ class ScriptedTranscoder implements Transcoder
     /** @var list<string> The keys of the runs refreshed */
     public array $refreshed = [];
 
+    /** @var list<string> The keys of the runs it was asked to cancel */
+    public array $canceled = [];
+
     public function __construct(private readonly Recorder $recorder) {}
 
     public function supports(string $operation): bool
@@ -63,6 +66,8 @@ class ScriptedTranscoder implements Transcoder
 
     public function cancel(PipelineRun $run): void
     {
+        $this->canceled[] = $run->key();
+
         foreach ($run->jobs() as $job) {
             $this->recorder->canceled($job);
         }

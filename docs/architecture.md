@@ -438,8 +438,9 @@ Signed streaming of private files on local disks (`GET files/{file}`) comes with
 | `RenditionCompleted`, `RenditionFailed`, `RenditionSkipped`, `RenditionCanceled` | Each rendition. Drivers that report from webhook snapshots may dispatch them some time after the fact |
 | `MediaReady` | Every rendition of the default pipeline ended, at least the main one completed |
 | `MediaFailed` | The probe failed, or the main rendition did not complete |
-| `MediaVisibilityChanged`, `OriginalReplaced` | |
-| `IngestRejected` | Ingest refused a file: its reason, message and file name. Nothing was stored |
+| `MediaVisibilityChanged` | |
+| `OriginalReplaced` | The original was replaced: the media, the previous and the new checksum ([decisions/0019](decisions/0019-replace-original.md)) |
+| `IngestRejected` | Ingest, or the replacement of an original, refused a file: its reason, message and file name. Nothing was stored |
 
 Events carry contracts, not concrete classes, so they work with the application's models.
 
@@ -518,7 +519,20 @@ Route::middleware(['web', 'auth'])->group(function () {
 
 - Deleting a media soft-deletes it. Its files stay until `mediatheque:prune` force-deletes it after `prune.after_days`. Force deletion removes files, renditions, pipeline runs, metadata and pivot rows.
 - A media in use can't be deleted unless the deletion is forced.
-- `$media->replaceOriginal($source)` keeps the `uid`, stores the new original, deletes the renditions in a queued job, and runs the pipeline again.
+- `$media->replaceOriginal($source)`, or `Mediatheque::replaceOriginal($media, $source)`, replaces the original and keeps the media ([decisions/0019](decisions/0019-replace-original.md)):
+
+```php
+Mediatheque::replaceOriginal($media, $request->file('file'));
+Mediatheque::replaceOriginal($media, Source::disk('s3', 'uploads/abc.mov'), new IngestOptions(name: 'Episode 1, new cut'));
+$media->replaceOriginal($file, allowTypeChange: true);     // an image replaced by a video
+```
+
+  - The file is validated as ingest validates it. A file ingest would refuse throws `FileRejected`, and so does a file of another type unless `allowTypeChange` is set (`RejectionReason::TypeChanged`). Nothing changes then.
+  - The media keeps its `uid`, visibility, data, the application's attributes, its usages, and its name unless the options give one. Of the options, only `name`, `pipeline` and `source` are read; the source is the current original's disk by default.
+  - Its original, mime, size, checksum and metadata are the new file's. The new original is stored at a path of its own (`original-{version}.mp4`).
+  - The renditions are removed, and their files and the previous original are deleted in a queued job once the new original is stored. The runs that haven't ended are canceled, through their transcoder when it can; their late results are ignored, and the media doesn't fail.
+  - The media goes back to `pending`: it is probed, then its pipeline runs again. `OriginalReplaced` carries the previous and the new checksum, so `laravel-image` URLs change.
+  - Replacing an original with the same file again changes nothing.
 
 ## Configuration
 

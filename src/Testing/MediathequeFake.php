@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque\Testing;
 
+use Carbon\CarbonImmutable;
 use Closure;
 use Folklore\Mediatheque\Contracts\Ingestor;
 use Folklore\Mediatheque\Contracts\Mediatheque;
@@ -13,6 +14,7 @@ use Folklore\Mediatheque\Contracts\Recorder;
 use Folklore\Mediatheque\Contracts\UrlGenerator;
 use Folklore\Mediatheque\Enums\JobStatus;
 use Folklore\Mediatheque\Enums\MediaStatus;
+use Folklore\Mediatheque\Enums\PipelineStatus;
 use Folklore\Mediatheque\Enums\RejectionReason;
 use Folklore\Mediatheque\Enums\TranscoderErrorCode;
 use Folklore\Mediatheque\Enums\Visibility;
@@ -21,6 +23,9 @@ use Folklore\Mediatheque\Events\MediaCreated;
 use Folklore\Mediatheque\Events\MediaFailed;
 use Folklore\Mediatheque\Events\MediaProbed;
 use Folklore\Mediatheque\Events\MediaReady;
+use Folklore\Mediatheque\Events\OriginalReplaced;
+use Folklore\Mediatheque\Events\PipelineCanceled;
+use Folklore\Mediatheque\Events\RenditionCanceled;
 use Folklore\Mediatheque\Exceptions\FileRejected;
 use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
@@ -41,6 +46,7 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\File as LocalFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Testing\Fakes\Fake;
@@ -170,6 +176,94 @@ class MediathequeFake implements Fake, Mediatheque
 
         $this->media[] = $media;
         $this->events->dispatch(new MediaCreated($media));
+
+        $this->probe($media, $pipeline);
+
+        return $media;
+    }
+
+    /**
+     * The fake replaces the original as the package does
+     * (docs/decisions/0019), at once: the previous files are deleted from
+     * the fake disks, the runs that haven't ended are canceled, and the new
+     * original is probed, then its pipeline runs.
+     */
+    public function replaceOriginal(Media $media, mixed $source, ?IngestOptions $options = null, bool $allowTypeChange = false): Media
+    {
+        $media = $this->find($media);
+        $source = Source::from($source);
+        $options ??= new IngestOptions;
+
+        try {
+            [$localPath, $mime] = $this->read($source);
+            $type = $this->detectType($mime) ?? throw FileRejected::because(
+                RejectionReason::UnknownType,
+                sprintf('The file "%s" (%s) matches no media type.', $source->filename ?? 'file', $mime),
+            );
+            if ($type !== $media->type && ! $allowTypeChange) {
+                throw FileRejected::because(
+                    RejectionReason::TypeChanged,
+                    sprintf('The file "%s" is a %s, and %s is a %s: its type can\'t change.', $source->filename ?? 'file', $type, $media->uid, $media->type),
+                );
+            }
+        } catch (FileRejected $exception) {
+            $this->events->dispatch(new IngestRejected($exception->reason, $exception->getMessage(), $source->filename));
+
+            throw $exception;
+        }
+
+        $checksum = (string) hash_file('sha256', $localPath);
+        $previous = $media->original();
+        if ($options->name !== null) {
+            $media->name = $options->name;
+        }
+        if ($previous !== null && $previous->checksum() === $checksum) {
+            return $media;
+        }
+
+        foreach ($this->runs as $run) {
+            if ($run->media === $media && ! $run->status->isFinal()) {
+                $this->cancelReplaced($run);
+            }
+        }
+
+        $storage = $options->source ?? $previous?->source() ?? $this->string('mediatheque.source', 'public');
+        $extension = MimeTypes::getDefault()->getExtensions($mime)[0] ?? 'bin';
+        $path = $media->uid.'/original-'.substr($checksum, 0, 16).'.'.$extension;
+        $this->disk($storage)->put($path, (string) file_get_contents($localPath));
+        $size = (int) filesize($localPath);
+
+        foreach ($media->files as $file) {
+            if ($file->source !== null && $file->path !== null && ($file->source !== $storage || $file->path !== $path)) {
+                $this->disk($file->source)->delete($file->path);
+            }
+        }
+
+        $pipeline = $options->pipeline ?? $this->pipelineOf($type);
+        $media->files = [];
+        $media->attach(new FakeFile(
+            media: $media,
+            urls: $this->urls,
+            handle: File::ORIGINAL,
+            source: $storage,
+            path: $path,
+            role: 'original',
+            mime: $mime,
+            size: $size,
+            checksum: $checksum,
+        ));
+        $media->type = $type;
+        $media->mainRendition = $pipeline !== null ? $this->pipeline($pipeline)->mainRendition()?->name : null;
+        $media->status = MediaStatus::Pending;
+        $media->metadata = [
+            MetadataKey::Filename->value => $source->filename,
+            MetadataKey::Mime->value => $mime,
+            MetadataKey::Extension->value => $extension,
+            MetadataKey::Size->value => $size,
+            MetadataKey::Checksum->value => $checksum,
+        ];
+
+        $this->events->dispatch(new OriginalReplaced($media, $previous?->checksum(), $checksum));
 
         $this->probe($media, $pipeline);
 
@@ -642,6 +736,30 @@ class MediathequeFake implements Fake, Mediatheque
 
                 return [$local, MimeTypes::getDefault()->getMimeTypes(strtolower($extension))[0] ?? 'application/octet-stream'];
         }
+    }
+
+    /**
+     * A run of a media whose original was replaced: its renditions that
+     * haven't ended are canceled, and the run, without changing the media.
+     */
+    private function cancelReplaced(FakePipelineRun $run): void
+    {
+        $now = CarbonImmutable::instance(Date::now());
+
+        foreach ($run->jobs as $job) {
+            if ($job->status->canMoveTo(JobStatus::Canceled)) {
+                $job->status = JobStatus::Canceled;
+                $job->reason = 'The media\'s original was replaced.';
+                $job->endedAt = $now;
+                $this->events->dispatch(new RenditionCanceled($job));
+            }
+        }
+
+        $run->status = PipelineStatus::Canceled;
+        $run->endedAt = $now;
+        $this->events->dispatch(new PipelineCanceled($run));
+
+        $this->transcoder->cancel($run);
     }
 
     private function detectType(string $mime): ?string

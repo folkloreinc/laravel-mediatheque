@@ -6,6 +6,7 @@ use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Contracts\Models\PipelineRun;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Exceptions\FileRejected;
+use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
 use Folklore\Mediatheque\References\MediaReference;
 use Illuminate\Http\UploadedFile;
@@ -34,6 +35,38 @@ interface Mediatheque
         array $data = [],
         array $attributes = [],
     ): Media;
+
+    /**
+     * Replace a media's original with another file (docs/decisions/0019).
+     * `$source` takes what ingest() takes, and the file is validated by the
+     * same rules: a file ingest would refuse throws FileRejected, and
+     * nothing changes.
+     *
+     * - The media keeps its uid, visibility, application data and
+     *   attributes, its usages, and its name unless `$options` names it. Of
+     *   the options, only `name`, `pipeline` and `source` are read: the
+     *   disk is the current original's by default.
+     * - Its original, with its mime, size and checksum, and its metadata are
+     *   the new file's. It goes back to `pending`: it is probed again, then
+     *   its pipeline runs, `$options->pipeline` or the one it ran before.
+     * - Its renditions are removed, and their files deleted in a queued job
+     *   once the new original is stored. Its runs that haven't ended are
+     *   canceled, through their transcoder when it can, and their late
+     *   results are ignored.
+     * - A file of another type is refused (`RejectionReason::TypeChanged`),
+     *   so references keep a media of the same kind, unless
+     *   `$allowTypeChange` is set.
+     * - `OriginalReplaced` is dispatched, with the previous and the new
+     *   checksum.
+     * - Safe to retry: replacing an original with the same file stores
+     *   nothing, cancels nothing and runs nothing again. Only a name given
+     *   in `$options` is applied.
+     *
+     * @param  UploadedFile|Source|string|resource  $source
+     *
+     * @throws FileRejected
+     */
+    public function replaceOriginal(Media $media, mixed $source, ?IngestOptions $options = null, bool $allowTypeChange = false): Media;
 
     /**
      * A media by reference: `media://med_…`, `medias://123` (1.x), or a uid.

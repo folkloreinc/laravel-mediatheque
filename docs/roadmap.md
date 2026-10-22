@@ -49,7 +49,7 @@ Images: the alpha stores and probes them; their renditions come from `laravel-im
 - [ ] `HasMedias` with `attachMedia`, `syncMedias`, `media()`; usage graph; media in use protected from deletion
 - [ ] `media://` references: parser, batch resolution
 - [ ] Soft deletes, `mediatheque:prune`, deferred file cleanup
-- [ ] `replaceOriginal()`
+- [x] `replaceOriginal()` ([decisions/0019](decisions/0019-replace-original.md), [#87](https://github.com/folkloreinc/laravel-mediatheque/issues/87))
 - [ ] `MediaResource` and `FileResource`, in sync with Panneau 5's protocol
 - [ ] Contract for Panneau 5's media adapter ([laravel-panneau#35](https://github.com/folkloreinc/laravel-panneau/issues/35))
 - [ ] Images at ingest: HEIC, orientation, GPS removal, ThumbHash placeholder

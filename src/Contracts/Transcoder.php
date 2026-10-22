@@ -37,7 +37,9 @@ interface Transcoder
 
     /**
      * With the cancel capability: stop the run. The driver reports the
-     * renditions it canceled through the recorder.
+     * renditions it canceled through the recorder. When a media's original
+     * is replaced, its renditions are already canceled when this is called:
+     * the driver stops its job all the same.
      */
     public function cancel(PipelineRun $run): void;
 
