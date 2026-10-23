@@ -20,6 +20,7 @@ jobs:
     lint:
         name: Pint and Larastan
         runs-on: ubuntu-24.04
+        timeout-minutes: 10
         steps:
             - uses: actions/checkout@v5
 
@@ -50,6 +51,7 @@ jobs:
     dashboard:
         name: Dashboard
         runs-on: ubuntu-24.04
+        timeout-minutes: 10
         defaults:
             run:
                 working-directory: dashboard
@@ -81,6 +83,7 @@ jobs:
     tests:
         name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }}
         runs-on: ubuntu-24.04
+        timeout-minutes: 20
         strategy:
             fail-fast: false
             matrix:
@@ -89,11 +92,64 @@ jobs:
         steps:
             - uses: actions/checkout@v5
 
+            # The Azure Ubuntu mirror sometimes throttles a runner to a few
+            # dozen kB/s for the whole job, which apt's own timeouts don't catch
+            # (#96). The packages are cached between runs, keyed on the runner
+            # image so they follow its updates.
+            - name: Find the runner image
+              id: image
+              run: echo "version=${ImageOS}-${ImageVersion}" >> "$GITHUB_OUTPUT"
+
+            - name: Restore media tools packages
+              id: apt-cache
+              uses: actions/cache/restore@v4
+              env:
+                  # A slow restore counts as a miss instead of holding the job
+                  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+              with:
+                  path: ~/apt-archives
+                  key: apt-media-tools-${{ steps.image.outputs.version }}
+                  restore-keys: apt-media-tools-
+
+            # Each apt-get call that downloads is capped and retried. After a
+            # failed attempt, the next one skips the Azure mirror for the next
+            # mirror of the runner's list, and keeps the packages already
+            # downloaded. The install then only reads the local cache.
             - name: Install media tools
+              timeout-minutes: 12
               run: |
-                  sudo apt-get update
-                  sudo apt-get install -y --no-install-recommends ffmpeg imagemagick
+                  packages=(ffmpeg imagemagick)
+                  mirrors=/etc/apt/apt-mirrors.txt
+                  apt_get_with_retries() {
+                      local limit=$1
+                      shift
+                      for attempt in 1 2 3; do
+                          sudo timeout --kill-after=10 "$limit" apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=20 "$@" && return 0
+                          echo "::warning::apt-get $1 failed or took more than ${limit}s (attempt ${attempt} of 3)"
+                          if [ -f "$mirrors" ]; then
+                              sudo sed -i '/azure\.archive\.ubuntu\.com/d' "$mirrors"
+                          fi
+                      done
+                      return 1
+                  }
+                  mkdir -p ~/apt-archives
+                  sudo find ~/apt-archives -name '*.deb' -exec cp -t /var/cache/apt/archives/ {} +
+                  apt_get_with_retries 60 update
+                  apt_get_with_retries 120 install -y --no-install-recommends --download-only "${packages[@]}"
+                  # Keep the current packages for the cache, without the
+                  # versions the mirror no longer has
+                  sudo apt-get autoclean
+                  rm -f ~/apt-archives/*.deb
+                  cp /var/cache/apt/archives/*.deb ~/apt-archives/
+                  sudo apt-get install -y --no-install-recommends "${packages[@]}"
                   ffprobe -version | head -n 1
+
+            - name: Save media tools packages
+              if: steps.apt-cache.outputs.cache-hit != 'true'
+              uses: actions/cache/save@v4
+              with:
+                  path: ~/apt-archives
+                  key: ${{ steps.apt-cache.outputs.cache-primary-key }}
 
             - uses: shivammathur/setup-php@v2
               with:
@@ -130,6 +186,7 @@ jobs:
         needs: [lint, tests, dashboard]
         if: github.event_name == 'push' && github.ref == 'refs/heads/v2.x'
         runs-on: ubuntu-24.04
+        timeout-minutes: 5
         permissions:
             contents: write
         env:
