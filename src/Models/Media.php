@@ -14,9 +14,11 @@ use Folklore\Mediatheque\Events\MediaDeleted;
 use Folklore\Mediatheque\Events\MediaRestored;
 use Folklore\Mediatheque\Events\MediaUpdated;
 use Folklore\Mediatheque\Exceptions\FileRejected;
+use Folklore\Mediatheque\Exceptions\MediaInUse;
 use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
 use Folklore\Mediatheque\Support\MediathequeConfig;
+use Folklore\Mediatheque\Support\MediaUsage;
 use Folklore\Mediatheque\Support\Models;
 use Folklore\Mediatheque\Support\Uid;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -24,7 +26,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -54,7 +58,9 @@ use Illuminate\Support\Collection;
  */
 class Media extends Model implements MediaContract
 {
-    use SoftDeletes;
+    use SoftDeletes {
+        performDeleteOnModel as performSoftDeletableDeleteOnModel;
+    }
 
     /**
      * @var array<string, mixed>
@@ -218,6 +224,100 @@ class Media extends Model implements MediaContract
     public function temporaryUrl(?string $handle, DateTimeInterface $expiration): ?string
     {
         return $this->playedFile($handle)?->temporaryUrl($expiration);
+    }
+
+    public function usages(): Collection
+    {
+        $rows = $this->usageRows()->orderBy('id')->get(['morphable_type', 'morphable_id', 'handle', 'order']);
+        $models = [];
+
+        foreach ($rows->groupBy('morphable_type') as $type => $rowsOfType) {
+            $class = Relation::getMorphedModel((string) $type) ?? (string) $type;
+
+            if (! is_a($class, Model::class, true)) {
+                continue;
+            }
+
+            // As the package's workers do, ignore the global scopes: a usage
+            // hidden by a tenant scope, or soft-deleted, is still a usage
+            $found = $class::query()
+                ->withoutGlobalScopes()
+                ->whereKey($rowsOfType->pluck('morphable_id')->all())
+                ->get();
+
+            foreach ($found as $model) {
+                $key = $model->getKey();
+
+                if (is_int($key) || is_string($key)) {
+                    $models[$type][(string) $key] = $model;
+                }
+            }
+        }
+
+        $usages = [];
+
+        foreach ($rows as $row) {
+            /** @var object{morphable_type: string, morphable_id: int|string, handle: string|null, order: int|string} $row */
+            $usages[] = new MediaUsage(
+                $row->morphable_type,
+                $row->morphable_id,
+                $row->handle,
+                (int) $row->order,
+                $models[$row->morphable_type][(string) $row->morphable_id] ?? null,
+            );
+        }
+
+        return new Collection($usages);
+    }
+
+    public function isUsed(): bool
+    {
+        return $this->exists && $this->usageRows()->exists();
+    }
+
+    /**
+     * Soft-delete the media, or force-delete it with forceDelete(). A media
+     * in use can't be soft-deleted: detach it first, or force the deletion,
+     * which removes its usages (docs/decisions/0020).
+     *
+     * Untyped, as Eloquent's, so an application's model can override it.
+     *
+     * @return bool|null
+     *
+     * @throws MediaInUse
+     */
+    public function delete()
+    {
+        if (! $this->isForceDeleting() && $this->isUsed()) {
+            throw MediaInUse::for($this);
+        }
+
+        return parent::delete();
+    }
+
+    /**
+     * A forced deletion removes the media's usages: the foreign key of a new
+     * install would, but a table upgraded from 1.x has none yet.
+     *
+     * @return mixed
+     */
+    protected function performDeleteOnModel()
+    {
+        if ($this->isForceDeleting()) {
+            $this->usageRows()->delete();
+        }
+
+        return $this->performSoftDeletableDeleteOnModel();
+    }
+
+    /**
+     * The rows of `medias_pivot` that attach this media to models.
+     */
+    protected function usageRows(): Builder
+    {
+        return $this->getConnection()
+            ->table(Models::table('medias_pivot'))
+            ->where('media_id', $this->getKey());
     }
 
     /**

@@ -79,6 +79,24 @@ $media->replaceOriginal(Source::disk('s3', $upload->path, $upload->name));
 
 The media keeps its uid, so `media://` references keep working. It also keeps its visibility, its data and your attributes. The new file is validated as at ingest, and a file of another type is refused unless you pass `allowTypeChange: true`. The media goes back to `pending`: its renditions are produced again from the new file, and `OriginalReplaced` is dispatched. See [decisions/0019](docs/decisions/0019-replace-original.md).
 
+### Attach media to your models
+
+```php
+use Folklore\Mediatheque\Concerns\HasMedias;
+
+class Post extends Model
+{
+    use HasMedias;
+}
+
+$post->attachMedia($media, 'cover');
+$post->syncMedias(['gallery' => [$a, $b]]);    // replaces the gallery only
+$post->media('cover');
+$post->medias('gallery');
+```
+
+Each attachment is a usage: `$media->usages()` lists the models that use a media, and `$media->delete()` throws `MediaInUse` while one does, unless you force the deletion with `forceDelete()`. See [decisions/0020](docs/decisions/0020-attachments-by-handle-and-usages.md).
+
 ### Monitoring dashboard
 
 A dashboard of probes, pipeline runs and renditions, with retry, cancel and refresh, in the spirit of Horizon. It is precompiled: your application builds nothing. Register its routes in your own middleware, and say who can use it:

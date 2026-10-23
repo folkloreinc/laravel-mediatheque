@@ -5,6 +5,7 @@ namespace Folklore\Mediatheque\Tests\Contracts;
 use Folklore\Mediatheque\Contracts\Models\File;
 use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Enums\Visibility;
+use Folklore\Mediatheque\Support\MediaUsage;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
@@ -21,6 +22,12 @@ trait MediaContractTests
      * @param  array<string, mixed>  $metadata
      */
     abstract protected function mediaWithFiles(string $type, Visibility $visibility, array $files, array $metadata = []): Media;
+
+    /**
+     * Make a model use the media under a handle, and return the media as the
+     * implementation reads it again.
+     */
+    abstract protected function useMedia(Media $media, string $handle): Media;
 
     #[Test]
     public function the_original_is_the_file_with_the_original_handle(): void
@@ -114,5 +121,25 @@ trait MediaContractTests
         $this->assertSame(Visibility::Public, $public->original()?->visibility());
         $this->assertSame(Visibility::Private, $private->original()?->visibility());
         $this->assertSame(Visibility::Private, $private->visibility());
+    }
+
+    #[Test]
+    public function a_media_that_no_model_uses_is_not_used(): void
+    {
+        $media = $this->mediaWithFiles('image', Visibility::Public, [['original', null, 'original']]);
+
+        $this->assertFalse($media->isUsed());
+        $this->assertCount(0, $media->usages());
+    }
+
+    #[Test]
+    public function a_used_media_has_a_usage_for_each_handle(): void
+    {
+        $media = $this->mediaWithFiles('image', Visibility::Public, [['original', null, 'original']]);
+
+        $media = $this->useMedia($this->useMedia($media, 'cover'), 'json:data');
+
+        $this->assertTrue($media->isUsed());
+        $this->assertSame(['cover', 'json:data'], $media->usages()->map(fn (MediaUsage $usage) => $usage->handle)->all());
     }
 }

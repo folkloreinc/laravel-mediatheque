@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque\Tests\Feature\Testing;
 
 use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Enums\Visibility;
+use Folklore\Mediatheque\Support\MediaUsage;
 use Folklore\Mediatheque\Support\Uid;
 use Folklore\Mediatheque\Testing\FakeUrlGenerator;
 use Folklore\Mediatheque\Testing\Models\FakeFile;
@@ -24,6 +25,14 @@ class FakeModelsTest extends TestCase
         foreach ($files as [$handle, $index, $role]) {
             $media->attach(new FakeFile($media, $urls, $handle, 'public', $handle.'-'.$index.'.bin', index: $index, role: $role));
         }
+
+        return $media;
+    }
+
+    protected function useMedia(Media $media, string $handle): Media
+    {
+        $this->assertInstanceOf(FakeMedia::class, $media);
+        $media->usages[] = new MediaUsage('post', 1, $handle, 0);
 
         return $media;
     }

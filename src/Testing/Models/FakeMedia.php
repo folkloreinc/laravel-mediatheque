@@ -11,6 +11,7 @@ use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Exceptions\FileRejected;
 use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
+use Folklore\Mediatheque\Support\MediaUsage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -23,6 +24,14 @@ class FakeMedia implements Media
 {
     /** @var list<FakeFile> */
     public array $files = [];
+
+    /**
+     * The models that use it. `HasMedias` stores usages in the database, so a
+     * test of the fake sets them here.
+     *
+     * @var list<MediaUsage>
+     */
+    public array $usages = [];
 
     /**
      * @param  array<string, mixed>  $metadata
@@ -107,6 +116,16 @@ class FakeMedia implements Media
     public function temporaryUrl(?string $handle, DateTimeInterface $expiration): ?string
     {
         return $this->playedFile($handle)?->temporaryUrl($expiration);
+    }
+
+    public function usages(): Collection
+    {
+        return new Collection($this->usages);
+    }
+
+    public function isUsed(): bool
+    {
+        return $this->usages !== [];
     }
 
     /**
