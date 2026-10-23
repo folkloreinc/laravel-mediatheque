@@ -17,7 +17,7 @@ In 1.x, `HasMedias` only declares the `medias()` relation. Applications write th
 
 - A new migration, `create_mediatheque_medias_pivot_table`, creates `medias_pivot` with the table prefix: `id`, `media_id` (foreign key, cascade on delete), `morphable` (morph, indexed), `handle` (64, nullable), `order`, timestamps, and a unique index on the model, the handle and the media.
 - `mediatheque:install` publishes it under the 1.x migration's name, so a project upgraded from 1.x, which has that migration, doesn't get it again. If it runs anyway, it leaves an existing table as it is. The upgrade adds the foreign key once orphan rows are removed ([upgrade.md](../upgrade.md)); until then, the 1.x columns work as they are.
-- `handle` stays nullable, as on 1.x tables: rows written by 1.x have none.
+- `handle` stays nullable, as on 1.x tables: rows written by 1.x have none. `HasMedias` itself always writes a handle (see below).
 
 ### `HasMedias`
 
@@ -33,6 +33,7 @@ In 1.x, `HasMedias` only declares the `medias()` relation. Applications write th
 | `detachMedia($media, ?$handle)` | Detach from one handle, or from all of them |
 
 - **Writes go by handle.** `syncMedias()` only touches the handles it names, so the code that owns a handle (a form, the sync of a JSON column) never detaches the media another handle holds. An empty list or null clears a handle. There is no method that replaces every handle at once: the relation's own `sync()` still does, for 1.x code.
+- **The handle is required.** It says which code owns a row, which is what lets `syncMedias()` replace one owner's rows without touching another's. A row without a handle belongs to no one, so no sync could replace it safely. Media without a particular role go under a generic handle (`medias`). The relation's own `attach()` can still write a row without one, as 1.x code does; that row is a usage, but no method of the trait reads or syncs it alone.
 - Media are given as media models or as their keys (the internal `id`, which is what `medias://` references and the pivot hold). Keys that no media has are ignored by `syncMedias()`, as a stale reference in JSON data would be; `attachMedia()` throws `ModelNotFoundException` for one. A trashed media can be attached: a reference to it is kept, and counts as a usage.
 - The media of `Mediatheque::fake()` are not stored, so they can't be attached: the trait throws `InvalidArgumentException`.
 - A deleted model no longer uses its media: its rows are removed. A soft-deleted model keeps them, and uses its media again when it is restored.
