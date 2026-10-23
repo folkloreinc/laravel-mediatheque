@@ -15,6 +15,7 @@ class V1FixturesTest extends TestCase
     #[Test]
     public function the_1x_migrations_create_the_1x_schema(): void
     {
+        $this->startFromAnEmptyDatabase();
         $this->loadMigrationsFrom(self::fixturePath('v1/migrations'));
 
         foreach (['medias', 'metadatas', 'medias_pivot', 'files', 'files_pivot', 'pipelines', 'pipelines_jobs'] as $table) {

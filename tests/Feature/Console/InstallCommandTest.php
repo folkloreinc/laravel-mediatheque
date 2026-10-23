@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque\Tests\Feature\Console;
 
+use Folklore\Mediatheque\Console\InstallCommand;
 use Folklore\Mediatheque\Tests\TestCase;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Artisan;
@@ -90,6 +91,7 @@ class InstallCommandTest extends TestCase
     public function the_published_migration_creates_and_drops_the_tables(): void
     {
         $this->install();
+        $this->startFromAnEmptyDatabase();
 
         Artisan::call('migrate', ['--path' => $this->migrations, '--realpath' => true]);
 
@@ -105,6 +107,44 @@ class InstallCommandTest extends TestCase
         Artisan::call('migrate:rollback', ['--path' => $this->migrations, '--realpath' => true]);
 
         $this->assertFalse(Schema::hasTable('mediatheque_medias'));
+    }
+
+    #[Test]
+    public function index_and_foreign_key_names_fit_in_mysql_identifiers_with_a_longer_prefix(): void
+    {
+        $prefix = 'mediatheque_app_';
+        config(['mediatheque.table_prefix' => $prefix]);
+        $this->install();
+        $this->startFromAnEmptyDatabase();
+
+        Artisan::call('migrate', ['--path' => $this->migrations, '--realpath' => true]);
+
+        $names = [];
+        foreach (['medias', 'files', 'pipelines', 'pipelines_jobs', 'medias_pivot'] as $table) {
+            $this->assertTrue(Schema::hasTable($prefix.$table), $table);
+            foreach ([...Schema::getIndexes($prefix.$table), ...Schema::getForeignKeys($prefix.$table)] as $constraint) {
+                if (is_string($constraint['name'] ?? null)) {
+                    $names[] = $constraint['name'];
+                }
+            }
+        }
+
+        $this->assertContains($prefix.'medias_pivot_usage_unique', $names);
+        $this->assertSame([], array_values(array_filter($names, fn (string $name) => strlen($name) > 64)), 'MySQL refuses identifiers longer than 64 characters.');
+
+        Artisan::call('migrate:rollback', ['--path' => $this->migrations, '--realpath' => true]);
+    }
+
+    #[Test]
+    public function a_migrator_that_loads_the_migrations_from_the_package_runs_them_in_their_order(): void
+    {
+        $migrations = InstallCommand::migrations();
+        $sorted = $migrations;
+        usort($sorted, fn (string $a, string $b) => basename($a) <=> basename($b));
+
+        // Migrators sort by file name: the pivot's foreign key needs the media
+        // table first, which MySQL checks and SQLite does not
+        $this->assertSame($migrations, $sorted);
     }
 
     #[Test]

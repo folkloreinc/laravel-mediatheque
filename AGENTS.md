@@ -35,7 +35,7 @@ database/migrations/ Published by mediatheque:install; the package doesn't load 
 docs/                Current state of 1.x, architecture, decisions, roadmap, upgrade guide
 tests/
   Contracts/         Contract tests (traits): every implementation of a contract runs them
-  Feature/           Orchestra Testbench (SQLite in memory)
+  Feature/           Orchestra Testbench (SQLite in memory, or MySQL with DB_DRIVER=mysql)
   Unit/
   fixtures/          Sample media, and the 1.x schema and config for the upgrade tests
 ```
@@ -57,12 +57,13 @@ composer test
 - **Every change comes with tests**: contract tests for each contract (a trait in `tests/Contracts/`, used by a test of each implementation, the fake's included), a regression test for each bug fix, a feature test on a fixture for each operation of a transcoder.
 - Tests that need a binary (ffmpeg, Imagick…) or an external service are skipped when it is not available, and CI installs what they need.
 - The `tests/fixtures/v1/` files are the 1.x schema and config as they are on `v1.1`. Don't edit them to make a test pass.
+- The tests run on SQLite in memory. To run them on MySQL, as CI also does, set `DB_DRIVER=mysql` with `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` and `DB_PASSWORD`. A test never creates a table: the application's tables it needs are in `tests/Support/migrations`.
 - Before pushing, run `composer lint`, `composer analyse` and `composer test`, and say in the PR what you ran and what could not run.
 
 ## Workflow
 
 - Branch from `v2.x`, named `<type>/<issue>-<slug>`, and open a pull request to `v2.x`. Nothing is pushed directly to `v2.x`.
-- GitHub Actions (`.github/workflows/ci.yml`) runs Pint, Larastan and the test suite (PHP 8.3–8.5 × Laravel 12 and 13) on every pull request and on `v2.x`. **Merge only when CI is green.** Never skip, disable or weaken a test to get there.
+- GitHub Actions (`.github/workflows/ci.yml`) runs Pint, Larastan and the test suite (PHP 8.3–8.5 × Laravel 12 and 13 on SQLite, and on MySQL 8.4) on every pull request and on `v2.x`. **Merge only when CI is green.** Never skip, disable or weaken a test to get there.
 - `v1.1` is never merged into `v2.x`: their code has nothing in common any more. A 1.x fix that matters to 2.0 is written again for 2.0, with its own test.
 - Commit messages follow Conventional Commits (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`…).
 - Every pull request with a user-visible effect adds a line under `[Unreleased]` in `CHANGELOG.md`, with its issue number. A breaking change goes under **Breaking changes**, and says what to change.

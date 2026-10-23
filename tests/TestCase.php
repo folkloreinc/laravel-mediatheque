@@ -5,6 +5,8 @@ namespace Folklore\Mediatheque\Tests;
 use Folklore\Mediatheque\ServiceProvider;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 use League\Flysystem\Filesystem;
 use League\Flysystem\InMemory\InMemoryFilesystemAdapter;
@@ -30,6 +32,26 @@ abstract class TestCase extends BaseTestCase
     protected function defineEnvironment($app): void
     {
         $app['config']->set('database.default', 'testing');
+
+        // SQLite in memory by default. CI also runs the tests against MySQL:
+        // set the environment variable DB_DRIVER to `mysql`, with DB_HOST,
+        // DB_PORT, DB_DATABASE, DB_USERNAME and DB_PASSWORD.
+        $driver = getenv('DB_DRIVER') ?: 'sqlite';
+
+        if ($driver !== 'sqlite') {
+            $app['config']->set('database.connections.testing', [
+                'driver' => $driver,
+                'host' => getenv('DB_HOST') ?: '127.0.0.1',
+                'port' => getenv('DB_PORT') ?: '3306',
+                'database' => getenv('DB_DATABASE') ?: 'testing',
+                'username' => getenv('DB_USERNAME') ?: 'root',
+                'password' => getenv('DB_PASSWORD') ?: '',
+                'charset' => 'utf8mb4',
+                'collation' => 'utf8mb4_unicode_ci',
+                'prefix' => '',
+                'strict' => true,
+            ]);
+        }
     }
 
     /**
@@ -61,6 +83,27 @@ abstract class TestCase extends BaseTestCase
         });
         config(['filesystems.disks.'.$name => ['driver' => 'memory']]);
         Storage::forgetDisk($name);
+    }
+
+    /**
+     * The migration of the application's tables that the tests use (users,
+     * posts, pages).
+     */
+    protected static function applicationMigrations(): string
+    {
+        return __DIR__.'/Support/migrations';
+    }
+
+    /**
+     * For a test that builds a schema of its own (the 1.x tables, a published
+     * migration) instead of the package's: it starts from an empty database,
+     * and the next DatabaseTestCase migrates again. In memory, each test has
+     * its own database already; on MySQL, tables outlive the test.
+     */
+    protected function startFromAnEmptyDatabase(): void
+    {
+        Artisan::call('db:wipe');
+        RefreshDatabaseState::$migrated = false;
     }
 
     /**

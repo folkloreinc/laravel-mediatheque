@@ -178,12 +178,67 @@ jobs:
             - name: Run tests
               run: composer test
 
+    # The tests run on SQLite above. MySQL refuses what SQLite accepts:
+    # identifiers over 64 characters, a foreign key to a table that doesn't
+    # exist yet. The tests that need ffmpeg or Imagick are skipped here.
+    mysql:
+        name: PHP 8.4 - Laravel ${{ matrix.laravel }} - MySQL 8.4
+        runs-on: ubuntu-24.04
+        timeout-minutes: 15
+        strategy:
+            fail-fast: false
+            matrix:
+                laravel: ['12.*', '13.*']
+        services:
+            mysql:
+                image: mysql:8.4
+                env:
+                    MYSQL_ROOT_PASSWORD: password
+                    MYSQL_DATABASE: testing
+                ports:
+                    - 3306:3306
+                options: >-
+                    --health-cmd="mysqladmin ping -h 127.0.0.1 -ppassword"
+                    --health-interval=5s
+                    --health-timeout=5s
+                    --health-retries=30
+        steps:
+            - uses: actions/checkout@v5
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.4'
+                  extensions: pdo_mysql
+                  coverage: none
+
+            - name: Cache Composer downloads
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/composer/files
+                  key: composer-${{ runner.os }}-8.4-${{ matrix.laravel }}-${{ hashFiles('composer.json') }}
+                  restore-keys: composer-${{ runner.os }}-8.4-${{ matrix.laravel }}-
+
+            - name: Install dependencies
+              run: |
+                  composer require "illuminate/support:${{ matrix.laravel }}" --no-update --no-interaction
+                  composer update --prefer-dist --no-interaction --no-progress --with-all-dependencies
+
+            - name: Run tests
+              run: composer test
+              env:
+                  DB_DRIVER: mysql
+                  DB_HOST: 127.0.0.1
+                  DB_PORT: 3306
+                  DB_DATABASE: testing
+                  DB_USERNAME: root
+                  DB_PASSWORD: password
+
     # Tags a release when a push to v2.x passes CI and CHANGELOG.md has a dated
     # section whose version is not tagged yet: merging a release pull request
     # releases it. See "Releases" in AGENTS.md.
     release:
         name: Release
-        needs: [lint, tests, dashboard]
+        needs: [lint, tests, mysql, dashboard]
         if: github.event_name == 'push' && github.ref == 'refs/heads/v2.x'
         runs-on: ubuntu-24.04
         timeout-minutes: 5

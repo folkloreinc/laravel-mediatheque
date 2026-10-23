@@ -94,16 +94,13 @@ class InstallCommand extends Command
         $directory = $this->laravel->databasePath('migrations');
         $files->ensureDirectoryExists($directory);
 
-        $existing = array_map(
-            fn (string $path) => (string) preg_replace('/^\d{4}_\d{2}_\d{2}_\d{6}_/', '', basename($path)),
-            glob($directory.'/*.php') ?: [],
-        );
+        $existing = array_map(fn (string $path) => self::withoutTimestamp($path), glob($directory.'/*.php') ?: []);
 
         $time = Date::now();
         $published = 0;
 
         foreach (self::migrations() as $migration) {
-            $name = basename($migration);
+            $name = self::withoutTimestamp($migration);
 
             if (in_array($name, $existing, true)) {
                 $this->components->twoColumnDetail('database/migrations/…_'.$name, '<fg=yellow;options=bold>EXISTS</>');
@@ -126,16 +123,29 @@ class InstallCommand extends Command
      * The package's migrations, in the order they run. A later alpha adds
      * its own at the end.
      *
+     * Their file names start with a timestamp, so a migrator that loads them
+     * from the package, as tests do, runs them in this order too. They are
+     * published under their name without it, with a fresh one.
+     *
      * @return list<string>
      */
     public static function migrations(): array
     {
         return array_map(fn (string $name) => self::packagePath('database/migrations/'.$name), [
-            'create_mediatheque_tables.php',
-            'update_mediatheque_tables_for_monitoring.php',
-            'drop_mediatheque_uploads_table.php',
-            'create_mediatheque_medias_pivot_table.php',
+            '2026_10_16_000000_create_mediatheque_tables.php',
+            '2026_10_21_000000_update_mediatheque_tables_for_monitoring.php',
+            '2026_10_21_000001_drop_mediatheque_uploads_table.php',
+            '2026_10_22_000000_create_mediatheque_medias_pivot_table.php',
         ]);
+    }
+
+    /**
+     * A migration's file name without its timestamp: the name the
+     * application has it under, whenever it was published.
+     */
+    private static function withoutTimestamp(string $path): string
+    {
+        return (string) preg_replace('/^\d{4}_\d{2}_\d{2}_\d{6}_/', '', basename($path));
     }
 
     private static function packagePath(string $path): string

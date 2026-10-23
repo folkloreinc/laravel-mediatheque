@@ -23,7 +23,6 @@ use Folklore\Mediatheque\Tests\Feature\Models\Fixtures\TenantMedia;
 use Folklore\Mediatheque\Tests\Support\Post;
 use Folklore\Mediatheque\Transcoders\TranscoderError;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
 
 class EloquentModelsTest extends DatabaseTestCase
@@ -46,10 +45,6 @@ class EloquentModelsTest extends DatabaseTestCase
 
     protected function useMedia(MediaContract $media, string $handle): MediaContract
     {
-        if (! Schema::hasTable('posts')) {
-            Post::createTable();
-        }
-
         $post = Post::query()->firstOrCreate(['title' => 'Post']);
         $post->attachMedia($media, $handle);
 
