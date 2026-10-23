@@ -23,16 +23,16 @@ class HasMediasOnV1SchemaTest extends TestCase
     {
         parent::setUp();
 
-        $this->loadMigrationsFrom(self::fixturePath('v1/migrations'));
+        $this->startFromAnEmptyDatabase();
+        $this->loadMigrationsFrom(['--path' => [self::fixturePath('v1/migrations'), self::applicationMigrations()]]);
         // The upgrade converts the medias table; until it exists, the media
         // model needs its soft deletes only
         Schema::table('mediatheque_medias', fn (Blueprint $table) => $table->softDeletes());
-        Page::createTable();
     }
 
     private function runPivotMigration(): void
     {
-        $migration = require __DIR__.'/../../../database/migrations/create_mediatheque_medias_pivot_table.php';
+        $migration = require __DIR__.'/../../../database/migrations/2026_10_22_000000_create_mediatheque_medias_pivot_table.php';
         if (! $migration instanceof Migration || ! method_exists($migration, 'up')) {
             $this->fail('The migration has no up().');
         }

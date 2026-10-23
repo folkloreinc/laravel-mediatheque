@@ -23,12 +23,14 @@ return new class extends Migration
         Schema::create($prefix.'medias_pivot', function (Blueprint $table) use ($prefix) {
             $table->id();
             $table->foreignId('media_id')->constrained($prefix.'medias')->cascadeOnDelete();
-            $table->morphs('morphable');
+            $table->morphs('morphable', $prefix.'medias_pivot_morphable_index');
             $table->string('handle', 64)->nullable();
             $table->unsignedInteger('order')->default(0);
             $table->timestamps();
 
-            $table->unique(['morphable_type', 'morphable_id', 'handle', 'media_id']);
+            // Named: the generated name is longer than the 64 characters
+            // MySQL allows
+            $table->unique(['morphable_type', 'morphable_id', 'handle', 'media_id'], $prefix.'medias_pivot_usage_unique');
         });
     }
 

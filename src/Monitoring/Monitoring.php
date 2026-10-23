@@ -197,7 +197,8 @@ class Monitoring
     /**
      * How long renditions that completed in a period took, and waited in the
      * queue, by pipeline, rendition and transcoder, over at most
-     * `monitoring.max_rows` of the latest ones.
+     * `monitoring.max_rows` of the latest ones. Sorted by pipeline, rendition
+     * and transcoder.
      *
      * @return list<RenditionDurations>
      */
@@ -231,6 +232,10 @@ class Monitoring
                 $groups[$key]['waits'][] = (float) $queued->diffInSeconds($started);
             }
         }
+
+        // The rows' order says nothing about the groups': sort them, so the
+        // result is the same on every database
+        ksort($groups);
 
         $durations = [];
         foreach ($groups as $group) {

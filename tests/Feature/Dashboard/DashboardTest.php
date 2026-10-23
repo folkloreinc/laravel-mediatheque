@@ -18,12 +18,10 @@ use Folklore\Mediatheque\Tests\Support\ScriptedTranscoder;
 use Folklore\Mediatheque\Tests\Support\User;
 use Folklore\Mediatheque\Transcoders\TranscoderManager;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Application;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -46,11 +44,6 @@ class DashboardTest extends DatabaseTestCase
     {
         parent::setUp();
 
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->boolean('can_upload')->default(true);
-            $table->unsignedBigInteger('space_id')->nullable();
-        });
         Storage::fake('public');
         $this->transcoder = new ScriptedTranscoder(app(Recorder::class));
         app(TranscoderManager::class)->extend('scripted', fn () => $this->transcoder);

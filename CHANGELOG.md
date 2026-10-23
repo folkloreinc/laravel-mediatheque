@@ -6,6 +6,12 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Fixed
+
+- `migrate` works on MySQL. The `create_mediatheque_medias_pivot_table` migration names its unique index `{prefix}medias_pivot_usage_unique` and its morph index `{prefix}medias_pivot_morphable_index`: the generated name was longer than the 64 characters MySQL allows (#98). If `migrate` failed on MySQL with alpha.6, the table was created without its unique index: drop the empty `medias_pivot` table, delete the published `…_create_mediatheque_medias_pivot_table.php`, then run `php artisan mediatheque:install` and `php artisan migrate`.
+- The package's migration files start with a timestamp, so a migrator that loads them from the package, as a package's tests do with `InstallCommand::migrations()`, runs them in order: the pivot's foreign key needs the media table first. `mediatheque:install` publishes them under the same names as before (#98).
+- `Monitoring::durations()` is sorted by pipeline, rendition and transcoder, instead of the order the database returned (#98).
+
 ## [2.0.0-alpha.6] - 2026-10-23
 
 Application models attach media by handle, and a media in use can't be deleted unless the deletion is forced ([decisions/0020](docs/decisions/0020-attachments-by-handle-and-usages.md), #92). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new migration only, which creates `medias_pivot`.

@@ -4,8 +4,6 @@ namespace Folklore\Mediatheque\Tests\Support;
 
 use Folklore\Mediatheque\Concerns\HasMedias;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * An application's model that attaches media and references them in its
@@ -23,12 +21,4 @@ class Page extends Model
     protected $guarded = [];
 
     public $timestamps = false;
-
-    public static function createTable(): void
-    {
-        Schema::create('pages', function (Blueprint $table) {
-            $table->id();
-            $table->string('title');
-        });
-    }
 }

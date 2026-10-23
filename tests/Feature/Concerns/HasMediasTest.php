@@ -23,14 +23,6 @@ class HasMediasTest extends DatabaseTestCase
 {
     use CreatesMedia;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        Post::createTable();
-        Page::createTable();
-    }
-
     protected function tearDown(): void
     {
         Relation::morphMap([], false);

@@ -109,7 +109,8 @@ trait MediaContractTests
         $this->assertSame(12.5, $media->metadata('duration'));
         $this->assertSame('Camera', $media->metadata('exif.make'));
         $this->assertSame('none', $media->metadata('width', 'none'));
-        $this->assertSame(['duration' => 12.5, 'exif' => ['make' => 'Camera']], $media->metadata());
+        // MySQL's JSON type doesn't keep the order of keys
+        $this->assertEquals(['duration' => 12.5, 'exif' => ['make' => 'Camera']], $media->metadata());
     }
 
     #[Test]
