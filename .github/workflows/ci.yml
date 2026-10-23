@@ -20,6 +20,7 @@ jobs:
     lint:
         name: Pint and Larastan
         runs-on: ubuntu-24.04
+        timeout-minutes: 10
         steps:
             - uses: actions/checkout@v5
 
@@ -50,6 +51,7 @@ jobs:
     dashboard:
         name: Dashboard
         runs-on: ubuntu-24.04
+        timeout-minutes: 10
         defaults:
             run:
                 working-directory: dashboard
@@ -81,6 +83,7 @@ jobs:
     tests:
         name: PHP ${{ matrix.php }} - Laravel ${{ matrix.laravel }}
         runs-on: ubuntu-24.04
+        timeout-minutes: 20
         strategy:
             fail-fast: false
             matrix:
@@ -89,10 +92,27 @@ jobs:
         steps:
             - uses: actions/checkout@v5
 
+            # The Ubuntu mirror sometimes throttles a runner to a few kB/s,
+            # which apt's own timeouts don't catch (#96). Each apt-get call that
+            # downloads is capped and retried: a new attempt keeps the packages
+            # already downloaded and opens new connections. The install then
+            # only reads the local cache.
             - name: Install media tools
+              timeout-minutes: 12
               run: |
-                  sudo apt-get update
-                  sudo apt-get install -y --no-install-recommends ffmpeg imagemagick
+                  packages=(ffmpeg imagemagick)
+                  apt_get_with_retries() {
+                      local limit=$1
+                      shift
+                      for attempt in 1 2 3; do
+                          sudo timeout --kill-after=10 "$limit" apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=20 "$@" && return 0
+                          echo "::warning::apt-get $1 failed or took more than ${limit}s (attempt ${attempt} of 3)"
+                      done
+                      return 1
+                  }
+                  apt_get_with_retries 60 update
+                  apt_get_with_retries 120 install -y --no-install-recommends --download-only "${packages[@]}"
+                  sudo apt-get install -y --no-install-recommends "${packages[@]}"
                   ffprobe -version | head -n 1
 
             - uses: shivammathur/setup-php@v2
@@ -130,6 +150,7 @@ jobs:
         needs: [lint, tests, dashboard]
         if: github.event_name == 'push' && github.ref == 'refs/heads/v2.x'
         runs-on: ubuntu-24.04
+        timeout-minutes: 5
         permissions:
             contents: write
         env:
