@@ -137,19 +137,23 @@ A run is never retried in place: retrying failed renditions creates a new run, w
 
 ### Attachments and usages
 
-Application models attach media through the `HasMedias` trait, on the 1.x `medias_pivot` table (`media_id`, `morphable`, `handle`, `order`). The pivot is also the **usage graph**:
+Application models attach media through the `HasMedias` trait, on the 1.x `medias_pivot` table (`media_id`, `morphable`, `handle`, `order`). The pivot is also the **usage graph** ([decisions/0020](decisions/0020-attachments-by-handle-and-usages.md)):
 
 ```php
-$post->attachMedia($media, 'cover');
-$post->syncMedias(['cover' => $cover, 'gallery' => [$a, $b]]);
+$post->attachMedia($media, 'cover');                          // after the media already under the handle
+$post->syncMedias(['cover' => $cover, 'gallery' => [$a, $b]]); // replaces these handles only
+$post->detachMedia($media, 'cover');
 $post->media('cover');                // Media|null
-$post->medias('gallery');             // Collection<Media>
+$post->medias('gallery');             // Collection<Media>, from the loaded relation
+$post->medias();                      // the MorphToMany relation, with handle and order on its pivot
 
-$media->usages();                     // the models that use it
+$media->usages();                     // Collection<MediaUsage>: model, handle, order
 $media->isUsed();
 ```
 
-A media that is in use can't be deleted unless the deletion is forced.
+- Writes go by handle: `syncMedias()` leaves the handles it doesn't name, so a form and the sync of JSON references (`laravel-folklore`, under `json:{column}`) don't undo each other. Media are given as models or as their keys.
+- A media that is in use can't be deleted unless the deletion is forced: `delete()` throws `MediaInUse`, `forceDelete()` deletes it and its usages.
+- A deleted model no longer uses its media; a soft-deleted one keeps them.
 
 ### References
 
@@ -518,7 +522,7 @@ Route::middleware(['web', 'auth'])->group(function () {
 ## Deletion and replacement
 
 - Deleting a media soft-deletes it. Its files stay until `mediatheque:prune` force-deletes it after `prune.after_days`. Force deletion removes files, renditions, pipeline runs, metadata and pivot rows.
-- A media in use can't be deleted unless the deletion is forced.
+- A media in use can't be deleted unless the deletion is forced: `delete()` throws `MediaInUse` ([decisions/0020](decisions/0020-attachments-by-handle-and-usages.md)).
 - `$media->replaceOriginal($source)`, or `Mediatheque::replaceOriginal($media, $source)`, replaces the original and keeps the media ([decisions/0019](decisions/0019-replace-original.md)):
 
 ```php
@@ -559,7 +563,7 @@ src/                                  PSR-4: Folklore\Mediatheque\
   Transcoders/Ffmpeg/, MediaConvert/
   Urls/                               UrlGenerator, signers
   References/                         media:// and medias:// parsing and resolution
-  Support/                            Uid
+  Support/                            Uid, MediaUsage
   Http/                               JSON resources
   Concerns/                           HasMedias
   Compat/                             1.x compatibility layer (deprecated)

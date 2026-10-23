@@ -134,6 +134,7 @@ class InstallCommand extends Command
             'create_mediatheque_tables.php',
             'update_mediatheque_tables_for_monitoring.php',
             'drop_mediatheque_uploads_table.php',
+            'create_mediatheque_medias_pivot_table.php',
         ]);
     }
 

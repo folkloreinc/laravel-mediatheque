@@ -53,6 +53,7 @@ Existing media become `public` and `ready` (or `failed` if their last pipeline f
 | 1.x | 2.0 | Compatibility layer |
 |---|---|---|
 | `Folklore\Mediatheque\Support\Traits\HasMedias` | `Folklore\Mediatheque\Concerns\HasMedias` | Alias |
+| `$model->medias()->sync($ids)`, `attach($id, ['handle' => …])` | `$model->syncMedias([$handle => $ids])`, `attachMedia($media, $handle)`: by handle ([decisions/0020](decisions/0020-attachments-by-handle-and-usages.md)) | The relation keeps working |
 | `$media->getFile('h264')`, `hasFile()`, `getFiles()` | `$media->file('h264')`, `files()` | Deprecated proxies |
 | `$media->getFile('thumbnails.0')` | `$media->file('thumbnails', 0)` | 1.x handles still resolve |
 | `$media->setOriginalFile($path)` | `Mediatheque::ingest($path)`, `$media->replaceOriginal($source)` | Deprecated proxy |

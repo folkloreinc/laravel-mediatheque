@@ -5,6 +5,7 @@ namespace Folklore\Mediatheque\Contracts\Models;
 use DateTimeInterface;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\Visibility;
+use Folklore\Mediatheque\Support\MediaUsage;
 use Illuminate\Support\Collection;
 
 /**
@@ -75,4 +76,18 @@ interface Media
     public function url(?string $handle = null): ?string;
 
     public function temporaryUrl(?string $handle, DateTimeInterface $expiration): ?string;
+
+    /**
+     * The models that use the media: one usage per model and handle it is
+     * attached under, through `HasMedias` (docs/decisions/0020).
+     *
+     * @return Collection<int, MediaUsage>
+     */
+    public function usages(): Collection;
+
+    /**
+     * Whether a model uses the media. A media in use can't be deleted unless
+     * the deletion is forced.
+     */
+    public function isUsed(): bool;
 }

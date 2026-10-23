@@ -6,6 +6,26 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+Application models attach media by handle, and a media in use can't be deleted unless the deletion is forced ([decisions/0020](docs/decisions/0020-attachments-by-handle-and-usages.md), #ISSUE). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new migration only, which creates `medias_pivot`.
+
+### Breaking changes
+
+- The `Media` contract has `usages()` and `isUsed()`: a class that implements it implements them too (#ISSUE).
+- `$media->delete()` throws `MediaInUse` when a model uses the media, and reads `medias_pivot`: publish and run the new migration before deleting media (#ISSUE).
+
+### Added
+
+- The `create_mediatheque_medias_pivot_table` migration: `medias_pivot` with the table prefix, a foreign key to the media and a unique index on the model, handle and media. A project upgraded from 1.x keeps its table (#ISSUE).
+- `Folklore\Mediatheque\Concerns\HasMedias` for application models ([decisions/0020](docs/decisions/0020-attachments-by-handle-and-usages.md), #ISSUE):
+  - `medias()`, the morph-to-many relation, with `handle` and `order` on its pivot;
+  - `medias($handle)` and `media($handle)`, read from the loaded relation;
+  - `attachMedia($media, $handle)`, after the media already under the handle;
+  - `syncMedias([$handle => $medias])`, which replaces the media of the handles it names only, so `laravel-folklore` syncs JSON references under `json:{column}` without detaching media attached otherwise;
+  - `detachMedia($media, $handle)`;
+  - a deleted model no longer uses its media; a soft-deleted one keeps them.
+- The usage graph: `$media->usages()`, a `MediaUsage` per model and handle, and `$media->isUsed()`, on the package's `Media` model and the fake's media (#ISSUE).
+- `MediaInUse`, thrown by `delete()` on a media in use. `forceDelete()` deletes it and removes its usages (#ISSUE).
+
 ## [2.0.0-alpha.5] - 2026-10-22
 
 A media's file can be replaced while the media keeps its uid, so `media://` references keep working ([decisions/0019](docs/decisions/0019-replace-original.md), #87). There is no new migration.

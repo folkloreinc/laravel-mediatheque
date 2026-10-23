@@ -51,10 +51,11 @@ class InstallCommandTest extends TestCase
         $this->assertFileExists(config_path('mediatheque.php'));
         $published = $this->published();
         sort($published);
-        $this->assertCount(3, $published);
+        $this->assertCount(4, $published);
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_create_mediatheque_tables\.php$/', $published[0]);
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_update_mediatheque_tables_for_monitoring\.php$/', $published[1], 'Later migrations run after the first one.');
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_drop_mediatheque_uploads_table\.php$/', $published[2]);
+        $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_create_mediatheque_medias_pivot_table\.php$/', $published[3]);
     }
 
     #[Test]
@@ -65,7 +66,7 @@ class InstallCommandTest extends TestCase
 
         $this->install();
 
-        $this->assertCount(3, $this->published());
+        $this->assertCount(4, $this->published());
         $this->assertStringContainsString("'local'", (string) file_get_contents(config_path('mediatheque.php')));
     }
 
@@ -73,7 +74,7 @@ class InstallCommandTest extends TestCase
     public function an_application_installed_by_an_earlier_alpha_gets_the_new_migrations_only(): void
     {
         $this->install();
-        foreach (glob($this->migrations.'/*_drop_mediatheque_uploads_table.php') ?: [] as $later) {
+        foreach (glob($this->migrations.'/*_create_mediatheque_medias_pivot_table.php') ?: [] as $later) {
             unlink($later);
         }
         $earlier = $this->published();
@@ -81,7 +82,7 @@ class InstallCommandTest extends TestCase
         $this->install();
 
         $published = $this->published();
-        $this->assertCount(3, $published);
+        $this->assertCount(4, $published);
         $this->assertSame($earlier, array_values(array_intersect($published, $earlier)), 'Published migrations are left as they are.');
     }
 
@@ -92,13 +93,14 @@ class InstallCommandTest extends TestCase
 
         Artisan::call('migrate', ['--path' => $this->migrations, '--realpath' => true]);
 
-        foreach (['medias', 'files', 'pipelines', 'pipelines_jobs'] as $table) {
+        foreach (['medias', 'files', 'pipelines', 'pipelines_jobs', 'medias_pivot'] as $table) {
             $this->assertTrue(Schema::hasTable('mediatheque_'.$table), $table);
         }
         $this->assertTrue(Schema::hasColumns('mediatheque_files', ['media_id', 'handle', 'index', 'role', 'size', 'checksum', 'definition_hash']));
         $this->assertTrue(Schema::hasColumns('mediatheque_pipelines_jobs', ['queued_at']));
         $this->assertFalse(Schema::hasTable('mediatheque_uploads'));
         $this->assertTrue(Schema::hasIndex('mediatheque_pipelines', ['ended_at']));
+        $this->assertTrue(Schema::hasColumns('mediatheque_medias_pivot', ['media_id', 'morphable_type', 'morphable_id', 'handle', 'order']));
 
         Artisan::call('migrate:rollback', ['--path' => $this->migrations, '--realpath' => true]);
 
@@ -143,5 +145,19 @@ class InstallCommandTest extends TestCase
         $this->install();
 
         $this->assertFileDoesNotExist(app_path('Providers/MediathequeServiceProvider.php'));
+    }
+
+    #[Test]
+    public function an_application_upgraded_from_1x_keeps_its_medias_pivot_migration(): void
+    {
+        (new Filesystem)->ensureDirectoryExists($this->migrations);
+        copy(
+            self::fixturePath('v1/migrations/2017_07_25_100001_create_mediatheque_medias_pivot_table.php'),
+            $this->migrations.'/2017_07_25_100001_create_mediatheque_medias_pivot_table.php',
+        );
+
+        $this->install();
+
+        $this->assertCount(1, glob($this->migrations.'/*_create_mediatheque_medias_pivot_table.php') ?: []);
     }
 }
