@@ -6,6 +6,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+## [2.0.0-alpha.7] - 2026-10-23
+
+The migrations run on MySQL, and CI runs the tests on MySQL 8.4 (#98). There is no new migration: the fix is in the migration that alpha.6 added, for the projects that haven't run it yet. A project whose `migrate` failed on MySQL with alpha.6 follows the first item below.
+
 ### Fixed
 
 - `migrate` works on MySQL. The `create_mediatheque_medias_pivot_table` migration names its unique index `{prefix}medias_pivot_usage_unique` and its morph index `{prefix}medias_pivot_morphable_index`: the generated name was longer than the 64 characters MySQL allows (#98). If `migrate` failed on MySQL with alpha.6, the table was created without its unique index: drop the empty `medias_pivot` table, delete the published `…_create_mediatheque_medias_pivot_table.php`, then run `php artisan mediatheque:install` and `php artisan migrate`.
@@ -162,7 +166,8 @@ The first alpha of 2.0, for new projects: upload and play a video. The [README](
 - Presigned multipart uploads to an S3-compatible disk, for Uppy's `AwsS3` plugin: `Route::mediatheque()` registers routes to create an upload, sign its parts, list them, complete and abort it, inside the application's own middleware. A fresh install still exposes no route. Each step is authorized with the `create` ability of the media policy (denied without a policy); an upload belongs to the user who created it, and guests can't upload. Completing an upload ingests the file from the disk with the options of `Mediatheque::uploadsUsing()` (the application's attributes, such as a tenant id, chosen on the server); a rejected file is deleted. Errors are `application/problem+json`. New: the `uploads` table (published by `mediatheque:install`), the `Upload` model, and the `uploads` config (`disk`, `path`, `expires_after`, `url_ttl`) ([decisions/0015](docs/decisions/0015-new-install-schema-attributes-and-uploads.md), #54).
 - Releases are tagged by CI, from a commit of `v2.x` whose lint and test jobs passed, when `CHANGELOG.md` gets a dated section for a new version (#30).
 
-[Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.6...v2.x
+[Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.7...v2.x
+[2.0.0-alpha.7]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.6...v2.0.0-alpha.7
 [2.0.0-alpha.6]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.5...v2.0.0-alpha.6
 [2.0.0-alpha.5]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.4...v2.0.0-alpha.5
 [2.0.0-alpha.4]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.3...v2.0.0-alpha.4
