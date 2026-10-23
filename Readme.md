@@ -10,7 +10,7 @@
 
 ## The alphas: upload and play a video, images through laravel-image
 
-The alphas are for new projects; the upgrade from 1.x comes in the beta. 2.0.0-alpha.1 uploads and plays videos; 2.0.0-alpha.2 adds image URLs through `laravel-image` 2; 2.0.0-alpha.3 added direct uploads with Uppy 6, which 2.0.0-alpha.4 moves to the application, or to Panneau 5 ([decisions/0018](docs/decisions/0018-ingest-only.md)), and 2.0.0-alpha.4 adds monitoring: `mediatheque:status`, actions on runs and a dashboard. 2.0.0-alpha.5 replaces a media's file while the media keeps its uid.
+The alphas are for new projects; the upgrade from 1.x comes in the beta. 2.0.0-alpha.1 uploads and plays videos; 2.0.0-alpha.2 adds image URLs through `laravel-image` 2; 2.0.0-alpha.3 added direct uploads with Uppy 6, which 2.0.0-alpha.4 moves to the application, or to Panneau 5 ([decisions/0018](docs/decisions/0018-ingest-only.md)), and 2.0.0-alpha.4 adds monitoring: `mediatheque:status`, actions on runs and a dashboard. 2.0.0-alpha.5 replaces a media's file while the media keeps its uid. 2.0.0-alpha.6 attaches media to your models by handle, and keeps a media in use from being deleted.
 
 ### Requirements
 
