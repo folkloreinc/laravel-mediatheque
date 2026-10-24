@@ -39,3 +39,35 @@ Most applications need no change. Check the following if they apply to you:
 - `mediatheque.upload` and `mediatheque.replace` gates, checked by the upload routes when they are defined.
 - `Folklore\Mediatheque\Contracts\Services\SvgSanitizer`, bound to `mediatheque.services.svg_sanitizer`.
 - Dependency on [`rhukster/dom-sanitizer`](https://github.com/rhukster/dom-sanitizer) (MIT).
+
+## 1.1.1
+
+**Requirements:** PHP 8.2 or later, Laravel 9 or later (#20). Tested on PHP 8.2–8.5 with Laravel 9 to 13 (#17).
+
+### Changed
+
+- `illuminate/support` now requires Laravel 9 or later, and the `symfony/*` constraints no longer allow Symfony 5 (#20). Projects on Laravel 7 or 8 that require `^1.1` stay on `v1.1.0`.
+- CI also tests Laravel 9 and 10, and installs tagged framework releases instead of `x.x-dev` branches (#17).
+
+No code change since `v1.1.0`.
+
+## 1.1.0
+
+First tagged release of the 1.x line. Projects that required `v1.1.x-dev` can now require `^1.1` (#15).
+
+**Requirements:** PHP 8.2 or later (#2). Tested on PHP 8.2–8.5 with Laravel 11, 12 and 13.
+
+### Fixed and changed
+
+- CI on GitHub Actions, with Pint and Larastan (#5).
+- The default `video` pipeline only adds `media_convert` when MediaConvert is configured (#5).
+- `ColorExtractor::getColors()` returns its result, and `Definition::jsonSerialize()` no longer triggers a deprecation (#5).
+- `Pipeline::allJobsEnded()` only looks at its own jobs; the source, type and metadata managers no longer miss imports or the `InvalidSourceException` class; `Media::setType()` accepts a `Type` object; `File::search()` matches name, path or handle (#7).
+- Async pipelines: a failed job fails the jobs waiting for its file and ends its pipeline; each job is dispatched once; new `mediatheque.jobs.timeout` and `mediatheque.jobs.tries` options, with `failOnTimeout`; temporary files are deleted (#9).
+- The 2023 migration honors the table prefix, and `LocalSource` and `Router` declare their properties (#11).
+- `File::setFile()` stores the file on the requested source and records the default one; `Pipeline::getModelToProcess()` honors the morph map and ignores global scopes (#14).
+
+### Upgrade notes
+
+- Upload routes are now named `mediatheque.upload.{type}` instead of `mediatheque..upload.{type}` (#11).
+- New files record their source name instead of `null` (#14). Existing rows keep resolving to the default source.
