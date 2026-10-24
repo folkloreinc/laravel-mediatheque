@@ -4,13 +4,13 @@
 [![CI](https://github.com/folkloreinc/laravel-mediatheque/actions/workflows/ci.yml/badge.svg?branch=v2.x)](https://github.com/folkloreinc/laravel-mediatheque/actions/workflows/ci.yml)
 [![Total Downloads](https://poser.pugx.org/folklore/laravel-mediatheque/downloads.svg)](https://packagist.org/packages/folklore/laravel-mediatheque)
 
-> **2.0 is in development on this branch**, released as alphas. An alpha can break the previous one: read the [CHANGELOG](CHANGELOG.md) before you update. [`docs/`](docs/README.md) has the design of 2.0 and [`docs/roadmap.md`](docs/roadmap.md) what each alpha contains. 1.x is maintained on [`v1.1`](https://github.com/folkloreinc/laravel-mediatheque/tree/v1.1).
+> **2.0 is in development on this branch**, released as alphas. An alpha can break the previous one: read the [CHANGELOG](CHANGELOG.md) before you update. [`docs/`](docs/README.md) has the design of 2.0 and [`docs/roadmap.md`](docs/roadmap.md) the plan. 1.x is maintained on [`v1.1`](https://github.com/folkloreinc/laravel-mediatheque/tree/v1.1).
 
-`folklore/laravel-mediatheque` stores media (video, audio, images, documents, fonts), probes them, produces their renditions in your queue, and serves them through public or temporary URLs.
+`folklore/laravel-mediatheque` stores media (video, audio, images, documents, fonts, captions), probes them, produces their renditions in your queue, and serves them through public or temporary URLs.
 
-## The alphas: upload and play a video, images through laravel-image
+## What 2.0 does today
 
-The alphas are for new projects; the upgrade from 1.x comes in the beta. 2.0.0-alpha.1 uploads and plays videos; 2.0.0-alpha.2 adds image URLs through `laravel-image` 2; 2.0.0-alpha.3 added direct uploads with Uppy 6, which 2.0.0-alpha.4 moves to the application, or to Panneau 5 ([decisions/0018](docs/decisions/0018-ingest-only.md)), and 2.0.0-alpha.4 adds monitoring: `mediatheque:status`, actions on runs and a dashboard. 2.0.0-alpha.5 replaces a media's file while the media keeps its uid. 2.0.0-alpha.6 attaches media to your models by handle, and keeps a media in use from being deleted; 2.0.0-alpha.7 fixes its migration on MySQL.
+The alphas are for new projects; the upgrade from 1.x comes in the beta. They ingest files (the application, or Panneau 5, takes the uploads: [decisions/0018](docs/decisions/0018-ingest-only.md)), probe them, render videos and audio with `ffmpeg` in your queue, serve public and temporary URLs, give images URLs through `laravel-image` 2, replace a media's file while it keeps its uid, attach media to your models by handle and keep a media in use from being deleted, and monitor the runs with `mediatheque:status`, actions and a dashboard. What each alpha added is in the [CHANGELOG](CHANGELOG.md).
 
 ### Requirements
 

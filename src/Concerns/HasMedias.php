@@ -113,7 +113,7 @@ trait HasMedias
      *
      * ```php
      * $post->syncMedias(['cover' => $cover, 'gallery' => [$a, $b]]);
-     * $page->syncMedias(['json:data' => $ids]);
+     * $page->syncMedias(['json' => $ids]);
      * ```
      *
      * @param  array<string, Media|int|iterable<Media|int>|null>  $medias  Media, or their keys, by handle

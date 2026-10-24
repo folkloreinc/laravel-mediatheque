@@ -65,14 +65,14 @@ A media is one piece of content: a video, an audio file, an image, a document, a
 | `deleted_at` | Soft deletes |
 
 ```php
-$media->uid;                          // "med_01JAB…"
-$media->status;                       // MediaStatus::Ready
+$media->uid();                        // "med_01JAB…"
+$media->status();                     // MediaStatus::Ready
 $media->metadata('duration');         // 2851.2
 $media->original();                   // File
 $media->file('h264');                 // File|null
 $media->file('thumbnails', 2);        // third file of a group
 $media->files('thumbnails');          // Collection<File>
-$media->thumbnail();                  // the first thumbnail or poster, whatever the type
+$media->thumbnail();                  // the poster, else the first thumbnail, whatever the type
 $media->url('h264');                  // string|null, see Visibility and URLs
 ```
 
@@ -151,7 +151,7 @@ $media->usages();                     // Collection<MediaUsage>: model, handle, 
 $media->isUsed();
 ```
 
-- Writes go by handle: `syncMedias()` leaves the handles it doesn't name, so a form and the sync of JSON references (`laravel-folklore`, under `json:{column}`) don't undo each other. Media are given as models or as their keys.
+- Writes go by handle: `syncMedias()` leaves the handles it doesn't name, so a form and the sync of JSON references (`laravel-json-data`'s cast, under `json` for every JSON column of a model, [decisions/0021](decisions/0021-json-references-handle.md)) don't undo each other. Media are given as models or as their keys.
 - A media that is in use can't be deleted unless the deletion is forced: `delete()` throws `MediaInUse`, `forceDelete()` deletes it and its usages.
 - A deleted model no longer uses its media; a soft-deleted one keeps them.
 
@@ -342,7 +342,7 @@ The rules below are in [decisions/0012](decisions/0012-pipeline-runs-recorder-an
 
 | Driver | Runs | Completion | Package |
 |---|---|---|---|
-| `ffmpeg` | ffmpeg, ffprobe, Imagick and fonttools in the application's queue. Alpha 1: `video.transcode` (`h264`, `vp9`), `video.poster`, `video.thumbnails`, `audio.transcode` (`mp3`, `aac`), `audio.waveform` | Each rendition is a queued job; dependent renditions are dispatched when their input completes | This package |
+| `ffmpeg` | ffmpeg, ffprobe, Imagick and fonttools in the application's queue. Since 2.0.0-alpha.1: `video.transcode` (`h264`, `vp9`), `video.poster`, `video.thumbnails`, `audio.transcode` (`mp3`, `aac`), `audio.waveform` | Each rendition is a queued job; dependent renditions are dispatched when their input completes | This package |
 | `eclair` | The whole run as one Eclair job (task graph, `when` conditions, outputs written to the application's storage) | Signed webhooks, deduplicated | [`laravel-eclair`](https://github.com/urbania-media/eclair/issues/13) |
 | `mediaconvert` | AWS Elemental MediaConvert jobs for video renditions | EventBridge notifications through a webhook, or a scheduled poller. Never `sleep()` in a worker | This package, with `aws/aws-sdk-php` (suggested) |
 | `cloudflare-stream` (2.x) | Upload to Cloudflare Stream; remote renditions | Webhook | Later, if a project needs it |
@@ -361,9 +361,9 @@ $media->file('h264')->url();
 ```
 
 - **Public:** the source's URL, through its CDN prefix when configured.
-- **Private:** `url()` returns a temporary URL with the configured lifetime (`urls.temporary_ttl`). Disks that support temporary URLs (S3) sign them themselves. Local disks go through a signed route that streams the file.
+- **Private:** `url()` returns a temporary URL with the configured lifetime (`urls.temporary_ttl`). Disks that support temporary URLs (S3) sign them themselves. A local disk signs them through Laravel's `serve` option (`'serve' => true` in the disk's config); without it, a private file on a local disk has no URL. The package has no streaming route of its own.
 - **CDN signing** goes through a `UrlSigner` contract, for CDNs that sign their own URLs.
-- **Private HLS** needs signed segments: the playlist is rewritten through a signed route, or the CDN signs by token. This is planned for the HLS alpha.
+- **Private HLS** needs signed segments: the playlist is rewritten through a signed route, or the CDN signs by token. This is planned for the beta, with the HLS rendition.
 
 ### Images and `laravel-image`
 
@@ -376,7 +376,7 @@ The resolver turns a media (its contract), a `MediaReference`, `media://med_…`
 - a source is a Laravel disk name;
 - deleted media don't resolve; pending and failed media resolve to the image files they have.
 
-Settled with `laravel-image` before alpha 2: `orientation` and the dominant color in the canonical keys, where the focal point and `transform` live, and clearing derivatives on `MediaVisibilityChanged` and `OriginalReplaced`.
+Still to settle with `laravel-image` 2 and Panneau 5, in [laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88): `orientation` and the dominant color in the canonical keys, where the focal point and `transform` live on the media, and clearing derivatives on `MediaVisibilityChanged` and `OriginalReplaced`. The media has no `transform` yet ([roadmap.md](roadmap.md#protected-playback-next)).
 
 ## JSON resource
 
@@ -430,7 +430,7 @@ Runs and their renditions have their own resources, for monitoring ([decisions/0
 
 Routes are off by default ([decisions/0008](decisions/0008-secure-http.md)). The package has no upload routes ([decisions/0018](decisions/0018-ingest-only.md)): the application's routes, or Panneau's, take files and call `ingest()`. Its only route is the monitoring dashboard's, `Route::mediathequeDashboard()`, which the application registers inside its own middleware ([decisions/0017](decisions/0017-monitoring-dashboard.md)).
 
-Signed streaming of private files on local disks (`GET files/{file}`) comes with the visibility work of alpha 2, behind the same opt-in rule.
+Private files on local disks are served by Laravel's `serve` option, not by a route of the package ([Visibility and URLs](#visibility-and-urls)).
 
 ## Events
 
@@ -540,7 +540,7 @@ $media->replaceOriginal($file, allowTypeChange: true);     // an image replaced 
 
 ## Configuration
 
-The 1.x keys keep their meaning where the concept is unchanged (`table_prefix`, `source`, `file_path_format`, `types`, `pipelines`, `routes`, `jobs`). A source is a Laravel disk name, so 2.0 has no `sources` key: `mediatheque:upgrade --config` turns 1.x sources into disks ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)). New keys: `models`, `ingest`, `urls`, `transcoders`, `probe`, `prune`, `monitoring`, `run_path_format`.
+The 1.x keys keep their meaning where the concept is unchanged (`table_prefix`, `source`, `file_path_format`, `types`, `pipelines`, `jobs`). `routes` is gone: the package has no routes but the dashboard's, which the application registers. A source is a Laravel disk name, so 2.0 has no `sources` key: `mediatheque:upgrade --config` turns 1.x sources into disks ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)). New keys: `models`, `ingest`, `urls`, `transcoders`, `probe`, `prune`, `monitoring`, `run_path_format`.
 
 The package merges its defaults deeply with the application's file, so a published config only needs its overrides. Lists (`mimes`) and a pipeline's `renditions` replace the defaults as a whole, and `false` removes a default type or pipeline. Every value is validated when it is read, with the key that is wrong. The 1.x shapes of `types` and `pipelines` are read with deprecation warnings (see [upgrade.md](upgrade.md)).
 
@@ -560,7 +560,10 @@ src/                                  PSR-4: Folklore\Mediatheque\
   Ingest/                             Sources, validation, sanitizers, path formatter
   Probe/                              Prober contract implementations
   Pipelines/                          Renditions, runner, recorder
-  Transcoders/Ffmpeg/, MediaConvert/
+  Transcoders/Ffmpeg/                 (MediaConvert/ to come)
+  Images/                             The `media` resolver of laravel-image 2
+  Casts/
+  Jobs/                               Probe and rendition jobs
   Urls/                               UrlGenerator, signers
   References/                         media:// and medias:// parsing and resolution
   Support/                            Uid, MediaUsage

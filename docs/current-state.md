@@ -1,6 +1,8 @@
 # Current state of 1.x
 
-Audit of `folklore/laravel-mediatheque` `v1.1` (tag `v1.1.1`), written to plan 2.0. Paths are relative to `src/Folklore/Mediatheque/` unless they start with `src/` or `tests/`.
+Audit of `folklore/laravel-mediatheque` `v1.1` (tag `v1.1.1`), written to plan 2.0. It describes 1.x as it was then. Paths are relative to `src/Folklore/Mediatheque/` unless they start with `src/` or `tests/`.
+
+> **Since then on `v1.1`:** the upload and route hardening was released in `v1.1.2`, with the advisory [GHSA-cfwc-q2m5-j68c](https://github.com/folkloreinc/laravel-mediatheque/security/advisories/GHSA-cfwc-q2m5-j68c), and Guzzle was removed in `v1.1.3` ([#21](https://github.com/folkloreinc/laravel-mediatheque/issues/21)).
 
 ## Summary
 
@@ -10,7 +12,7 @@ The 1.x concepts are sound and widely used: a **Media** with **Files** attached 
 - metadata lives in an EAV table and is read synchronously during the upload request;
 - pipeline orchestration is spread across observers, a global event, two models and two runner jobs;
 - there is no private storage, no temporary URL and no access control;
-- the HTTP layer is loaded by default and needs hardening (tracked privately);
+- the HTTP layer is loaded by default and needed hardening (released in `v1.1.2`);
 - the code is mostly untyped, relies on service location inside models, and uses PSR-0 autoloading.
 
 2.0 keeps the concepts and the tables, and replaces the implementation behind them (see [architecture.md](architecture.md) and [decisions/0002](decisions/0002-evolve-the-schema-in-place.md)).
@@ -138,7 +140,7 @@ How they run:
 
 - Routes are loaded by default, through `routes/mediatheque.php` when published or the package's `routes.php` otherwise. Applications that don't want them set `routes.map` to `null`.
 - `MediaController` fails on every action (it reads a route action the router never sets). The `pull` route is a stub.
-- The upload and route hardening is tracked privately.
+- The upload and route hardening was released in `v1.1.2` (GHSA-cfwc-q2m5-j68c).
 
 In practice, applications upload through their own controllers (usually Panneau's upload field, through `laravel-folklore`'s `Medias` repository) and return `laravel-folklore`'s `MediaResource`.
 
@@ -152,7 +154,7 @@ In practice, applications upload through their own controllers (usually Panneau'
 | `contao/imagine-svg` | SVG dimensions |
 | `symfony/process`, `symfony/mime`, `symfony/http-foundation` | Shell jobs, mime detection, uploads |
 | `ramsey/uuid` | One call, replaceable by `Str::uuid()` |
-| `guzzlehttp/guzzle` | Unused ([#21](https://github.com/folkloreinc/laravel-mediatheque/issues/21)) |
+| `guzzlehttp/guzzle` | Unused, removed in `v1.1.3` ([#21](https://github.com/folkloreinc/laravel-mediatheque/issues/21)) |
 | `ksubileau/color-thief-php` | Used by the default `colors` reader, but only in `require-dev` |
 
 Only `illuminate/support` is declared, while the code uses the database, routing, queue, console and filesystem components. `league/flysystem-aws-s3-v3` is used without being declared.
@@ -165,7 +167,7 @@ Only `illuminate/support` is declared, while the code uses the database, routing
 
 ## Known limits, by impact
 
-1. HTTP layer loaded by default and in need of hardening (tracked privately).
+1. HTTP layer loaded by default and in need of hardening (released in `v1.1.2`).
 2. Serialized pipeline definitions with class names in the database.
 3. Pipeline orchestration that is hard to follow and to make reliable: observers, a global event, pseudo-jobs run synchronously, `progress` never written, MediaConvert blocking a worker, the `image` pipeline never ending.
 4. Synchronous metadata extraction in the upload request, with swallowed errors.

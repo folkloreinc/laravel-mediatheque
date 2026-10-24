@@ -4,16 +4,17 @@
 
 **Language.** This is a public repository. Everything written here is in **English**: code, comments, docs, commit messages, issues and their comments, pull requests and reviews. Never copy private details from the projects that use this package (product plans, infrastructure, internal docs, client names). Report security problems privately through a GitHub security advisory, never in a public issue, PR or commit message.
 
-**Branches.** This is `v2.x`, where 2.0 is developed. 1.x is maintained on `v1.1`, with its own `AGENTS.md`: read that one when you work on 1.x.
+**Branches.** This is `v2.x`, where 2.0 is developed, and the default branch. 1.x is maintained on `v1.1`, with its own `AGENTS.md`: read that one when you work on 1.x.
 
 **Read [`docs/`](docs/README.md) first.** Its architecture and decisions are the design of 2.0. A change that departs from them adds or amends a decision in `docs/decisions/` in the same pull request.
 
-**Roadmap.** The overall plan is tracked in [#1](https://github.com/folkloreinc/laravel-mediatheque/issues/1), the 2.0 kickoff in [#23](https://github.com/folkloreinc/laravel-mediatheque/issues/23), and the phases and alphas in [`docs/roadmap.md`](docs/roadmap.md). Create a sub-issue when starting an item, and check the item in the roadmap in the pull request that closes it.
+**Roadmap.** The plan of 2.0 is [`docs/roadmap.md`](docs/roadmap.md), in slices named by theme; [#1](https://github.com/folkloreinc/laravel-mediatheque/issues/1) is its index and tracks 1.x. Create a sub-issue of #1 when starting an item, and check the item in the roadmap, with the release that ships it, in the pull request that closes it.
 
 ## Who depends on this package
 
 - The pilot project requires 2.0 pre-releases (`^2.0@alpha`) and pulls each alpha from its own needs.
 - About forty applications use 1.x, most through `folklore/laravel-folklore`. They extend the models, use the `HasMedias` trait, store `medias://` references and read files by handle. 2.0 keeps their tables and a compatibility layer for their code ([decisions/0002](docs/decisions/0002-evolve-the-schema-in-place.md)), so treat the 1.x API listed in [`docs/upgrade.md`](docs/upgrade.md) as something the compatibility layer must keep working.
+- `laravel-folklore` 2 syncs JSON references into the usage graph with `HasMedias` and declares older alphas of this package in `conflict`, so a change to `HasMedias` or the pivot is checked against it.
 - `laravel-image` 2, `laravel-eclair` and Panneau 5 implement or consume contracts of this package. A change to a contract they use is designed with them, in linked issues ([decisions/0009](docs/decisions/0009-package-boundaries.md)).
 
 ## Non-negotiable rules
@@ -63,7 +64,7 @@ composer test
 ## Workflow
 
 - Branch from `v2.x`, named `<type>/<issue>-<slug>`, and open a pull request to `v2.x`. Nothing is pushed directly to `v2.x`.
-- GitHub Actions (`.github/workflows/ci.yml`) runs Pint, Larastan and the test suite (PHP 8.3–8.5 × Laravel 12 and 13 on SQLite, and on MySQL 8.4) on every pull request and on `v2.x`. **Merge only when CI is green.** Never skip, disable or weaken a test to get there.
+- GitHub Actions (`.github/workflows/ci.yml`) runs Pint, Larastan, the test suite (PHP 8.3–8.5 × Laravel 12 and 13 on SQLite, and PHP 8.4 on MySQL 8.4) and the dashboard's build and tests on every pull request and on `v2.x`. **Merge only when CI is green.** Never skip, disable or weaken a test to get there.
 - `v1.1` is never merged into `v2.x`: their code has nothing in common any more. A 1.x fix that matters to 2.0 is written again for 2.0, with its own test.
 - Commit messages follow Conventional Commits (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`…).
 - Every pull request with a user-visible effect adds a line under `[Unreleased]` in `CHANGELOG.md`, with its issue number. A breaking change goes under **Breaking changes**, and says what to change.
@@ -72,8 +73,8 @@ composer test
 
 2.0 ships as tagged pre-releases (`v2.0.0-alpha.N`, then `-beta.N` and `-rc.N`), so the pilot project requires `^2.0@alpha` rather than `v2.x-dev`. A release is only tagged from a commit of `v2.x` whose CI passed.
 
-1. Open a pull request `release/<issue>-v2.0.0-alpha.N` to `v2.x` that renames `[Unreleased]` in `CHANGELOG.md` to `[2.0.0-alpha.N] - YYYY-MM-DD`, adds an empty `[Unreleased]` above it and updates the compare links at the bottom. Check the alpha's items in `docs/roadmap.md`.
+1. Open a pull request `release/<issue>-v2.0.0-alpha.N` to `v2.x` that renames `[Unreleased]` in `CHANGELOG.md` to `[2.0.0-alpha.N] - YYYY-MM-DD`, adds an empty `[Unreleased]` above it and updates the compare links at the bottom. Check in `docs/roadmap.md` the items it ships, with the version.
 2. Merge it once its CI is green and it is approved.
-3. CI runs again on `v2.x`. When its lint and test jobs pass, its **Release** job reads the first dated section of `CHANGELOG.md` and, if that version has no tag yet, creates the tag on that commit and a GitHub release with the section as its notes, marked as a pre-release for alphas, betas and RCs. Packagist picks up the tag. If CI fails, nothing is tagged: fix `v2.x` in a new pull request, and the release happens when CI passes.
+3. CI runs again on `v2.x`. When its lint, tests, MySQL and dashboard jobs pass, its **Release** job reads the first dated section of `CHANGELOG.md` and, if that version has no tag yet, creates the tag on that commit and a GitHub release with the section as its notes, marked as a pre-release for alphas, betas and RCs. Packagist picks up the tag. If CI fails, nothing is tagged: fix `v2.x` in a new pull request, and the release happens when CI passes.
 
 A dated section in `CHANGELOG.md` is a release: only a release pull request adds one. The Release job refuses a version that is not 2.x. Never create a 2.x tag by hand or from another branch.
