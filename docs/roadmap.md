@@ -68,7 +68,7 @@ What the pilot needs for its reserved videos.
 - [ ] Visibility changes, and CDN prefixes for public files
 - [ ] Temporary URLs that download the file, with its name ([#102](https://github.com/folkloreinc/laravel-mediatheque/issues/102))
 - [ ] `MediaResource` and `FileResource`, in sync with Panneau 5's protocol, and with the `legacy` shape that `laravel-folklore` 2's `MediaResource` uses
-- [ ] The `transform`, focal point and `orientation` of an image, settled with `laravel-image` 2 and Panneau 5 ([laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88)), then stored on the media
+- [ ] The `transform`, focal point and `orientation` of an image, settled with `laravel-image` 2 and Panneau 5 ([laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88)), then stored on the media ([#107](https://github.com/folkloreinc/laravel-mediatheque/issues/107))
 - [ ] Images at ingest: HEIC, orientation, GPS removal, ThumbHash placeholder
 - [ ] Soft deletes, `mediatheque:prune` of deleted media, deferred file cleanup
 
@@ -99,7 +99,7 @@ What the pilot needs for its reserved videos.
 - [ ] Derived media: clips with start, end and crop
 - [ ] `captions` type; transcription through transcoders that support it
 - [ ] The JSON resources of runs and renditions reviewed with Panneau 5
-- [ ] The monitoring dashboard validated on the pilot project, on the current `@panneau/ui` alpha
+- [ ] The monitoring dashboard validated on the pilot project, on the current `@panneau/ui` alpha ([#106](https://github.com/folkloreinc/laravel-mediatheque/issues/106))
 
 ## Release candidate
 
