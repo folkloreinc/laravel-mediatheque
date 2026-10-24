@@ -11,7 +11,7 @@ This package ships the `media` resolver of `laravel-image` 2, its `SourceResolve
 2. **Which file a key names.** The URL key is the media's `uid`, so it names a media. Video posters and thumbnails are files of their media, and go through `laravel-image` like images.
 5. **Disk.** An `ImageSource` carries a Laravel disk and a path. A 1.x source can be a local directory, not a disk.
 
-`laravel-image` settled them in its [decision 0010](https://github.com/folkloreinc/laravel-image/blob/v2.x/docs/decisions/0010-media-resolver.md) (folkloreinc/laravel-image#69), as the review proposed, and left two points to this package's resolver, before its first alpha: what deleted, pending and failed media resolve to (7), and which reference forms `supports()` accepts (8). The other points (orientation, dominant color, focal point, `transform`, clearing derivatives) are settled with `laravel-image` before alpha 2. One part of point 3 is settled here, because it names a canonical metadata key: the placeholder format.
+`laravel-image` settled them in its [decision 0010](https://github.com/folkloreinc/laravel-image/blob/v2.x/docs/decisions/0010-media-resolver.md) (folkloreinc/laravel-image#69), as the review proposed, and left two points to this package's resolver, before its first alpha: what deleted, pending and failed media resolve to (7), and which reference forms `supports()` accepts (8). The other points (orientation, dominant color, focal point, `transform`, clearing derivatives) are left to [laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88), still open. One part of point 3 is settled here, because it names a canonical metadata key: the placeholder format.
 
 ## Decision
 
@@ -43,7 +43,7 @@ This package ships the `media` resolver of `laravel-image` 2, its `SourceResolve
 - A **`pending` or `processing`** media resolves to its files that exist: an image's original exists from ingest, so it resolves before its probe ends (once its checksum is known), and `laravel-image` reads missing dimensions from the file. A video whose poster isn't produced yet doesn't resolve.
 - A **`failed`** media is treated like a `pending` one: what was stored resolves.
 - `isPrivate()` follows the media's visibility.
-- Metadata passed to the `ImageSource`: the file's `width`, `height` and `mime`, and its `thumbhash` placeholder when it has one. `orientation`, the focal point and `transform` are added in alpha 2.
+- Metadata passed to the `ImageSource`: the file's `width`, `height` and `mime`, and its `thumbhash` placeholder when it has one. `orientation`, the focal point and `transform` are added once [laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88) settles them.
 
 ### Reference forms
 

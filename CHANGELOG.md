@@ -6,6 +6,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Changed
+
+- The docs and `HasMedias`' docblock give `json` as the handle that JSON references sync under, for every JSON column of a model, as `laravel-json-data` and `laravel-folklore` 2 do: [decisions/0021](docs/decisions/0021-json-references-handle.md) amends 0020, which said `json:{column}` (#104).
+
 ## [2.0.0-alpha.7] - 2026-10-23
 
 The migrations run on MySQL, and CI runs the tests on MySQL 8.4 (#98). There is no new migration: the fix is in the migration that alpha.6 added, for the projects that haven't run it yet. A project whose `migrate` failed on MySQL with alpha.6 follows the first item below.

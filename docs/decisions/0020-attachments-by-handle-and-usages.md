@@ -1,6 +1,6 @@
 # 0020: Attachments by handle, and the usage graph
 
-- Status: accepted
+- Status: accepted, amended by [0021](0021-json-references-handle.md): the handle is `json`, for every column
 - Date: 2026-10-22
 
 ## Context
