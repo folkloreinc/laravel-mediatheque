@@ -10,14 +10,16 @@
 
 ## What 2.0 does today
 
-The alphas are for new projects; the upgrade from 1.x comes in the beta. They ingest files (the application, or Panneau 5, takes the uploads: [decisions/0018](docs/decisions/0018-ingest-only.md)), probe them, render videos and audio with `ffmpeg` in your queue, serve public and temporary URLs, give images URLs through `laravel-image` 2, replace a media's file while it keeps its uid, attach media to your models by handle and keep a media in use from being deleted, and monitor the runs with `mediatheque:status`, actions and a dashboard. What each alpha added is in the [CHANGELOG](CHANGELOG.md).
+The alphas are for new projects; the upgrade from 1.x comes in the beta. They ingest files (the application, or Panneau 5, takes the uploads: [decisions/0018](docs/decisions/0018-ingest-only.md)), probe them, render videos and audio with `ffmpeg` in your queue, serve public and temporary URLs (which can download a file under a name), give images URLs through `laravel-image` 2 with the edits of Panneau 5's image editor, replace a media's file while it keeps its uid, attach media to your models by handle and keep a media in use from being deleted, and monitor the runs with `mediatheque:status`, actions and a dashboard. What each alpha added is in the [CHANGELOG](CHANGELOG.md).
 
 ### Requirements
 
 - PHP 8.3+ and Laravel 12+.
+- SQLite, MySQL 8.4+ or PostgreSQL 17+: CI runs the tests on each.
 - ffmpeg and ffprobe on the servers that run your queue. The Imagick extension is optional: without it, image sizes come from `getimagesize()`.
 - A queue worker: probes and renditions run in jobs.
 - For S3-compatible disks: `league/flysystem-aws-s3-v3`.
+- For image URLs: `folklore/laravel-image` 2.0.0-alpha.2 or later.
 
 ### Install
 
