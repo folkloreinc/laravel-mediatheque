@@ -78,9 +78,10 @@ interface Media
     /**
      * A temporary URL of the same file as url(), public media included.
      *
-     * @param  bool|string  $download  `true` to download the file under its
-     *                                 name, a file name to download it under that name, or `false` to
-     *                                 show it (UrlGenerator)
+     * @param  bool|string  $download  `true` to download the file under the
+     *                                 media's name with the file's extension (`episode-1.mp4`), or under
+     *                                 the file's name when the media has none; a file name to download
+     *                                 it under that name; or `false` to show it (UrlGenerator)
      */
     public function temporaryUrl(?string $handle, DateTimeInterface $expiration, bool|string $download = false): ?string;
 

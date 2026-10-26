@@ -13,7 +13,7 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ### Added
 
-- Temporary URLs that download their file rather than show it, under its name (`download: true`) or another one (`download: 'clip.mp4'`), on the `UrlGenerator`, files, media and the fake. On S3 and S3-compatible disks, such as DigitalOcean Spaces, the presigned URL asks for `Content-Disposition: attachment` with the name in UTF-8 (`filename*`) and in ASCII (`filename`), as RFC 6266 describes. A local disk ignores the option: Laravel's signed route has no equivalent. A name that is not a file name throws `InvalidArgumentException`. The fake's URLs carry the name as `download` (#102).
+- Temporary URLs that download their file rather than show it, on the `UrlGenerator`, files, media and the fake: `download: 'clip.mp4'` names the file, and `download: true` takes the file's name on a file, and on a media its name with the extension of the file it serves (`episode-1.mp4`), or the file's name when the media has none. On S3 and S3-compatible disks, such as DigitalOcean Spaces, the presigned URL asks for `Content-Disposition: attachment` with the name in UTF-8 (`filename*`) and in ASCII (`filename`), as RFC 6266 describes. A local disk ignores the option: Laravel's signed route has no equivalent. A name that is not a file name throws `InvalidArgumentException`. The fake's URLs carry the name as `download` (#102).
 
 ### Changed
 

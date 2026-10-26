@@ -3,6 +3,7 @@
 namespace Folklore\Mediatheque\Urls;
 
 use Folklore\Mediatheque\Contracts\Models\File;
+use Folklore\Mediatheque\Contracts\Models\Media;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -44,14 +45,38 @@ final readonly class Download
         }
 
         foreach ([$file->name(), basename((string) $file->path())] as $name) {
-            $name = trim((string) preg_replace('/[\x00-\x1F\x7F\/\\\\]+/', '_', (string) $name));
+            $name = self::clean($name);
 
-            if (self::isFilename($name)) {
+            if ($name !== null) {
                 return new self($name);
             }
         }
 
         return new self('download');
+    }
+
+    /**
+     * What a media's temporary URL asks for: as of(), except that `true`
+     * takes the media's name, with the extension of the file it serves
+     * (`episode-1` gives `episode-1.mp4`), unless the name already ends with
+     * it. A media without a name downloads under its file's name.
+     *
+     * @throws InvalidArgumentException when the name given is not a file name
+     */
+    public static function ofMedia(Media $media, File $file, bool|string $download): ?self
+    {
+        $name = $download === true ? self::clean($media->name()) : null;
+
+        if ($name === null) {
+            return self::of($file, $download);
+        }
+
+        $extension = pathinfo((string) $file->path(), PATHINFO_EXTENSION);
+        if ($extension === '' || preg_match('/^[A-Za-z0-9]+$/', $extension) !== 1 || str_ends_with(strtolower($name), '.'.strtolower($extension))) {
+            return new self($name);
+        }
+
+        return new self($name.'.'.$extension);
     }
 
     /**
@@ -83,6 +108,17 @@ final readonly class Download
         $extension = pathinfo($ascii, PATHINFO_EXTENSION);
 
         return 'download'.(preg_match('/^[A-Za-z0-9]+$/', $extension) === 1 ? '.'.$extension : '');
+    }
+
+    /**
+     * A name that can come from a client, as a file name: control
+     * characters and slashes replaced, or null when nothing is left.
+     */
+    private static function clean(?string $name): ?string
+    {
+        $name = trim((string) preg_replace('/[\x00-\x1F\x7F\/\\\\]+/', '_', (string) $name));
+
+        return self::isFilename($name) ? $name : null;
     }
 
     private static function isFilename(string $name): bool

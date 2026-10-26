@@ -3,9 +3,11 @@
 namespace Folklore\Mediatheque\Tests\Feature\Testing;
 
 use Folklore\Mediatheque\Contracts\Models\File;
+use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Contracts\UrlGenerator;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Facades\Mediatheque;
+use Folklore\Mediatheque\Testing\Models\FakeMedia;
 use Folklore\Mediatheque\Tests\Contracts\UrlGeneratorContractTests;
 use Folklore\Mediatheque\Tests\TestCase;
 use Illuminate\Http\UploadedFile;
@@ -28,6 +30,15 @@ class FakeUrlGeneratorTest extends TestCase
         $this->assertNotNull($file);
 
         return $file;
+    }
+
+    protected function storedMedia(Visibility $visibility, ?string $name): Media
+    {
+        $media = Mediatheque::fake()->ingest(UploadedFile::fake()->create('Spring clip.mp4', 10, 'video/mp4'), visibility: $visibility);
+        $this->assertInstanceOf(FakeMedia::class, $media);
+        $media->name = $name;
+
+        return $media;
     }
 
     protected function downloadedAs(string $url): ?string
@@ -53,10 +64,13 @@ class FakeUrlGeneratorTest extends TestCase
         $media = Mediatheque::fake()->ingest(UploadedFile::fake()->create('Spring clip.mp4', 10, 'video/mp4'), visibility: Visibility::Private);
         $expiration = Date::now()->addMinutes(5);
 
-        // The fake completed the main rendition: the media plays it, under
-        // the name its transcoder wrote
-        $this->assertSame('h264.mp4', $this->downloadedAs((string) $media->temporaryUrl(null, $expiration, download: true)));
-        $this->assertSame('Spring clip.mp4', $this->downloadedAs((string) $media->temporaryUrl('original', $expiration, download: true)));
+        $this->assertInstanceOf(FakeMedia::class, $media);
+        $media->name = 'Episode 1';
+
+        // The fake completed the main rendition: the media serves it, under
+        // its name and the rendition's extension
+        $this->assertSame('Episode 1.mp4', $this->downloadedAs((string) $media->temporaryUrl(null, $expiration, download: true)));
+        $this->assertSame('h264.mp4', $this->downloadedAs((string) $media->file('h264')?->temporaryUrl($expiration, download: true)), 'A file keeps its own name.');
         $this->assertSame('Step 3.mp4', $this->downloadedAs((string) $media->temporaryUrl(null, $expiration, download: 'Step 3.mp4')));
         $this->assertNull($this->downloadedAs((string) $media->url()));
     }

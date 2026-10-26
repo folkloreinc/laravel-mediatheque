@@ -3,6 +3,7 @@
 namespace Folklore\Mediatheque\Tests\Contracts;
 
 use Folklore\Mediatheque\Contracts\Models\File;
+use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Contracts\UrlGenerator;
 use Folklore\Mediatheque\Enums\Visibility;
 use Illuminate\Support\Facades\Date;
@@ -21,6 +22,12 @@ trait UrlGeneratorContractTests
      * name.
      */
     abstract protected function storedFile(Visibility $visibility): File;
+
+    /**
+     * A media of this visibility and name, whose original is a stored file
+     * with a name and an extension, as storedFile() gives.
+     */
+    abstract protected function storedMedia(Visibility $visibility, ?string $name): Media;
 
     /**
      * The name a temporary URL downloads its file under, or null when the
@@ -129,5 +136,58 @@ trait UrlGeneratorContractTests
                 InvalidArgumentException::class,
             );
         }
+    }
+
+    #[Test]
+    public function a_media_downloads_its_file_under_its_name_with_the_file_s_extension(): void
+    {
+        $expiration = Date::now()->addMinutes(5);
+        $media = $this->storedMedia(Visibility::Private, 'Episode 1');
+        $original = $media->original();
+        $this->assertNotNull($original);
+        $extension = pathinfo((string) $original->path(), PATHINFO_EXTENSION);
+        $this->assertNotSame('', $extension);
+
+        $url = $media->temporaryUrl(File::ORIGINAL, $expiration, download: true);
+
+        $this->assertNotNull($url);
+        if ($this->downloadsFiles()) {
+            $this->assertSame('Episode 1.'.$extension, $this->downloadedAs($url));
+            $this->assertSame($original->name(), $this->downloadedAs((string) $original->temporaryUrl($expiration, download: true)), 'A file keeps its own name.');
+        } else {
+            $this->assertSame($media->temporaryUrl(File::ORIGINAL, $expiration), $url, 'An implementation that ignores downloads gives the same URL.');
+        }
+    }
+
+    #[Test]
+    public function a_media_whose_name_has_the_extension_downloads_under_its_name(): void
+    {
+        $media = $this->storedMedia(Visibility::Private, 'Episode 1');
+        $extension = pathinfo((string) $media->original()?->path(), PATHINFO_EXTENSION);
+        $media = $this->storedMedia(Visibility::Private, 'Episode 1.'.strtoupper($extension));
+
+        $url = (string) $media->temporaryUrl(File::ORIGINAL, Date::now()->addMinutes(5), download: true);
+
+        $this->assertSame($this->downloadsFiles() ? 'Episode 1.'.strtoupper($extension) : null, $this->downloadedAs($url));
+    }
+
+    #[Test]
+    public function a_media_without_a_name_downloads_under_its_file_s_name(): void
+    {
+        $media = $this->storedMedia(Visibility::Private, null);
+
+        $url = (string) $media->temporaryUrl(File::ORIGINAL, Date::now()->addMinutes(5), download: true);
+
+        $this->assertSame($this->downloadsFiles() ? $media->original()?->name() : null, $this->downloadedAs($url));
+    }
+
+    #[Test]
+    public function a_media_downloads_under_a_name_it_is_given(): void
+    {
+        $media = $this->storedMedia(Visibility::Private, 'Episode 1');
+
+        $url = (string) $media->temporaryUrl(File::ORIGINAL, Date::now()->addMinutes(5), download: 'Step 3.mov');
+
+        $this->assertSame($this->downloadsFiles() ? 'Step 3.mov' : null, $this->downloadedAs($url));
     }
 }

@@ -3,6 +3,7 @@
 namespace Folklore\Mediatheque\Tests\Feature\Urls;
 
 use Folklore\Mediatheque\Contracts\Models\File;
+use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
 use Folklore\Mediatheque\Contracts\UrlGenerator;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Tests\Concerns\CreatesMedia;
@@ -51,6 +52,14 @@ class S3DiskUrlGeneratorTest extends DatabaseTestCase
         return $this->createFile($media, 'original', ['source' => 'spaces', 'path' => 'video/'.$media->uid.'/original.mp4', 'name' => 'Spring clip.mp4']);
     }
 
+    protected function storedMedia(Visibility $visibility, ?string $name): MediaContract
+    {
+        $media = $this->createMedia(['visibility' => $visibility, 'name' => $name]);
+        $this->createFile($media, 'original', ['source' => 'spaces', 'path' => 'video/'.$media->uid.'/original.mp4', 'name' => 'Spring clip.mp4']);
+
+        return $media;
+    }
+
     protected function downloadedAs(string $url): ?string
     {
         $disposition = $this->contentDisposition($url);
@@ -96,13 +105,16 @@ class S3DiskUrlGeneratorTest extends DatabaseTestCase
     #[Test]
     public function the_media_gives_a_download_url_of_the_file_it_plays(): void
     {
-        $media = $this->createMedia(['type' => 'video', 'visibility' => Visibility::Private]);
+        $media = $this->createMedia(['type' => 'video', 'name' => 'episode-1', 'visibility' => Visibility::Private]);
         $this->createFile($media, 'original', ['source' => 'spaces', 'path' => 'video/original.mov', 'name' => 'IMG_0042.MOV']);
         $expiration = Date::now()->addMinutes(5);
 
-        $this->assertSame('IMG_0042.MOV', $this->downloadedAs((string) $media->temporaryUrl(null, $expiration, download: true)));
+        $this->assertSame('episode-1.mov', $this->downloadedAs((string) $media->temporaryUrl(null, $expiration, download: true)));
 
         $this->createFile($media, 'h264', ['source' => 'spaces', 'path' => 'video/h264.mp4', 'name' => 'h264.mp4']);
+
+        $this->assertSame('episode-1.mp4', $this->downloadedAs((string) $media->temporaryUrl(null, $expiration, download: true)), 'The extension of the file it serves now.');
+        $this->assertSame('IMG_0042.MOV', $this->downloadedAs((string) $media->original()?->temporaryUrl($expiration, download: true)), 'A file keeps its own name.');
 
         $this->assertSame('Step 3.mp4', $this->downloadedAs((string) $media->temporaryUrl(null, $expiration, download: 'Step 3.mp4')));
         $this->assertStringContainsString('/video/h264.mp4', (string) $media->temporaryUrl(null, $expiration, download: 'Step 3.mp4'));

@@ -66,4 +66,20 @@ class DownloadTest extends TestCase
 
         Download::of($this->file('clip.mov'), '../clip.mov');
     }
+
+    #[Test]
+    public function true_on_a_media_takes_its_name_with_the_extension_of_the_file_it_serves(): void
+    {
+        $file = $this->file('h264.mp4', 'video/med_1/run_1/h264.mp4');
+        $media = fn (?string $name) => new FakeMedia(1, 'med_1', 'video', $name);
+
+        $this->assertSame('episode-1.mp4', Download::ofMedia($media('episode-1'), $file, true)?->filename);
+        $this->assertSame('Episode 1.MP4', Download::ofMedia($media('Episode 1.MP4'), $file, true)?->filename, 'A name that ends with the extension keeps it.');
+        $this->assertSame('a_b.mp4', Download::ofMedia($media('a/b'), $file, true)?->filename, 'A name from a client is cleaned.');
+        $this->assertSame('h264.mp4', Download::ofMedia($media(null), $file, true)?->filename, 'Without a name, the file\'s.');
+        $this->assertSame('h264.mp4', Download::ofMedia($media(' '), $file, true)?->filename);
+        $this->assertSame('Step 3.mov', Download::ofMedia($media('episode-1'), $file, 'Step 3.mov')?->filename);
+        $this->assertNull(Download::ofMedia($media('episode-1'), $file, false));
+        $this->assertSame('episode-1', Download::ofMedia($media('episode-1'), $this->file(null, 'files/med_1/original'), true)?->filename, 'A file without an extension adds none.');
+    }
 }
