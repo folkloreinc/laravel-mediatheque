@@ -6,6 +6,7 @@ use Folklore\Mediatheque\Console\InstallCommand;
 use Folklore\Mediatheque\Tests\TestCase;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -52,11 +53,12 @@ class InstallCommandTest extends TestCase
         $this->assertFileExists(config_path('mediatheque.php'));
         $published = $this->published();
         sort($published);
-        $this->assertCount(4, $published);
+        $this->assertCount(5, $published);
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_create_mediatheque_tables\.php$/', $published[0]);
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_update_mediatheque_tables_for_monitoring\.php$/', $published[1], 'Later migrations run after the first one.');
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_drop_mediatheque_uploads_table\.php$/', $published[2]);
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_create_mediatheque_medias_pivot_table\.php$/', $published[3]);
+        $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_use_jsonb_in_mediatheque_tables_on_postgresql\.php$/', $published[4]);
     }
 
     #[Test]
@@ -67,7 +69,7 @@ class InstallCommandTest extends TestCase
 
         $this->install();
 
-        $this->assertCount(4, $this->published());
+        $this->assertCount(5, $this->published());
         $this->assertStringContainsString("'local'", (string) file_get_contents(config_path('mediatheque.php')));
     }
 
@@ -83,7 +85,7 @@ class InstallCommandTest extends TestCase
         $this->install();
 
         $published = $this->published();
-        $this->assertCount(4, $published);
+        $this->assertCount(5, $published);
         $this->assertSame($earlier, array_values(array_intersect($published, $earlier)), 'Published migrations are left as they are.');
     }
 
@@ -110,7 +112,76 @@ class InstallCommandTest extends TestCase
     }
 
     #[Test]
-    public function index_and_foreign_key_names_fit_in_mysql_identifiers_with_a_longer_prefix(): void
+    public function the_json_columns_are_jsonb_on_postgresql_only(): void
+    {
+        $this->install();
+        $this->startFromAnEmptyDatabase();
+
+        Artisan::call('migrate', ['--path' => $this->migrations, '--realpath' => true]);
+        $migrated = $this->jsonColumnTypes();
+        Artisan::call('migrate:rollback', ['--path' => $this->migrations, '--realpath' => true, '--step' => 1]);
+        $before = $this->jsonColumnTypes();
+
+        if (DB::getDriverName() === 'pgsql') {
+            $this->assertSame(array_fill_keys(array_keys($migrated), 'jsonb'), $migrated);
+            $this->assertSame(array_fill_keys(array_keys($before), 'json'), $before, 'Rolled back, the columns are json again.');
+        } else {
+            $this->assertSame($before, $migrated, 'The migration changes nothing on other databases.');
+        }
+
+        Artisan::call('migrate', ['--path' => $this->migrations, '--realpath' => true]);
+        $this->assertSame($migrated, $this->jsonColumnTypes(), 'It runs again after a rollback.');
+
+        Artisan::call('migrate:rollback', ['--path' => $this->migrations, '--realpath' => true]);
+    }
+
+    #[Test]
+    public function on_postgresql_a_json_column_whose_type_changed_is_left_as_it_is(): void
+    {
+        if (DB::getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('The jsonb migration changes PostgreSQL columns only.');
+        }
+
+        $this->install();
+        $this->startFromAnEmptyDatabase();
+        foreach (glob($this->migrations.'/*_use_jsonb_in_mediatheque_tables_on_postgresql.php') ?: [] as $jsonb) {
+            rename($jsonb, $jsonb.'.later');
+        }
+        Artisan::call('migrate', ['--path' => $this->migrations, '--realpath' => true]);
+        DB::statement('alter table mediatheque_medias alter column data type text');
+        foreach (glob($this->migrations.'/*.later') ?: [] as $jsonb) {
+            rename($jsonb, substr($jsonb, 0, -strlen('.later')));
+        }
+
+        Artisan::call('migrate', ['--path' => $this->migrations, '--realpath' => true]);
+
+        $types = $this->jsonColumnTypes();
+        $this->assertSame('text', $types['medias.data']);
+        $this->assertSame('jsonb', $types['medias.metadata']);
+
+        Artisan::call('migrate:rollback', ['--path' => $this->migrations, '--realpath' => true]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function jsonColumnTypes(): array
+    {
+        $types = [];
+        foreach (['medias' => ['metadata', 'data'], 'pipelines' => ['definition', 'error'], 'pipelines_jobs' => ['error'], 'files' => ['metadata']] as $table => $columns) {
+            foreach (Schema::getColumns('mediatheque_'.$table) as $column) {
+                if (in_array($column['name'], $columns, true)) {
+                    $types[$table.'.'.$column['name']] = $column['type_name'];
+                }
+            }
+        }
+        ksort($types);
+
+        return $types;
+    }
+
+    #[Test]
+    public function index_and_foreign_key_names_fit_in_mysql_and_postgresql_identifiers_with_a_longer_prefix(): void
     {
         $prefix = 'mediatheque_app_';
         config(['mediatheque.table_prefix' => $prefix]);
@@ -130,7 +201,10 @@ class InstallCommandTest extends TestCase
         }
 
         $this->assertContains($prefix.'medias_pivot_usage_unique', $names);
-        $this->assertSame([], array_values(array_filter($names, fn (string $name) => strlen($name) > 64)), 'MySQL refuses identifiers longer than 64 characters.');
+        // SQLite and MySQL keep the names whole, so their runs catch a name
+        // that PostgreSQL would truncate silently, and could then make two
+        // names collide
+        $this->assertSame([], array_values(array_filter($names, fn (string $name) => strlen($name) > 63)), 'MySQL refuses identifiers longer than 64 characters, and PostgreSQL truncates them to 63.');
 
         Artisan::call('migrate:rollback', ['--path' => $this->migrations, '--realpath' => true]);
     }

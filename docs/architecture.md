@@ -473,7 +473,7 @@ The fake stores files on fake disks, returns probe fixtures, and completes rendi
 - **Models.** `Media`, `File`, `PipelineRun` and `PipelineJob` are bound to contracts and set in the config (`models.media`…). Applications extend them to add columns, scopes and relations. The contracts are methods; the Eloquent relations have other names (`mediaFiles()`, `pipelineJobs()`…, [decisions/0014](decisions/0014-run-outcomes-and-model-contracts.md)).
 - **Migrations.** `mediatheque:install` publishes the migrations; the package does not load them itself. The application owns its schema and can add its own columns (a tenant id, for example) in the same migration ([decisions/0015](decisions/0015-new-install-schema-attributes-and-uploads.md)).
 - **Global scopes.** Package workers load models through the morph map and without global scopes, so a tenant scope that depends on the current request does not hide media from queued jobs.
-- **Path formatter.** Receives the media and the file: `{media.uid}`, `{media.tenant_id}`, `{type}`, `{handle}`, `{index}` (`-2` in a group, empty otherwise), `{extension}`, `{date(Y/m)}`. It builds originals with `file_path_format`, and each run's prefix with `run_path_format` (the media's placeholders and `{run}`). Every driver writes a run's files under its prefix: remote transcoders with their own file names, the `ffmpeg` driver with the last segment of `file_path_format`. A placeholder that names a missing attribute, or a value that would leave its directory, throws. Paths are recorded, so consumers never rebuild them.
+- **Path formatter.** Receives the media and the file: `{media.uid}`, `{media.tenant_id}` (a column's raw value, or the model's accessor when no column has that name, such as `{media.tenant_uid}`), `{type}`, `{handle}`, `{index}` (`-2` in a group, empty otherwise), `{extension}`, `{date(Y/m)}`. It builds originals with `file_path_format`, and each run's prefix with `run_path_format` (the media's placeholders and `{run}`). Every driver writes a run's files under its prefix: remote transcoders with their own file names, the `ffmpeg` driver with the last segment of `file_path_format`. A placeholder that names a missing attribute, or a value that would leave its directory, throws. Paths are recorded, so consumers never rebuild them.
 - **Types, renditions, transcoders, probers, URL signers and sources** register through the config or `Mediatheque::extend*()`.
 
 ## Commands
@@ -593,3 +593,5 @@ stubs/                                The provider of the dashboard's gates
 ## Supported versions
 
 PHP 8.3+ and Laravel 12+ ([decisions/0001](decisions/0001-supported-versions.md)).
+
+The migrations and the test suite run on SQLite, MySQL 8.4 and PostgreSQL 17. On PostgreSQL, the JSON columns are `jsonb`; the other databases keep `json`.

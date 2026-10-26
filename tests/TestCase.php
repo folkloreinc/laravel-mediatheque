@@ -33,23 +33,39 @@ abstract class TestCase extends BaseTestCase
     {
         $app['config']->set('database.default', 'testing');
 
-        // SQLite in memory by default. CI also runs the tests against MySQL:
-        // set the environment variable DB_DRIVER to `mysql`, with DB_HOST,
-        // DB_PORT, DB_DATABASE, DB_USERNAME and DB_PASSWORD.
+        // SQLite in memory by default. CI also runs the tests against MySQL
+        // and PostgreSQL: set the environment variable DB_DRIVER to `mysql`
+        // or `pgsql`, with DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME and
+        // DB_PASSWORD.
         $driver = getenv('DB_DRIVER') ?: 'sqlite';
 
-        if ($driver !== 'sqlite') {
+        $options = match ($driver) {
+            'sqlite' => null,
+            'mysql' => [
+                'port' => '3306',
+                'charset' => 'utf8mb4',
+                'collation' => 'utf8mb4_unicode_ci',
+                'strict' => true,
+            ],
+            'pgsql' => [
+                'port' => '5432',
+                'charset' => 'utf8',
+                'search_path' => 'public',
+                'sslmode' => 'prefer',
+            ],
+            default => throw new \RuntimeException(sprintf('DB_DRIVER is sqlite, mysql or pgsql, not %s.', $driver)),
+        };
+
+        if ($options !== null) {
             $app['config']->set('database.connections.testing', [
+                ...$options,
                 'driver' => $driver,
                 'host' => getenv('DB_HOST') ?: '127.0.0.1',
-                'port' => getenv('DB_PORT') ?: '3306',
+                'port' => getenv('DB_PORT') ?: $options['port'],
                 'database' => getenv('DB_DATABASE') ?: 'testing',
                 'username' => getenv('DB_USERNAME') ?: 'root',
                 'password' => getenv('DB_PASSWORD') ?: '',
-                'charset' => 'utf8mb4',
-                'collation' => 'utf8mb4_unicode_ci',
                 'prefix' => '',
-                'strict' => true,
             ]);
         }
     }
