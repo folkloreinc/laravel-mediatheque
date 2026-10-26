@@ -19,7 +19,7 @@ return new class extends Migration
      * @var array<string, array<string, bool>>
      */
     private const COLUMNS = [
-        'medias' => ['metadata' => true, 'data' => true],
+        'medias' => ['metadata' => true, 'data' => true, 'transform' => true],
         'pipelines' => ['definition' => false, 'error' => true],
         'pipelines_jobs' => ['error' => true],
         'files' => ['metadata' => true],

@@ -28,7 +28,9 @@ use Symfony\Component\Process\Process;
  * answers at once: it never returns a pending outcome.
  *
  * - Width and height are the displayed size, after the rotation of a video
- *   or the EXIF orientation of an image; `rotation` is the video's.
+ *   or the EXIF orientation of an image; `rotation` is the video's, and
+ *   `orientation` the image's EXIF orientation (1 to 8), when it declares
+ *   one. The original is never turned upright.
  * - ffprobe reads a file on a remote disk through a temporary URL when the
  *   disk signs them, so only what it needs is downloaded. Images are copied
  *   locally.
@@ -274,13 +276,15 @@ class LocalProber implements Prober
 
             $width = $image->getImageWidth();
             $height = $image->getImageHeight();
-            $turned = in_array($image->getImageOrientation(), [5, 6, 7, 8], true);
+            // 0 when the image declares no orientation
+            $orientation = self::orientation($image->getImageOrientation());
             $frames = $image->getNumberImages();
             $image->clear();
 
             return [
-                MetadataKey::Width->value => $turned ? $height : $width,
-                MetadataKey::Height->value => $turned ? $width : $height,
+                MetadataKey::Width->value => ($orientation ?? 1) >= 5 ? $height : $width,
+                MetadataKey::Height->value => ($orientation ?? 1) >= 5 ? $width : $height,
+                ...($orientation !== null ? [MetadataKey::Orientation->value => $orientation] : []),
                 MetadataKey::Animated->value => $frames > 1,
             ];
         } catch (ImagickException) {
@@ -299,13 +303,21 @@ class LocalProber implements Prober
         }
 
         $exif = function_exists('exif_read_data') ? @exif_read_data($path) : false;
-        $orientation = is_array($exif) ? ($exif['Orientation'] ?? 1) : 1;
-        $turned = in_array($orientation, [5, 6, 7, 8], true);
+        $orientation = self::orientation(is_array($exif) ? ($exif['Orientation'] ?? null) : null);
 
         return [
-            MetadataKey::Width->value => $turned ? $size[1] : $size[0],
-            MetadataKey::Height->value => $turned ? $size[0] : $size[1],
+            MetadataKey::Width->value => ($orientation ?? 1) >= 5 ? $size[1] : $size[0],
+            MetadataKey::Height->value => ($orientation ?? 1) >= 5 ? $size[0] : $size[1],
+            ...($orientation !== null ? [MetadataKey::Orientation->value => $orientation] : []),
         ];
+    }
+
+    /**
+     * An EXIF orientation, from 1 to 8, or null when there is none.
+     */
+    private static function orientation(mixed $orientation): ?int
+    {
+        return is_int($orientation) && $orientation >= 1 && $orientation <= 8 ? $orientation : null;
     }
 
     /**

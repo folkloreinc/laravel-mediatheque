@@ -6,10 +6,16 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
-The migrations and the test suite run on PostgreSQL, and CI runs the tests on PostgreSQL 17 (#103). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new migration only, which changes nothing on SQLite and MySQL.
+The migrations and the test suite run on PostgreSQL, and CI runs the tests on PostgreSQL 17 (#103). A media stores the edits of its image, and images their EXIF orientation (#107). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new migrations only, which add the `transform` column, and turn the JSON columns into `jsonb` on PostgreSQL.
+
+### Breaking changes
+
+- The `Media` contract has `transform()`: a class that implements it implements it too (#107).
 
 ### Added
 
+- A media's `transform`: the non-destructive edits of its image, in the shape of Panneau 5's `MediaTransform` (`crop`, `rotate`, `flipX`, `flipY`, `focalPoint`), stored outside `metadata` by the new `add_transform_to_mediatheque_medias_table` migration, and read by `$media->transform()`, on the package's model and the fake's media. Its cast checks the shape when it is written and throws `InvalidTransform` otherwise. `replaceOriginal()` keeps it ([decisions/0022](docs/decisions/0022-image-transform-and-orientation.md), #107).
+- The canonical metadata key `orientation`: an image's EXIF orientation, from 1 to 8, when it declares one, on the media and its original. Originals are not turned upright; `width` and `height` stay the upright size (#107).
 - The `use_jsonb_in_mediatheque_tables_on_postgresql` migration: on PostgreSQL, the JSON columns of the media, files, runs and renditions become `jsonb`, which can be compared and indexed. A column whose type is no longer `json` is left as it is. The other databases keep `json` (#103).
 
 ### Changed

@@ -1,6 +1,6 @@
 # 0013: The `media` resolver for `laravel-image`
 
-- Status: accepted
+- Status: accepted, amended by [0022](0022-image-transform-and-orientation.md): orientation, focal point and `transform`
 - Date: 2026-10-16
 
 ## Context
@@ -43,7 +43,7 @@ This package ships the `media` resolver of `laravel-image` 2, its `SourceResolve
 - A **`pending` or `processing`** media resolves to its files that exist: an image's original exists from ingest, so it resolves before its probe ends (once its checksum is known), and `laravel-image` reads missing dimensions from the file. A video whose poster isn't produced yet doesn't resolve.
 - A **`failed`** media is treated like a `pending` one: what was stored resolves.
 - `isPrivate()` follows the media's visibility.
-- Metadata passed to the `ImageSource`: the file's `width`, `height` and `mime`, and its `thumbhash` placeholder when it has one. `orientation`, the focal point and `transform` are added once [laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88) settles them.
+- Metadata passed to the `ImageSource`: the file's `width`, `height` and `mime`, and its `thumbhash` placeholder when it has one. `orientation`, the focal point and `transform` are added by [0022](0022-image-transform-and-orientation.md), as [laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88) settled them.
 
 ### Reference forms
 

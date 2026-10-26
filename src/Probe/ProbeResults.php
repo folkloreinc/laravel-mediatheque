@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  * the probe job, or from the recorder when a pending probe completes.
  *
  * - Done: the metadata goes to the media, the dimensions and duration to its
- *   original, and the media moves to `processing` (`MediaProbed`), or to
+ *   original, with an image's EXIF orientation in its metadata, and the media moves to `processing` (`MediaProbed`), or to
  *   `ready` (`MediaReady`) when its pipeline has no main rendition. Then its
  *   pipeline starts: the one ingest chose, or its type's.
  * - Failed: the media is `failed` (`MediaFailed`).
@@ -46,12 +46,15 @@ class ProbeResults
 
         $original = $media->original();
         if ($original instanceof Model) {
+            $orientation = self::int($metadata[MetadataKey::Orientation->value] ?? null);
+
             $original->forceFill(array_filter([
                 'width' => self::int($metadata[MetadataKey::Width->value] ?? null),
                 'height' => self::int($metadata[MetadataKey::Height->value] ?? null),
                 'duration' => self::float($metadata[MetadataKey::Duration->value] ?? null),
                 'bitrate' => self::int($metadata[MetadataKey::Bitrate->value] ?? null),
-            ], fn (int|float|null $value) => $value !== null))->save();
+                'metadata' => $orientation !== null ? [...$original->metadata(), MetadataKey::Orientation->value => $orientation] : null,
+            ], fn (int|float|array|null $value) => $value !== null))->save();
         }
 
         $definition = $pipeline !== null ? $this->config->pipeline($pipeline) : $this->config->pipelineOfType($media->type());

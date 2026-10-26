@@ -43,6 +43,14 @@ class EloquentModelsTest extends DatabaseTestCase
         return $fresh;
     }
 
+    protected function storeTransform(MediaContract $media, ?array $transform): MediaContract
+    {
+        $this->assertInstanceOf(Media::class, $media);
+        $media->forceFill(['transform' => $transform])->save();
+
+        return Media::query()->findOrFail($media->id);
+    }
+
     protected function useMedia(MediaContract $media, string $handle): MediaContract
     {
         $post = Post::query()->firstOrCreate(['title' => 'Post']);

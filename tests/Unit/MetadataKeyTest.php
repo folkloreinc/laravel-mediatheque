@@ -13,7 +13,7 @@ class MetadataKeyTest extends TestCase
     {
         $this->assertSame([
             'kind', 'mime', 'extension', 'size', 'checksum', 'filename',
-            'width', 'height', 'rotation', 'duration', 'frame_rate', 'bitrate',
+            'width', 'height', 'rotation', 'orientation', 'duration', 'frame_rate', 'bitrate',
             'video_codec', 'audio_codec', 'audio_channels', 'pages_count', 'font_names',
             'animated', 'exif', 'palette', 'thumbhash', 'scenes', 'locale',
         ], array_column(MetadataKey::cases(), 'value'));

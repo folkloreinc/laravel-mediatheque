@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque\Models;
 
 use DateTimeInterface;
 use Folklore\Mediatheque\Casts\Json;
+use Folklore\Mediatheque\Casts\MediaTransform;
 use Folklore\Mediatheque\Contracts\Mediatheque;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
@@ -50,6 +51,7 @@ use Illuminate\Support\Collection;
  * @property Visibility $visibility
  * @property array<string, mixed>|null $metadata
  * @property array<string, mixed>|null $data
+ * @property array<string, mixed>|null $transform
  * @property int|null $derived_from_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -116,6 +118,7 @@ class Media extends Model implements MediaContract
             'visibility' => Visibility::class,
             'metadata' => Json::class,
             'data' => Json::class,
+            'transform' => MediaTransform::class,
         ];
     }
 
@@ -183,6 +186,11 @@ class Media extends Model implements MediaContract
         $metadata = $this->metadata ?? [];
 
         return $key === null ? $metadata : Arr::get($metadata, $key, $default);
+    }
+
+    public function transform(): ?array
+    {
+        return $this->transform;
     }
 
     public function original(): ?FileContract

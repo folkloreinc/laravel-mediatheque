@@ -127,6 +127,19 @@ class ProbeMediaTest extends DatabaseTestCase
     }
 
     #[Test]
+    public function the_orientation_of_an_image_goes_to_its_original_and_the_media(): void
+    {
+        $this->requiresImagick();
+        $media = $this->pendingMedia('image', 'media/image-orientation-6.jpg', 'image/jpeg');
+
+        $this->probe($media);
+
+        $original = $this->fresh($media)->original();
+        $this->assertSame([60, 80, 6], [$original?->width(), $original?->height(), $original?->metadata('orientation')]);
+        $this->assertSame(6, $this->fresh($media)->metadata('orientation'));
+    }
+
+    #[Test]
     public function a_failed_probe_fails_the_media(): void
     {
         Event::fake([MediaFailed::class]);
