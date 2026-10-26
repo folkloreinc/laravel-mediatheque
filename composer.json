@@ -44,7 +44,7 @@
         "symfony/uid": "^7.2|^8.0"
     },
     "require-dev": {
-        "folklore/laravel-image": "^2.0@alpha",
+        "folklore/laravel-image": "^2.0.0-alpha.2",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.18",
         "league/flysystem-aws-s3-v3": "^3.25",
@@ -58,6 +58,9 @@
         "league/flysystem-aws-s3-v3": "S3-compatible disks",
         "folklore/laravel-eclair": "The eclair transcoder",
         "folklore/laravel-image": "Image renditions on the fly, from media ids"
+    },
+    "conflict": {
+        "folklore/laravel-image": "2.0.0-alpha.1"
     },
     "autoload": {
         "psr-4": {

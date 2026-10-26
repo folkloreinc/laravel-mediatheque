@@ -5,6 +5,7 @@ namespace Folklore\Mediatheque\Tests\Feature\Images;
 use Folklore\Image\Contracts\SourceResolver;
 use Folklore\Image\Exceptions\SourceNotFound;
 use Folklore\Image\Sources\SourceResolvers;
+use Folklore\Image\Specs\Flip;
 use Folklore\Image\Testing\Contracts\SourceResolverContractTests;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\Visibility;
@@ -258,5 +259,31 @@ class MediaResolverTest extends DatabaseTestCase
         $this->assertSame('video/poster.jpg', $source->path);
         $this->assertNull($source->transform);
         $this->assertNull($source->focalPoint);
+    }
+
+    #[Test]
+    public function the_flips_of_a_transform_reach_the_source(): void
+    {
+        $media = $this->image(['transform' => ['flipX' => true, 'flipY' => true]]);
+
+        $this->assertSame(Flip::Both, $this->resolver()->resolve($media)->transform?->flip);
+    }
+
+    #[Test]
+    public function editing_an_image_changes_the_version_of_its_urls(): void
+    {
+        $media = $this->image();
+        $before = $this->resolver()->resolve($media)->urlVersion();
+
+        $media->forceFill(['transform' => self::transform()])->save();
+        $edited = $this->resolver()->resolveKey($media->uid);
+
+        $this->assertSame('a1b2c3d4', $before);
+        $this->assertSame('a1b2c3d4', $edited->version);
+        $this->assertNotSame($before, $edited->urlVersion());
+        $this->assertStringStartsWith('a1b2c3d4-', (string) $edited->urlVersion());
+
+        $media->forceFill(['transform' => [...self::transform(), 'focalPoint' => ['x' => 0.5, 'y' => 0.5]]])->save();
+        $this->assertNotSame($edited->urlVersion(), $this->resolver()->resolveKey($media->uid)->urlVersion(), 'Moving the focal point gives new URLs too.');
     }
 }
