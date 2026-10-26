@@ -6,9 +6,12 @@ use Folklore\Image\Contracts\SourceResolver;
 use Folklore\Image\Exceptions\SourceNotFound;
 use Folklore\Image\Exceptions\UnsupportedReference;
 use Folklore\Image\Sources\ImageSource;
+use Folklore\Image\Specs\Focus;
+use Folklore\Image\Specs\Transform;
 use Folklore\Mediatheque\Contracts\Models\File;
 use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Enums\Visibility;
+use Folklore\Mediatheque\Metadata\MetadataKey;
 use Folklore\Mediatheque\Pipelines\Rendition;
 use Folklore\Mediatheque\References\MediaReference;
 use Folklore\Mediatheque\Support\MediathequeConfig;
@@ -30,6 +33,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *   image files they have. A key from a URL is resolved without the
  *   application's global scopes: the URL's signature authorizes it.
  * - `isPrivate()` follows the media's visibility.
+ * - The source has the file's EXIF `orientation`. The media's `transform`
+ *   and focal point apply to its image only, the original of an `image`
+ *   media, not to a video's poster or thumbnails (docs/decisions/0022).
+ *   `laravel-image` adds them to the version of URLs: the version stays the
+ *   file's.
  */
 class MediaResolver implements SourceResolver
 {
@@ -140,7 +148,11 @@ class MediaResolver implements SourceResolver
         $width = $file->width();
         $height = $file->height();
         $sized = $width !== null && $height !== null && $width > 0 && $height > 0;
-        $placeholder = $file->metadata('thumbhash') ?? ($file->handle() === File::ORIGINAL ? $media->metadata('thumbhash') : null);
+        $isOriginal = $file->handle() === File::ORIGINAL;
+        $placeholder = $file->metadata('thumbhash') ?? ($isOriginal ? $media->metadata('thumbhash') : null);
+        $orientation = $file->metadata(MetadataKey::Orientation->value) ?? ($isOriginal ? $media->metadata(MetadataKey::Orientation->value) : null);
+        $transform = $isOriginal && $media->type() === 'image' ? $media->transform() : null;
+        $focalPoint = $transform['focalPoint'] ?? null;
 
         return new ImageSource(
             resolver: self::NAME,
@@ -151,6 +163,9 @@ class MediaResolver implements SourceResolver
             width: $sized ? $width : null,
             height: $sized ? $height : null,
             mime: $file->mime(),
+            orientation: is_int($orientation) && $orientation >= 1 && $orientation <= 8 ? $orientation : null,
+            focalPoint: is_array($focalPoint) ? Focus::fromArray($focalPoint) : null,
+            transform: $transform !== null ? Transform::fromArray($transform) : null,
             placeholder: is_string($placeholder) ? $placeholder : null,
             private: $media->visibility() === Visibility::Private,
         );
