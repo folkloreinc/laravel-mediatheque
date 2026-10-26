@@ -44,7 +44,20 @@ class DiskUrlGeneratorTest extends DatabaseTestCase
     {
         $media = $this->createMedia(['visibility' => $visibility]);
 
-        return $this->createFile($media, 'original', ['source' => $disk, 'path' => 'video/'.$media->uid.'/original.mp4']);
+        return $this->createFile($media, 'original', ['source' => $disk, 'path' => 'video/'.$media->uid.'/original.mp4', 'name' => 'Spring clip.mp4']);
+    }
+
+    /**
+     * A local disk's signed route has no option to download its files.
+     */
+    protected function downloadedAs(string $url): ?string
+    {
+        return null;
+    }
+
+    protected function downloadsFiles(): bool
+    {
+        return false;
     }
 
     protected function temporaryTtl(): int

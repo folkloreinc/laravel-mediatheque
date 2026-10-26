@@ -1,0 +1,95 @@
+<?php
+
+namespace Folklore\Mediatheque\Urls;
+
+use Folklore\Mediatheque\Contracts\Models\File;
+use Illuminate\Support\Str;
+use InvalidArgumentException;
+
+/**
+ * What a temporary URL that downloads its file asks for (#102): the name to
+ * save the file under, and the `Content-Disposition` header the source
+ * sends with it.
+ */
+final readonly class Download
+{
+    private function __construct(
+        public string $filename,
+    ) {}
+
+    /**
+     * The download a temporary URL of a file asks for, or null to show the
+     * file.
+     *
+     * - `true` takes the file's name, which can come from a client: it is
+     *   cleaned, and the last segment of the file's path replaces a name
+     *   that is empty.
+     * - A string is the name, given by the application: it must be a file
+     *   name, without a directory or control characters.
+     *
+     * @throws InvalidArgumentException when the name given is not a file name
+     */
+    public static function of(File $file, bool|string $download): ?self
+    {
+        if ($download === false) {
+            return null;
+        }
+
+        if (is_string($download)) {
+            if (! self::isFilename($download)) {
+                throw new InvalidArgumentException(sprintf('"%s" is not a file name to download a file under.', $download));
+            }
+
+            return new self($download);
+        }
+
+        foreach ([$file->name(), basename((string) $file->path())] as $name) {
+            $name = trim((string) preg_replace('/[\x00-\x1F\x7F\/\\\\]+/', '_', (string) $name));
+
+            if (self::isFilename($name)) {
+                return new self($name);
+            }
+        }
+
+        return new self('download');
+    }
+
+    /**
+     * The `Content-Disposition` header of the download, as RFC 6266 writes
+     * it: `filename*` has the name in UTF-8, and `filename` an ASCII
+     * fallback for the clients that don't read it.
+     */
+    public function contentDisposition(): string
+    {
+        return sprintf(
+            'attachment; filename="%s"; filename*=UTF-8\'\'%s',
+            $this->asciiFilename(),
+            rawurlencode($this->filename),
+        );
+    }
+
+    /**
+     * The name in printable ASCII, without the characters a quoted string
+     * escapes, or `%`, which some clients decode.
+     */
+    private function asciiFilename(): string
+    {
+        $ascii = (string) preg_replace('/[^\x20-\x7E]|["\\\\%]/', '_', Str::ascii($this->filename));
+
+        if (preg_match('/[A-Za-z0-9]/', pathinfo($ascii, PATHINFO_FILENAME)) === 1) {
+            return $ascii;
+        }
+
+        $extension = pathinfo($ascii, PATHINFO_EXTENSION);
+
+        return 'download'.(preg_match('/^[A-Za-z0-9]+$/', $extension) === 1 ? '.'.$extension : '');
+    }
+
+    private static function isFilename(string $name): bool
+    {
+        return trim($name) !== ''
+            && $name !== '.'
+            && $name !== '..'
+            && preg_match('/[\x00-\x1F\x7F\/\\\\]/', $name) !== 1;
+    }
+}

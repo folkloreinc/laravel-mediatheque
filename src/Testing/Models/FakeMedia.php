@@ -113,9 +113,9 @@ class FakeMedia implements Media
         return $this->playedFile($handle)?->url();
     }
 
-    public function temporaryUrl(?string $handle, DateTimeInterface $expiration): ?string
+    public function temporaryUrl(?string $handle, DateTimeInterface $expiration, bool|string $download = false): ?string
     {
-        return $this->playedFile($handle)?->temporaryUrl($expiration);
+        return $this->playedFile($handle)?->temporaryUrl($expiration, $download);
     }
 
     public function usages(): Collection

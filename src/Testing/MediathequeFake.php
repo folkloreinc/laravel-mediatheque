@@ -165,6 +165,7 @@ class MediathequeFake implements Fake, Mediatheque
             mime: $mime,
             size: $size,
             checksum: $checksum,
+            name: $source->filename,
         ));
         $media->metadata = [
             MetadataKey::Filename->value => $source->filename,
@@ -251,6 +252,7 @@ class MediathequeFake implements Fake, Mediatheque
             mime: $mime,
             size: $size,
             checksum: $checksum,
+            name: $source->filename,
         ));
         $media->type = $type;
         $media->mainRendition = $pipeline !== null ? $this->pipeline($pipeline)->mainRendition()?->name : null;

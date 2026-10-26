@@ -8,6 +8,7 @@ use Folklore\Mediatheque\Contracts\UrlGenerator;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Support\MediathequeConfig;
 use Illuminate\Contracts\Filesystem\Factory as Filesystems;
+use Illuminate\Filesystem\AwsS3V3Adapter;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Date;
 
@@ -19,6 +20,10 @@ use Illuminate\Support\Facades\Date;
  *   S3-compatible disks sign them, and local disks that serve their files
  *   (`'serve' => true`) sign a route that streams them. On a disk that can't
  *   sign URLs, a private file has no URL.
+ * - A temporary URL that downloads its file asks S3 and S3-compatible disks
+ *   for a `Content-Disposition` header (`ResponseContentDisposition`). A
+ *   local disk's signed route has no such option: there, the URL shows the
+ *   file.
  */
 class DiskUrlGenerator implements UrlGenerator
 {
@@ -39,8 +44,9 @@ class DiskUrlGenerator implements UrlGenerator
         return $disk !== null && $path !== null ? $disk->url($path) : null;
     }
 
-    public function temporaryUrl(File $file, DateTimeInterface $expiration): ?string
+    public function temporaryUrl(File $file, DateTimeInterface $expiration, bool|string $download = false): ?string
     {
+        $download = Download::of($file, $download);
         $disk = $this->disk($file);
         $path = $file->path();
 
@@ -48,7 +54,11 @@ class DiskUrlGenerator implements UrlGenerator
             return null;
         }
 
-        return $disk->temporaryUrl($path, $expiration);
+        $options = $download !== null && $disk instanceof AwsS3V3Adapter
+            ? ['ResponseContentDisposition' => $download->contentDisposition()]
+            : [];
+
+        return $disk->temporaryUrl($path, $expiration, $options);
     }
 
     private function disk(File $file): ?FilesystemAdapter

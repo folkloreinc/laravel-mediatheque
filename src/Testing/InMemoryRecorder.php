@@ -212,6 +212,7 @@ class InMemoryRecorder implements Recorder
                 partsCount: $output->partsCount,
                 metadata: $position === 0 ? [...$output->metadata, ...$outputs->metadata] : $output->metadata,
                 definitionHash: $rendition->definitionHash(),
+                name: basename($output->path),
             ));
         }
     }

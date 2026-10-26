@@ -6,6 +6,15 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Breaking changes
+
+- `UrlGenerator::temporaryUrl()`, `File::temporaryUrl()` and `Media::temporaryUrl()` take a third parameter, `bool|string $download = false`: a class that implements them, or a model that overrides them, adds it too (#102).
+- The `File` contract has `name()`, the file's name as stored: a class that implements it implements it too (#102).
+
+### Added
+
+- Temporary URLs that download their file rather than show it, under its name (`download: true`) or another one (`download: 'clip.mp4'`), on the `UrlGenerator`, files, media and the fake. On S3 and S3-compatible disks, such as DigitalOcean Spaces, the presigned URL asks for `Content-Disposition: attachment` with the name in UTF-8 (`filename*`) and in ASCII (`filename`), as RFC 6266 describes. A local disk ignores the option: Laravel's signed route has no equivalent. A name that is not a file name throws `InvalidArgumentException`. The fake's URLs carry the name as `download` (#102).
+
 ### Changed
 
 - The docs and `HasMedias`' docblock give `json` as the handle that JSON references sync under, for every JSON column of a model, as `laravel-json-data` and `laravel-folklore` 2 do: [decisions/0021](docs/decisions/0021-json-references-handle.md) amends 0020, which said `json:{column}` (#104).

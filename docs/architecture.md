@@ -357,11 +357,13 @@ A media is `public` or `private`. Its files follow its visibility on their sourc
 $media->url();                                    // the main rendition, or the original
 $media->url('h264');
 $media->temporaryUrl('h264', now()->addMinutes(30));
+$media->temporaryUrl(null, now()->addMinutes(30), download: 'clip.mp4');   // saves the file as clip.mp4
 $media->file('h264')->url();
 ```
 
 - **Public:** the source's URL, through its CDN prefix when configured.
 - **Private:** `url()` returns a temporary URL with the configured lifetime (`urls.temporary_ttl`). Disks that support temporary URLs (S3) sign them themselves. A local disk signs them through Laravel's `serve` option (`'serve' => true` in the disk's config); without it, a private file on a local disk has no URL. The package has no streaming route of its own.
+- **Downloads:** a temporary URL can ask for the file to be saved rather than shown (`download: true` for the file's name, or `download: 'clip.mp4'`), on the `UrlGenerator`, a file and a media. S3 and S3-compatible disks (DigitalOcean Spaces) answer it with `Content-Disposition: attachment`, the name in UTF-8 (`filename*`) and in ASCII (`filename`), as RFC 6266 describes. A local disk's signed route has no such option, so there the URL shows the file. The file's name is the uploaded file's for an original, and the name its transcoder wrote for a rendition (`h264.mp4`): give a name to download a rendition under the media's. A name given by the application must be a file name, without a directory or control characters ([#102](https://github.com/folkloreinc/laravel-mediatheque/issues/102)).
 - **CDN signing** goes through a `UrlSigner` contract, for CDNs that sign their own URLs.
 - **Private HLS** needs signed segments: the playlist is rewritten through a signed route, or the CDN signs by token. This is planned for the beta, with the HLS rendition.
 
