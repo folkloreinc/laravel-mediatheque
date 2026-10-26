@@ -136,6 +136,7 @@ class InstallCommand extends Command
             '2026_10_21_000000_update_mediatheque_tables_for_monitoring.php',
             '2026_10_21_000001_drop_mediatheque_uploads_table.php',
             '2026_10_22_000000_create_mediatheque_medias_pivot_table.php',
+            '2026_10_26_000000_use_jsonb_in_mediatheque_tables_on_postgresql.php',
         ]);
     }
 
