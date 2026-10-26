@@ -29,6 +29,14 @@ class FakeModelsTest extends TestCase
         return $media;
     }
 
+    protected function storeTransform(Media $media, ?array $transform): Media
+    {
+        $this->assertInstanceOf(FakeMedia::class, $media);
+        $media->transform = $transform;
+
+        return $media;
+    }
+
     protected function useMedia(Media $media, string $handle): Media
     {
         $this->assertInstanceOf(FakeMedia::class, $media);

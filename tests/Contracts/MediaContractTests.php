@@ -29,6 +29,14 @@ trait MediaContractTests
      */
     abstract protected function useMedia(Media $media, string $handle): Media;
 
+    /**
+     * Store the edits of a media's image, as Panneau 5 writes them, and
+     * return the media as the implementation reads it again.
+     *
+     * @param  array<string, mixed>|null  $transform
+     */
+    abstract protected function storeTransform(Media $media, ?array $transform): Media;
+
     #[Test]
     public function the_original_is_the_file_with_the_original_handle(): void
     {
@@ -142,5 +150,33 @@ trait MediaContractTests
 
         $this->assertTrue($media->isUsed());
         $this->assertSame(['cover', 'json:data'], $media->usages()->map(fn (MediaUsage $usage) => $usage->handle)->all());
+    }
+
+    #[Test]
+    public function a_media_has_no_transform_until_one_is_stored(): void
+    {
+        $media = $this->mediaWithFiles('image', Visibility::Public, [['original', null, 'original']]);
+
+        $this->assertNull($media->transform());
+    }
+
+    #[Test]
+    public function the_transform_is_read_as_it_was_stored(): void
+    {
+        $media = $this->mediaWithFiles('image', Visibility::Public, [['original', null, 'original']]);
+        $transform = [
+            'crop' => ['x' => 0, 'y' => 120, 'width' => 1600, 'height' => 900],
+            'rotate' => 90,
+            'flipX' => true,
+            'flipY' => false,
+            'focalPoint' => ['x' => 0.3, 'y' => 0.6],
+        ];
+
+        $media = $this->storeTransform($media, $transform);
+        // An object's keys can come back in another order: MySQL and
+        // PostgreSQL's jsonb sort them
+        $this->assertEquals($transform, $media->transform());
+
+        $this->assertNull($this->storeTransform($media, null)->transform());
     }
 }

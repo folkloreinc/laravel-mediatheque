@@ -38,6 +38,7 @@ class FakeMedia implements Media
      * @param  array<string, mixed>  $metadata
      * @param  array<string, mixed>  $data
      * @param  array<string, mixed>  $attributes  The application's columns, given to ingest
+     * @param  array<string, mixed>|null  $transform  The edits of its image, as Panneau 5 stores them
      */
     public function __construct(
         public int $id,
@@ -50,6 +51,7 @@ class FakeMedia implements Media
         public array $data = [],
         public ?string $mainRendition = null,
         public array $attributes = [],
+        public ?array $transform = null,
     ) {}
 
     public function uid(): string
@@ -80,6 +82,11 @@ class FakeMedia implements Media
     public function metadata(?string $key = null, mixed $default = null): mixed
     {
         return $key === null ? $this->metadata : Arr::get($this->metadata, $key, $default);
+    }
+
+    public function transform(): ?array
+    {
+        return $this->transform;
     }
 
     public function original(): ?File

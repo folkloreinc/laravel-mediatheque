@@ -6,15 +6,19 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
-The migrations and the test suite run on PostgreSQL, and CI runs the tests on PostgreSQL 17 (#103). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new migration only, which changes nothing on SQLite and MySQL.
+The migrations and the test suite run on PostgreSQL, and CI runs the tests on PostgreSQL 17 (#103). A media stores the edits of its image, and images their EXIF orientation (#107). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new migrations only, which add the `transform` column, and turn the JSON columns into `jsonb` on PostgreSQL.
 
 ### Breaking changes
 
+- The `Media` contract has `transform()`: a class that implements it implements it too (#107).
 - `UrlGenerator::temporaryUrl()`, `File::temporaryUrl()` and `Media::temporaryUrl()` take a third parameter, `bool|string $download = false`: a class that implements them, or a model that overrides them, adds it too (#102).
 - The `File` contract has `name()`, the file's name as stored: a class that implements it implements it too (#102).
 
 ### Added
 
+- A media's `transform`: the non-destructive edits of its image, in the shape of Panneau 5's `MediaTransform` (`crop`, `rotate`, `flipX`, `flipY`, `focalPoint`), stored outside `metadata` by the new `add_transform_to_mediatheque_medias_table` migration, and read by `$media->transform()`, on the package's model and the fake's media. Its cast checks the shape when it is written and throws `InvalidTransform` otherwise. `replaceOriginal()` keeps it ([decisions/0022](docs/decisions/0022-image-transform-and-orientation.md), #107).
+- The `media` resolver of `laravel-image` passes the file's `orientation` to the `ImageSource`, and the media's `transform`, focal point included, for its image: the original of an `image` media, not a video's poster or thumbnails. The source's version stays the file's: `laravel-image` adds the edits to the version of URLs, from the pre-release that ships folkloreinc/laravel-image#101, which also reads `flipX` and `flipY` (#107).
+- The canonical metadata key `orientation`: an image's EXIF orientation, from 1 to 8, when it declares one, on the media and its original. Originals are not turned upright; `width` and `height` stay the upright size (#107).
 - The `use_jsonb_in_mediatheque_tables_on_postgresql` migration: on PostgreSQL, the JSON columns of the media, files, runs and renditions become `jsonb`, which can be compared and indexed. A column whose type is no longer `json` is left as it is. The other databases keep `json` (#103).
 - A path placeholder `{media.<attribute>}` reads the media model's accessor when no column has that name, so paths can be grouped by a tenant's public id (`{media.tenant_uid}`) rather than by its sequential key. An accessor can read a relation whose foreign key `attributes` sets at ingest. A column keeps its raw value, even with a cast or an accessor of the same name, and a model that prevents accessing missing attributes gets `InvalidPath` for an attribute that has neither (#64).
 - Temporary URLs that download their file rather than show it, on the `UrlGenerator`, files, media and the fake: `download: 'clip.mp4'` names the file, and `download: true` takes the file's name on a file, and on a media its name with the extension of the file it serves (`episode-1.mp4`), or the file's name when the media has none. On S3 and S3-compatible disks, such as DigitalOcean Spaces, the presigned URL asks for `Content-Disposition: attachment` with the name in UTF-8 (`filename*`) and in ASCII (`filename`), as RFC 6266 describes. A local disk ignores the option: Laravel's signed route has no equivalent. A name that is not a file name throws `InvalidArgumentException`. The fake's URLs carry the name as `download` (#102).

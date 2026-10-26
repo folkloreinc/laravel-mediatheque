@@ -32,8 +32,15 @@ enum MetadataKey: string
     /** In pixels. */
     case Height = 'height';
 
-    /** In degrees, clockwise: 0, 90, 180 or 270. */
+    /** In degrees, clockwise: 0, 90, 180 or 270. A video's. */
     case Rotation = 'rotation';
+
+    /**
+     * The EXIF orientation of an image, from 1 to 8, when it declares one.
+     * The file is stored as it is: renderers turn it upright, and `width`
+     * and `height` are the upright size.
+     */
+    case Orientation = 'orientation';
 
     /** In seconds. */
     case Duration = 'duration';

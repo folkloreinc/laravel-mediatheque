@@ -185,4 +185,78 @@ class MediaResolverTest extends DatabaseTestCase
     {
         $this->assertInstanceOf(MediaResolver::class, app(SourceResolvers::class)->named('media'));
     }
+
+    /**
+     * The edits of an image, as Panneau 5 stores them.
+     *
+     * @return array<string, mixed>
+     */
+    private static function transform(): array
+    {
+        return [
+            'crop' => ['x' => 0, 'y' => 120, 'width' => 800, 'height' => 450],
+            'rotate' => 90,
+            'flipX' => true,
+            'flipY' => false,
+            'focalPoint' => ['x' => 0.3, 'y' => 0.6],
+        ];
+    }
+
+    #[Test]
+    public function an_image_resolves_with_its_orientation(): void
+    {
+        $media = $this->image();
+        $this->assertNull($this->resolver()->resolve($media)->orientation);
+
+        $original = $media->original();
+        $this->assertInstanceOf(File::class, $original);
+        $original->forceFill(['metadata' => ['orientation' => 6]])->save();
+
+        $this->assertSame(6, $this->resolver()->resolveKey($media->uid)->orientation);
+    }
+
+    #[Test]
+    public function an_original_without_its_orientation_takes_the_media_s(): void
+    {
+        $media = $this->image(['metadata' => ['orientation' => 8]]);
+
+        $this->assertSame(8, $this->resolver()->resolve($media)->orientation);
+        $this->assertNull($this->resolver()->resolve($this->video())->orientation, 'A poster is upright.');
+    }
+
+    #[Test]
+    public function an_image_resolves_with_the_crop_rotation_and_focal_point_of_its_transform(): void
+    {
+        $media = $this->image(['transform' => self::transform()]);
+
+        $source = $this->resolver()->resolveKey($media->uid);
+
+        $this->assertSame([0, 120, 800, 450], [$source->transform?->crop?->x, $source->transform?->crop?->y, $source->transform?->crop?->width, $source->transform?->crop?->height]);
+        $this->assertSame(90, $source->transform?->rotate);
+        $this->assertSame([0.3, 0.6], [$source->focalPoint?->x, $source->focalPoint?->y]);
+        $this->assertSame('a1b2c3d4', $source->version, 'The version stays the file\'s: laravel-image adds the edits.');
+        $this->assertSame(90, $this->resolver()->resolveKey($media->uid.'/original')->transform?->rotate);
+    }
+
+    #[Test]
+    public function an_image_without_a_transform_resolves_without_edits(): void
+    {
+        $source = $this->resolver()->resolve($this->image());
+
+        $this->assertNull($source->transform);
+        $this->assertNull($source->focalPoint);
+    }
+
+    #[Test]
+    public function the_transform_of_a_media_does_not_apply_to_a_video_s_poster(): void
+    {
+        $media = $this->video();
+        $media->forceFill(['transform' => self::transform()])->save();
+
+        $source = $this->resolver()->resolveKey($media->uid);
+
+        $this->assertSame('video/poster.jpg', $source->path);
+        $this->assertNull($source->transform);
+        $this->assertNull($source->focalPoint);
+    }
 }

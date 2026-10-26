@@ -53,12 +53,13 @@ class InstallCommandTest extends TestCase
         $this->assertFileExists(config_path('mediatheque.php'));
         $published = $this->published();
         sort($published);
-        $this->assertCount(5, $published);
+        $this->assertCount(6, $published);
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_create_mediatheque_tables\.php$/', $published[0]);
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_update_mediatheque_tables_for_monitoring\.php$/', $published[1], 'Later migrations run after the first one.');
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_drop_mediatheque_uploads_table\.php$/', $published[2]);
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_create_mediatheque_medias_pivot_table\.php$/', $published[3]);
-        $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_use_jsonb_in_mediatheque_tables_on_postgresql\.php$/', $published[4]);
+        $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_add_transform_to_mediatheque_medias_table\.php$/', $published[4]);
+        $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_use_jsonb_in_mediatheque_tables_on_postgresql\.php$/', $published[5]);
     }
 
     #[Test]
@@ -69,7 +70,7 @@ class InstallCommandTest extends TestCase
 
         $this->install();
 
-        $this->assertCount(5, $this->published());
+        $this->assertCount(6, $this->published());
         $this->assertStringContainsString("'local'", (string) file_get_contents(config_path('mediatheque.php')));
     }
 
@@ -85,7 +86,7 @@ class InstallCommandTest extends TestCase
         $this->install();
 
         $published = $this->published();
-        $this->assertCount(5, $published);
+        $this->assertCount(6, $published);
         $this->assertSame($earlier, array_values(array_intersect($published, $earlier)), 'Published migrations are left as they are.');
     }
 
@@ -102,6 +103,7 @@ class InstallCommandTest extends TestCase
         }
         $this->assertTrue(Schema::hasColumns('mediatheque_files', ['media_id', 'handle', 'index', 'role', 'size', 'checksum', 'definition_hash']));
         $this->assertTrue(Schema::hasColumns('mediatheque_pipelines_jobs', ['queued_at']));
+        $this->assertTrue(Schema::hasColumns('mediatheque_medias', ['transform']));
         $this->assertFalse(Schema::hasTable('mediatheque_uploads'));
         $this->assertTrue(Schema::hasIndex('mediatheque_pipelines', ['ended_at']));
         $this->assertTrue(Schema::hasColumns('mediatheque_medias_pivot', ['media_id', 'morphable_type', 'morphable_id', 'handle', 'order']));
@@ -168,7 +170,7 @@ class InstallCommandTest extends TestCase
     private function jsonColumnTypes(): array
     {
         $types = [];
-        foreach (['medias' => ['metadata', 'data'], 'pipelines' => ['definition', 'error'], 'pipelines_jobs' => ['error'], 'files' => ['metadata']] as $table => $columns) {
+        foreach (['medias' => ['metadata', 'data', 'transform'], 'pipelines' => ['definition', 'error'], 'pipelines_jobs' => ['error'], 'files' => ['metadata']] as $table => $columns) {
             foreach (Schema::getColumns('mediatheque_'.$table) as $column) {
                 if (in_array($column['name'], $columns, true)) {
                     $types[$table.'.'.$column['name']] = $column['type_name'];

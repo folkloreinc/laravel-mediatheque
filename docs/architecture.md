@@ -61,6 +61,7 @@ A media is one piece of content: a video, an audio file, an image, a document, a
 | `visibility` | `Visibility` enum: `public` or `private` ([decisions/0007](decisions/0007-visibility-and-urls.md)) |
 | `metadata` | JSON, with the [canonical keys](#metadata-keys): `width`, `height`, `duration`, `frame_rate`, `video_codec`, `pages_count`, `font_names`, `palette`, `thumbhash`, `locale`… |
 | `data` | JSON for the application (kept from 1.x) |
+| `transform` | JSON: the non-destructive edits of an image, as Panneau 5's editor writes them (`crop`, `rotate`, `flipX`, `flipY`, `focalPoint`), or null ([decisions/0022](decisions/0022-image-transform-and-orientation.md)) |
 | `derived_from_id` | The media it was derived from (a clip, a caption track) |
 | `deleted_at` | Soft deletes |
 
@@ -68,6 +69,7 @@ A media is one piece of content: a video, an audio file, an image, a document, a
 $media->uid();                        // "med_01JAB…"
 $media->status();                     // MediaStatus::Ready
 $media->metadata('duration');         // 2851.2
+$media->transform();                  // ['crop' => [...], 'rotate' => 90, 'focalPoint' => [...]] or null
 $media->original();                   // File
 $media->file('h264');                 // File|null
 $media->file('thumbnails', 2);        // third file of a group
@@ -104,7 +106,8 @@ Metadata keys are snake_case and come from one list, so every prober and transco
 | `kind` | `image`, `video`, `audio`, `document`, `font` or `other`: the probe's kind, shared by every prober and transcoder |
 | `mime`, `extension`, `size`, `checksum` | Detected from the content; `checksum` is a SHA-256 in hex |
 | `filename` | The name the file was ingested with |
-| `width`, `height`, `rotation` | Pixels; rotation in degrees, clockwise (0, 90, 180, 270) |
+| `width`, `height`, `rotation` | Pixels, the displayed (upright) size; a video's rotation in degrees, clockwise (0, 90, 180, 270) |
+| `orientation` | An image's EXIF orientation, from 1 to 8, when it declares one. Originals are stored as they are: renderers (`laravel-image`) turn them upright |
 | `duration`, `frame_rate`, `bitrate` | Seconds, frames per second, bits per second |
 | `video_codec`, `audio_codec`, `audio_channels` | |
 | `pages_count` | Documents |
@@ -371,14 +374,19 @@ $media->file('h264')->url();
 
 Image renditions (sizes, crops, formats) are not stored by the mediatheque: `laravel-image` 2 renders them on the fly from the original. The mediatheque provides the `media` resolver of `laravel-image` (its `SourceResolver` contract), registered when `laravel-image` is installed, so image URLs never expose storage paths. Video posters and thumbnails, which come out of a pipeline, are files of the media and go through `laravel-image` the same way.
 
-The resolver turns a media (its contract), a `MediaReference`, `media://med_…`, a uid or a key with a handle (`med_…/poster`) into an `ImageSource`: the key, a version, the disk and path of the file, its metadata (`width`, `height`, `mime`, `thumbhash`) and whether it is private. [decisions/0013](decisions/0013-media-resolver-for-laravel-image.md) has the rules, agreed with `laravel-image` ([its decision 0010](https://github.com/folkloreinc/laravel-image/blob/v2.x/docs/decisions/0010-media-resolver.md)):
+The resolver turns a media (its contract), a `MediaReference`, `media://med_…`, a uid or a key with a handle (`med_…/poster`) into an `ImageSource`: the key, a version, the disk and path of the file, its metadata (`width`, `height`, `mime`, `orientation`, `thumbhash`), the media's `transform` and focal point for its image, and whether it is private. [decisions/0013](decisions/0013-media-resolver-for-laravel-image.md) has the rules, agreed with `laravel-image` ([its decision 0010](https://github.com/folkloreinc/laravel-image/blob/v2.x/docs/decisions/0010-media-resolver.md)):
 
 - the version is the first 8 hex characters of the resolved file's `checksum`;
 - `med_…` resolves to the original of an image and the `thumbnail()` of other types; `med_…/{handle}` and `med_…/{handle}/{index}` to a file of the media (`med_…/thumbnails/2`); only image files resolve;
 - a source is a Laravel disk name;
 - deleted media don't resolve; pending and failed media resolve to the image files they have.
 
-Still to settle with `laravel-image` 2 and Panneau 5, in [laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88): `orientation` and the dominant color in the canonical keys, where the focal point and `transform` live on the media, and clearing derivatives on `MediaVisibilityChanged` and `OriginalReplaced`. The media has no `transform` yet ([roadmap.md](roadmap.md#protected-playback-next)).
+The edits of an image were settled with `laravel-image` 2 and Panneau 5 in [laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88) ([decisions/0022](decisions/0022-image-transform-and-orientation.md)):
+
+- the media's `transform` (crop, rotation, flips, focal point, in pixels of and relative to the upright original) applies to the original of an `image` media, not to a video's poster or thumbnails; `laravel-image` hashes it into the version of URLs, so editing a media gives new URLs;
+- `orientation` is the image's EXIF orientation; originals are stored as they were uploaded, and `laravel-image` turns renderings upright;
+- the dominant color is `palette[0]`;
+- `laravel-image` clears a media's derivatives on `MediaVisibilityChanged` and `OriginalReplaced`.
 
 ## JSON resource
 

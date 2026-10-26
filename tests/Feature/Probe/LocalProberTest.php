@@ -114,8 +114,20 @@ class LocalProberTest extends TestCase
         $jpeg = $this->probe('media/image.jpg', 'image/jpeg')->metadata;
         $gif = $this->probe('media/animated.gif', 'image/gif')->metadata;
 
-        $this->assertSame(['kind' => 'image', 'mime' => 'image/jpeg', 'width' => 800, 'height' => 600, 'animated' => false], $jpeg);
+        $this->assertSame(['kind' => 'image', 'mime' => 'image/jpeg', 'width' => 800, 'height' => 600, 'orientation' => 1, 'animated' => false], $jpeg);
         $this->assertSame([400, 400, true], [$gif['width'], $gif['height'], $gif['animated']]);
+        $this->assertArrayNotHasKey('orientation', $gif, 'A GIF declares no orientation.');
+    }
+
+    #[Test]
+    public function an_image_turned_by_its_exif_orientation_has_its_upright_size_and_its_orientation(): void
+    {
+        $this->requiresImagick();
+
+        // 80 by 60 pixels, to be shown turned a quarter clockwise (6)
+        $metadata = $this->probe('media/image-orientation-6.jpg', 'image/jpeg')->metadata;
+
+        $this->assertSame([60, 80, 6], [$metadata['width'], $metadata['height'], $metadata['orientation']]);
     }
 
     #[Test]

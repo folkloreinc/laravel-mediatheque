@@ -25,6 +25,7 @@ One file per decision. A decision is not edited once accepted: a later one repla
 | [0019](0019-replace-original.md) | Replacing a media's original | Accepted |
 | [0020](0020-attachments-by-handle-and-usages.md) | Attachments by handle, and the usage graph | Accepted, amended by 0021 |
 | [0021](0021-json-references-handle.md) | JSON references sync under one handle, `json` | Accepted |
+| [0022](0022-image-transform-and-orientation.md) | The transform, focal point and orientation of an image | Accepted |
 
 Template:
 

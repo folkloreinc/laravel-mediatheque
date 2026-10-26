@@ -44,6 +44,16 @@ interface Media
     public function metadata(?string $key = null, mixed $default = null): mixed;
 
     /**
+     * The non-destructive edits of the media's image, as Panneau 5 stores
+     * them (`MediaTransform`: crop, rotate, flipX, flipY and focalPoint), or
+     * null when it has none (docs/decisions/0022). The crop and the focal
+     * point are relative to the upright original.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function transform(): ?array;
+
+    /**
      * The ingested file. Null while a media imported from a URL waits for
      * its download.
      */
