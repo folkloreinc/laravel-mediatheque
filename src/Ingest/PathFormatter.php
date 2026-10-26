@@ -19,7 +19,9 @@ use Stringable;
  * Placeholders:
  *
  * - `{media.<attribute>}`: an attribute of the media's model, such as
- *   `{media.uid}` or an application's `{media.tenant_id}`;
+ *   `{media.uid}` or an application's `{media.tenant_id}`. A column gives
+ *   its raw value; an attribute that no column has is read from the model's
+ *   accessor, such as `{media.tenant_uid}`;
  * - `{type}`, `{handle}`, `{extension}`;
  * - `{index}`: `-2` for the file at index 2 of a group, empty for a single
  *   file;
@@ -139,7 +141,22 @@ final class PathFormatter
             throw new InvalidPath(sprintf('The placeholder {media.%s} needs an Eloquent media model.', $attribute));
         }
 
-        return $media->getAttributes()[$attribute] ?? null;
+        // A column gives its raw value, as stored, even if the model casts it
+        // or has an accessor of the same name
+        $attributes = $media->getAttributes();
+        if (array_key_exists($attribute, $attributes)) {
+            return $attributes[$attribute];
+        }
+
+        // Without one, an accessor gives it, such as a tenant's public id
+        // read through a relation. Without an accessor either, the attribute
+        // is missing, even when the model prevents accessing missing
+        // attributes.
+        if ($media->hasAnyGetMutator($attribute)) {
+            return $media->getAttribute($attribute);
+        }
+
+        return null;
     }
 
     private function date(Media $media, string $format): string

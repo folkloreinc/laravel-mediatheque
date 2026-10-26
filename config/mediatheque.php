@@ -70,7 +70,8 @@ return [
     | overwrites the files of another. Paths are recorded on the files.
     |
     | Placeholders: {media.<attribute>} (any attribute of your media model,
-    | such as {media.uid} or {media.tenant_id}), {type}, {handle}, {index}
+    | such as {media.uid} or {media.tenant_id}: a column's raw value, or an
+    | accessor's when no column has that name), {type}, {handle}, {index}
     | ("-2" in a group, empty otherwise), {extension}, {run} and {date(Y/m)}.
     |
     */

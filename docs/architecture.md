@@ -360,11 +360,13 @@ A media is `public` or `private`. Its files follow its visibility on their sourc
 $media->url();                                    // the main rendition, or the original
 $media->url('h264');
 $media->temporaryUrl('h264', now()->addMinutes(30));
+$media->temporaryUrl(null, now()->addMinutes(30), download: 'clip.mp4');   // saves the file as clip.mp4
 $media->file('h264')->url();
 ```
 
 - **Public:** the source's URL, through its CDN prefix when configured.
 - **Private:** `url()` returns a temporary URL with the configured lifetime (`urls.temporary_ttl`). Disks that support temporary URLs (S3) sign them themselves. A local disk signs them through Laravel's `serve` option (`'serve' => true` in the disk's config); without it, a private file on a local disk has no URL. The package has no streaming route of its own.
+- **Downloads:** a temporary URL can ask for the file to be saved rather than shown (`download: true`, or `download: 'clip.mp4'`), on the `UrlGenerator`, a file and a media. On a media, `true` is its name with the extension of the file it serves (`episode-1.mp4`), or the file's name when the media has none; on a file, the file's name. S3 and S3-compatible disks (DigitalOcean Spaces) answer it with `Content-Disposition: attachment`, the name in UTF-8 (`filename*`) and in ASCII (`filename`), as RFC 6266 describes. A local disk's signed route has no such option, so there the URL shows the file. A file's name is the uploaded file's for an original, and the name its transcoder wrote for a rendition (`h264.mp4`). A name given by the application must be a file name, without a directory or control characters ([#102](https://github.com/folkloreinc/laravel-mediatheque/issues/102)).
 - **CDN signing** goes through a `UrlSigner` contract, for CDNs that sign their own URLs.
 - **Private HLS** needs signed segments: the playlist is rewritten through a signed route, or the CDN signs by token. This is planned for the beta, with the HLS rendition.
 
@@ -479,7 +481,7 @@ The fake stores files on fake disks, returns probe fixtures, and completes rendi
 - **Models.** `Media`, `File`, `PipelineRun` and `PipelineJob` are bound to contracts and set in the config (`models.media`…). Applications extend them to add columns, scopes and relations. The contracts are methods; the Eloquent relations have other names (`mediaFiles()`, `pipelineJobs()`…, [decisions/0014](decisions/0014-run-outcomes-and-model-contracts.md)).
 - **Migrations.** `mediatheque:install` publishes the migrations; the package does not load them itself. The application owns its schema and can add its own columns (a tenant id, for example) in the same migration ([decisions/0015](decisions/0015-new-install-schema-attributes-and-uploads.md)).
 - **Global scopes.** Package workers load models through the morph map and without global scopes, so a tenant scope that depends on the current request does not hide media from queued jobs.
-- **Path formatter.** Receives the media and the file: `{media.uid}`, `{media.tenant_id}`, `{type}`, `{handle}`, `{index}` (`-2` in a group, empty otherwise), `{extension}`, `{date(Y/m)}`. It builds originals with `file_path_format`, and each run's prefix with `run_path_format` (the media's placeholders and `{run}`). Every driver writes a run's files under its prefix: remote transcoders with their own file names, the `ffmpeg` driver with the last segment of `file_path_format`. A placeholder that names a missing attribute, or a value that would leave its directory, throws. Paths are recorded, so consumers never rebuild them.
+- **Path formatter.** Receives the media and the file: `{media.uid}`, `{media.tenant_id}` (a column's raw value, or the model's accessor when no column has that name, such as `{media.tenant_uid}`), `{type}`, `{handle}`, `{index}` (`-2` in a group, empty otherwise), `{extension}`, `{date(Y/m)}`. It builds originals with `file_path_format`, and each run's prefix with `run_path_format` (the media's placeholders and `{run}`). Every driver writes a run's files under its prefix: remote transcoders with their own file names, the `ffmpeg` driver with the last segment of `file_path_format`. A placeholder that names a missing attribute, or a value that would leave its directory, throws. Paths are recorded, so consumers never rebuild them.
 - **Types, renditions, transcoders, probers, URL signers and sources** register through the config or `Mediatheque::extend*()`.
 
 ## Commands

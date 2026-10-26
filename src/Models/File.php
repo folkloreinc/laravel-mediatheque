@@ -61,6 +61,7 @@ class File extends Model implements FileContract
             'role' => 'string',
             'source' => 'string',
             'path' => 'string',
+            'name' => 'string',
             'mime' => 'string',
             'checksum' => 'string',
             'size' => 'integer',
@@ -121,6 +122,11 @@ class File extends Model implements FileContract
     public function path(): ?string
     {
         return $this->path;
+    }
+
+    public function name(): ?string
+    {
+        return $this->name;
     }
 
     public function mime(): ?string
@@ -187,8 +193,8 @@ class File extends Model implements FileContract
         return app(UrlGenerator::class)->url($this);
     }
 
-    public function temporaryUrl(DateTimeInterface $expiration): ?string
+    public function temporaryUrl(DateTimeInterface $expiration, bool|string $download = false): ?string
     {
-        return app(UrlGenerator::class)->temporaryUrl($this, $expiration);
+        return app(UrlGenerator::class)->temporaryUrl($this, $expiration, $download);
     }
 }

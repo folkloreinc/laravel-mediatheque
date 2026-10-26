@@ -35,6 +35,7 @@ class FakeFile implements File
         public array $metadata = [],
         public ?string $definitionHash = null,
         public ?string $provider = null,
+        public ?string $name = null,
     ) {}
 
     public function handle(): string
@@ -60,6 +61,11 @@ class FakeFile implements File
     public function path(): ?string
     {
         return $this->path;
+    }
+
+    public function name(): ?string
+    {
+        return $this->name;
     }
 
     public function mime(): ?string
@@ -122,8 +128,8 @@ class FakeFile implements File
         return $this->urls->url($this);
     }
 
-    public function temporaryUrl(DateTimeInterface $expiration): ?string
+    public function temporaryUrl(DateTimeInterface $expiration, bool|string $download = false): ?string
     {
-        return $this->urls->temporaryUrl($this, $expiration);
+        return $this->urls->temporaryUrl($this, $expiration, $download);
     }
 }

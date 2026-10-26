@@ -1,6 +1,6 @@
 # 0015: The schema of a new install, application attributes, and uploads
 
-- Status: accepted, amended by [0016](0016-uploads-signed-for-uppy-6.md) and [0018](0018-ingest-only.md): uploads left the package
+- Status: accepted, amended by [0016](0016-uploads-signed-for-uppy-6.md) and [0018](0018-ingest-only.md): uploads left the package; amended on 2026-10-26: placeholders read accessors (#64)
 - Date: 2026-10-16
 
 ## Context
@@ -34,6 +34,7 @@ Presigned multipart uploads ([0006](0006-ingest-and-uploads.md)) take several re
 
 - `IngestOptions` has **`attributes`**: columns of the application's media model, set before the path is built and the media saved. `Mediatheque::ingest()` takes them as a named argument (`attributes: ['tenant_id' => $tenant->id]`).
 - The path formatter reads any attribute of the media (`{media.tenant_id}`). A placeholder that names a missing or empty attribute throws, rather than building a path without it.
+- (Amended on 2026-10-26, [#64](https://github.com/folkloreinc/laravel-mediatheque/issues/64).) An attribute that no column has is read from the model's accessor, so a path can hold a tenant's public id rather than its sequential key: `{media.tenant_uid}` from a `tenantUid()` accessor that reads the tenant relation, whose foreign key `attributes` sets before the path is built. A column keeps its raw value, even when the model casts it or has an accessor of the same name, so the paths of existing media don't change.
 - The upload routes get them from the application: `Mediatheque::uploadsUsing(fn (Request $request) => new IngestOptions(attributes: [...]))` returns the options of the media an upload creates, so the application decides them from its own context (the current tenant, a route parameter), never from fields the client sends.
 
 ### Uploads

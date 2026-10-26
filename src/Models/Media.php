@@ -22,6 +22,7 @@ use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Support\MediaUsage;
 use Folklore\Mediatheque\Support\Models;
 use Folklore\Mediatheque\Support\Uid;
+use Folklore\Mediatheque\Urls\Download;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -229,9 +230,11 @@ class Media extends Model implements MediaContract
         return $this->playedFile($handle)?->url();
     }
 
-    public function temporaryUrl(?string $handle, DateTimeInterface $expiration): ?string
+    public function temporaryUrl(?string $handle, DateTimeInterface $expiration, bool|string $download = false): ?string
     {
-        return $this->playedFile($handle)?->temporaryUrl($expiration);
+        $file = $this->playedFile($handle);
+
+        return $file?->temporaryUrl($expiration, Download::ofMedia($this, $file, $download)->filename ?? false);
     }
 
     public function usages(): Collection

@@ -59,14 +59,14 @@ Released with [#85](https://github.com/folkloreinc/laravel-mediatheque/issues/85
 - [x] Migrations that run on MySQL, and a CI job on MySQL 8.4 ([#98](https://github.com/folkloreinc/laravel-mediatheque/issues/98)), in 2.0.0-alpha.7
 - [x] The handle of JSON references in the usage graph is `json`, for every JSON column of a model, as `laravel-json-data` and `laravel-folklore` 2 sync it ([decisions/0021](decisions/0021-json-references-handle.md), [#104](https://github.com/folkloreinc/laravel-mediatheque/issues/104))
 - [x] The test suite on PostgreSQL, with `jsonb` ([#103](https://github.com/folkloreinc/laravel-mediatheque/issues/103))
-- [ ] Path placeholders that read a model accessor, for a tenant's public id ([#64](https://github.com/folkloreinc/laravel-mediatheque/issues/64))
+- [x] Path placeholders that read a model accessor, for a tenant's public id ([#64](https://github.com/folkloreinc/laravel-mediatheque/issues/64))
 
 ## Protected playback (next)
 
 What the pilot needs for its reserved videos.
 
 - [ ] Visibility changes, and CDN prefixes for public files
-- [ ] Temporary URLs that download the file, with its name ([#102](https://github.com/folkloreinc/laravel-mediatheque/issues/102))
+- [x] Temporary URLs that download the file, with its name ([#102](https://github.com/folkloreinc/laravel-mediatheque/issues/102))
 - [ ] `MediaResource` and `FileResource`, in sync with Panneau 5's protocol, and with the `legacy` shape that `laravel-folklore` 2's `MediaResource` uses
 - [x] The `transform`, focal point and `orientation` of an image, settled with `laravel-image` 2 and Panneau 5 ([laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88)), then stored on the media ([#107](https://github.com/folkloreinc/laravel-mediatheque/issues/107))
 - [ ] Images at ingest: HEIC, orientation, GPS removal, ThumbHash placeholder
