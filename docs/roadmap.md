@@ -59,7 +59,7 @@ Released with [#85](https://github.com/folkloreinc/laravel-mediatheque/issues/85
 - [x] Migrations that run on MySQL, and a CI job on MySQL 8.4 ([#98](https://github.com/folkloreinc/laravel-mediatheque/issues/98)), in 2.0.0-alpha.7
 - [ ] The handle of JSON references in the usage graph is `json`, for every JSON column of a model, as `laravel-json-data` and `laravel-folklore` 2 sync it ([decisions/0021](decisions/0021-json-references-handle.md), [#104](https://github.com/folkloreinc/laravel-mediatheque/issues/104))
 - [ ] The test suite on PostgreSQL, with `jsonb` ([#103](https://github.com/folkloreinc/laravel-mediatheque/issues/103))
-- [ ] Path placeholders that read a model accessor, for a tenant's public id ([#64](https://github.com/folkloreinc/laravel-mediatheque/issues/64))
+- [x] Path placeholders that read a model accessor, for a tenant's public id ([#64](https://github.com/folkloreinc/laravel-mediatheque/issues/64))
 
 ## Protected playback (next)
 

@@ -6,6 +6,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Added
+
+- A path placeholder `{media.<attribute>}` reads the media model's accessor when no column has that name, so paths can be grouped by a tenant's public id (`{media.tenant_uid}`) rather than by its sequential key. An accessor can read a relation whose foreign key `attributes` sets at ingest. A column keeps its raw value, even with a cast or an accessor of the same name, and a model that prevents accessing missing attributes gets `InvalidPath` for an attribute that has neither (#64).
+
 ### Changed
 
 - The docs and `HasMedias`' docblock give `json` as the handle that JSON references sync under, for every JSON column of a model, as `laravel-json-data` and `laravel-folklore` 2 do: [decisions/0021](docs/decisions/0021-json-references-handle.md) amends 0020, which said `json:{column}` (#104).
