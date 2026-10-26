@@ -12,6 +12,7 @@ use Folklore\Mediatheque\Exceptions\FileRejected;
 use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
 use Folklore\Mediatheque\Support\MediaUsage;
+use Folklore\Mediatheque\Urls\Download;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -113,9 +114,11 @@ class FakeMedia implements Media
         return $this->playedFile($handle)?->url();
     }
 
-    public function temporaryUrl(?string $handle, DateTimeInterface $expiration): ?string
+    public function temporaryUrl(?string $handle, DateTimeInterface $expiration, bool|string $download = false): ?string
     {
-        return $this->playedFile($handle)?->temporaryUrl($expiration);
+        $file = $this->playedFile($handle);
+
+        return $file?->temporaryUrl($expiration, Download::ofMedia($this, $file, $download)->filename ?? false);
     }
 
     public function usages(): Collection

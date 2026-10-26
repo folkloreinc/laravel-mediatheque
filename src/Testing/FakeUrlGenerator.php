@@ -6,12 +6,14 @@ use DateTimeInterface;
 use Folklore\Mediatheque\Contracts\Models\File;
 use Folklore\Mediatheque\Contracts\UrlGenerator;
 use Folklore\Mediatheque\Enums\Visibility;
+use Folklore\Mediatheque\Urls\Download;
 use Illuminate\Contracts\Filesystem\Factory as Filesystems;
 use Illuminate\Support\Facades\Date;
 
 /**
  * URLs on the fake's disks. Temporary URLs carry their expiry and a fake
- * signature, so tests can tell them apart.
+ * signature, so tests can tell them apart, and the name a download URL saves
+ * its file under (`download`).
  */
 class FakeUrlGenerator implements UrlGenerator
 {
@@ -29,8 +31,9 @@ class FakeUrlGenerator implements UrlGenerator
         return $this->publicUrl($file);
     }
 
-    public function temporaryUrl(File $file, DateTimeInterface $expiration): ?string
+    public function temporaryUrl(File $file, DateTimeInterface $expiration, bool|string $download = false): ?string
     {
+        $download = Download::of($file, $download);
         $url = $this->publicUrl($file);
         if ($url === null) {
             return null;
@@ -40,7 +43,8 @@ class FakeUrlGenerator implements UrlGenerator
 
         return $url.'?'.http_build_query([
             'expires' => $expires,
-            'signature' => hash_hmac('sha256', $file->path().'|'.$expires, 'mediatheque-fake'),
+            'download' => $download?->filename,
+            'signature' => hash_hmac('sha256', implode('|', array_filter([$file->path(), $expires, $download?->filename], fn ($part) => $part !== null)), 'mediatheque-fake'),
         ]);
     }
 

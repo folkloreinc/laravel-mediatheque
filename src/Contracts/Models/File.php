@@ -39,6 +39,12 @@ interface File
      */
     public function path(): ?string;
 
+    /**
+     * The file's name: the uploaded file's for an original, the one its
+     * transcoder wrote for a rendition (`h264.mp4`).
+     */
+    public function name(): ?string;
+
     public function mime(): ?string;
 
     /**
@@ -89,5 +95,10 @@ interface File
 
     public function url(): ?string;
 
-    public function temporaryUrl(DateTimeInterface $expiration): ?string;
+    /**
+     * @param  bool|string  $download  `true` to download the file under its
+     *                                 name, a file name to download it under that name, or `false` to
+     *                                 show it (UrlGenerator)
+     */
+    public function temporaryUrl(DateTimeInterface $expiration, bool|string $download = false): ?string;
 }
