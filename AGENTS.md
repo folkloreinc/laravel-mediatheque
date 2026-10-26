@@ -36,7 +36,7 @@ database/migrations/ Published by mediatheque:install; the package doesn't load 
 docs/                Current state of 1.x, architecture, decisions, roadmap, upgrade guide
 tests/
   Contracts/         Contract tests (traits): every implementation of a contract runs them
-  Feature/           Orchestra Testbench (SQLite in memory, or MySQL with DB_DRIVER=mysql)
+  Feature/           Orchestra Testbench (SQLite in memory, or DB_DRIVER=mysql or pgsql)
   Unit/
   fixtures/          Sample media, and the 1.x schema and config for the upgrade tests
 ```
@@ -58,13 +58,13 @@ composer test
 - **Every change comes with tests**: contract tests for each contract (a trait in `tests/Contracts/`, used by a test of each implementation, the fake's included), a regression test for each bug fix, a feature test on a fixture for each operation of a transcoder.
 - Tests that need a binary (ffmpeg, Imagick…) or an external service are skipped when it is not available, and CI installs what they need.
 - The `tests/fixtures/v1/` files are the 1.x schema and config as they are on `v1.1`. Don't edit them to make a test pass.
-- The tests run on SQLite in memory. To run them on MySQL, as CI also does, set `DB_DRIVER=mysql` with `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` and `DB_PASSWORD`. A test never creates a table: the application's tables it needs are in `tests/Support/migrations`.
+- The tests run on SQLite in memory. To run them on MySQL or PostgreSQL, as CI also does, set `DB_DRIVER=mysql` or `DB_DRIVER=pgsql` with `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` and `DB_PASSWORD`. A test never creates a table: the application's tables it needs are in `tests/Support/migrations`.
 - Before pushing, run `composer lint`, `composer analyse` and `composer test`, and say in the PR what you ran and what could not run.
 
 ## Workflow
 
 - Branch from `v2.x`, named `<type>/<issue>-<slug>`, and open a pull request to `v2.x`. Nothing is pushed directly to `v2.x`.
-- GitHub Actions (`.github/workflows/ci.yml`) runs Pint, Larastan, the test suite (PHP 8.3–8.5 × Laravel 12 and 13 on SQLite, and PHP 8.4 on MySQL 8.4) and the dashboard's build and tests on every pull request and on `v2.x`. **Merge only when CI is green.** Never skip, disable or weaken a test to get there.
+- GitHub Actions (`.github/workflows/ci.yml`) runs Pint, Larastan, the test suite (PHP 8.3–8.5 × Laravel 12 and 13 on SQLite, and PHP 8.4 on MySQL 8.4 and PostgreSQL 17) and the dashboard's build and tests on every pull request and on `v2.x`. **Merge only when CI is green.** Never skip, disable or weaken a test to get there.
 - `v1.1` is never merged into `v2.x`: their code has nothing in common any more. A 1.x fix that matters to 2.0 is written again for 2.0, with its own test.
 - Commit messages follow Conventional Commits (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`…).
 - Every pull request with a user-visible effect adds a line under `[Unreleased]` in `CHANGELOG.md`, with its issue number. A breaking change goes under **Breaking changes**, and says what to change.
@@ -75,6 +75,6 @@ composer test
 
 1. Open a pull request `release/<issue>-v2.0.0-alpha.N` to `v2.x` that renames `[Unreleased]` in `CHANGELOG.md` to `[2.0.0-alpha.N] - YYYY-MM-DD`, adds an empty `[Unreleased]` above it and updates the compare links at the bottom. Check in `docs/roadmap.md` the items it ships, with the version.
 2. Merge it once its CI is green and it is approved.
-3. CI runs again on `v2.x`. When its lint, tests, MySQL and dashboard jobs pass, its **Release** job reads the first dated section of `CHANGELOG.md` and, if that version has no tag yet, creates the tag on that commit and a GitHub release with the section as its notes, marked as a pre-release for alphas, betas and RCs. Packagist picks up the tag. If CI fails, nothing is tagged: fix `v2.x` in a new pull request, and the release happens when CI passes.
+3. CI runs again on `v2.x`. When its lint, tests, MySQL, PostgreSQL and dashboard jobs pass, its **Release** job reads the first dated section of `CHANGELOG.md` and, if that version has no tag yet, creates the tag on that commit and a GitHub release with the section as its notes, marked as a pre-release for alphas, betas and RCs. Packagist picks up the tag. If CI fails, nothing is tagged: fix `v2.x` in a new pull request, and the release happens when CI passes.
 
 A dated section in `CHANGELOG.md` is a release: only a release pull request adds one. The Release job refuses a version that is not 2.x. Never create a 2.x tag by hand or from another branch.

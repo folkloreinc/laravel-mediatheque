@@ -6,6 +6,12 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+The migrations and the test suite run on PostgreSQL, and CI runs the tests on PostgreSQL 17 (#103). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new migration only, which changes nothing on SQLite and MySQL.
+
+### Added
+
+- The `use_jsonb_in_mediatheque_tables_on_postgresql` migration: on PostgreSQL, the JSON columns of the media, files, runs and renditions become `jsonb`, which can be compared and indexed. A column whose type is no longer `json` is left as it is. The other databases keep `json` (#103).
+
 ### Changed
 
 - The docs and `HasMedias`' docblock give `json` as the handle that JSON references sync under, for every JSON column of a model, as `laravel-json-data` and `laravel-folklore` 2 do: [decisions/0021](docs/decisions/0021-json-references-handle.md) amends 0020, which said `json:{column}` (#104).
