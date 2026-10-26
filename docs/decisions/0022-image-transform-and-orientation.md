@@ -6,7 +6,7 @@
 
 ## Context
 
-[0013](0013-media-resolver-for-laravel-image.md) left the orientation, the dominant color, the focal point and the `transform` of an image to [laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88). Panneau 5's image editor writes non-destructive edits on a media (`Media.transform` in its protocol, folkloreinc/panneau-js#80), and `laravel-image` 2 renders them. The three packages agreed on one shape in laravel-image#88, which `laravel-image` records in [its decision 0013](https://github.com/folkloreinc/laravel-image/blob/feature/88-transform-focal-point/docs/decisions/0013-transform-focal-point-and-metadata.md) and implements in folkloreinc/laravel-image#101. This is the mediatheque's side ([#107](https://github.com/folkloreinc/laravel-mediatheque/issues/107)).
+[0013](0013-media-resolver-for-laravel-image.md) left the orientation, the dominant color, the focal point and the `transform` of an image to [laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88). Panneau 5's image editor writes non-destructive edits on a media (`Media.transform` in its protocol, folkloreinc/panneau-js#80), and `laravel-image` 2 renders them. The three packages agreed on one shape in laravel-image#88, which `laravel-image` records in [its decision 0013](https://github.com/folkloreinc/laravel-image/blob/v2.x/docs/decisions/0013-transform-focal-point-and-metadata.md) and implements in folkloreinc/laravel-image#101. This is the mediatheque's side ([#107](https://github.com/folkloreinc/laravel-mediatheque/issues/107)).
 
 ## Decision
 
