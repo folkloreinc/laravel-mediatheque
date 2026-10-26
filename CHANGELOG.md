@@ -6,8 +6,11 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+The migrations and the test suite run on PostgreSQL, and CI runs the tests on PostgreSQL 17 (#103). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new migration only, which changes nothing on SQLite and MySQL.
+
 ### Added
 
+- The `use_jsonb_in_mediatheque_tables_on_postgresql` migration: on PostgreSQL, the JSON columns of the media, files, runs and renditions become `jsonb`, which can be compared and indexed. A column whose type is no longer `json` is left as it is. The other databases keep `json` (#103).
 - A path placeholder `{media.<attribute>}` reads the media model's accessor when no column has that name, so paths can be grouped by a tenant's public id (`{media.tenant_uid}`) rather than by its sequential key. An accessor can read a relation whose foreign key `attributes` sets at ingest. A column keeps its raw value, even with a cast or an accessor of the same name, and a model that prevents accessing missing attributes gets `InvalidPath` for an attribute that has neither (#64).
 
 ### Changed

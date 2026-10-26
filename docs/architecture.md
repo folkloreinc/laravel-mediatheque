@@ -591,3 +591,5 @@ stubs/                                The provider of the dashboard's gates
 ## Supported versions
 
 PHP 8.3+ and Laravel 12+ ([decisions/0001](decisions/0001-supported-versions.md)).
+
+The migrations and the test suite run on SQLite, MySQL 8.4 and PostgreSQL 17. On PostgreSQL, the JSON columns are `jsonb`; the other databases keep `json`.

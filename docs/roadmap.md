@@ -57,8 +57,8 @@ Released with [#85](https://github.com/folkloreinc/laravel-mediatheque/issues/85
 - [x] `replaceOriginal()` ([decisions/0019](decisions/0019-replace-original.md), [#87](https://github.com/folkloreinc/laravel-mediatheque/issues/87)), in 2.0.0-alpha.5
 - [x] `HasMedias` with `attachMedia`, `syncMedias`, `media()`; usage graph; media in use protected from deletion ([decisions/0020](decisions/0020-attachments-by-handle-and-usages.md), [#92](https://github.com/folkloreinc/laravel-mediatheque/issues/92)), in 2.0.0-alpha.6
 - [x] Migrations that run on MySQL, and a CI job on MySQL 8.4 ([#98](https://github.com/folkloreinc/laravel-mediatheque/issues/98)), in 2.0.0-alpha.7
-- [ ] The handle of JSON references in the usage graph is `json`, for every JSON column of a model, as `laravel-json-data` and `laravel-folklore` 2 sync it ([decisions/0021](decisions/0021-json-references-handle.md), [#104](https://github.com/folkloreinc/laravel-mediatheque/issues/104))
-- [ ] The test suite on PostgreSQL, with `jsonb` ([#103](https://github.com/folkloreinc/laravel-mediatheque/issues/103))
+- [x] The handle of JSON references in the usage graph is `json`, for every JSON column of a model, as `laravel-json-data` and `laravel-folklore` 2 sync it ([decisions/0021](decisions/0021-json-references-handle.md), [#104](https://github.com/folkloreinc/laravel-mediatheque/issues/104))
+- [x] The test suite on PostgreSQL, with `jsonb` ([#103](https://github.com/folkloreinc/laravel-mediatheque/issues/103))
 - [x] Path placeholders that read a model accessor, for a tenant's public id ([#64](https://github.com/folkloreinc/laravel-mediatheque/issues/64))
 
 ## Protected playback (next)
