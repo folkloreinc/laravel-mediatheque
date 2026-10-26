@@ -6,7 +6,9 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
-The migrations and the test suite run on PostgreSQL, and CI runs the tests on PostgreSQL 17 (#103). A media stores the edits of its image, and images their EXIF orientation (#107). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new migrations only, which add the `transform` column, and turn the JSON columns into `jsonb` on PostgreSQL.
+## [2.0.0-alpha.8] - 2026-10-26
+
+The migrations and the test suite run on PostgreSQL, with `jsonb` columns, and CI runs the tests on PostgreSQL 17 (#103). A media stores the edits of its image, which the `media` resolver passes to `laravel-image` 2.0.0-alpha.2, and images their EXIF orientation (#107). Temporary URLs can download their file under a name (#102), and path placeholders read a model's accessors (#64). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the two new migrations only, which add the `transform` column and turn the JSON columns into `jsonb` on PostgreSQL. Update `folklore/laravel-image` to 2.0.0-alpha.2 or later.
 
 ### Breaking changes
 
@@ -189,7 +191,8 @@ The first alpha of 2.0, for new projects: upload and play a video. The [README](
 - Presigned multipart uploads to an S3-compatible disk, for Uppy's `AwsS3` plugin: `Route::mediatheque()` registers routes to create an upload, sign its parts, list them, complete and abort it, inside the application's own middleware. A fresh install still exposes no route. Each step is authorized with the `create` ability of the media policy (denied without a policy); an upload belongs to the user who created it, and guests can't upload. Completing an upload ingests the file from the disk with the options of `Mediatheque::uploadsUsing()` (the application's attributes, such as a tenant id, chosen on the server); a rejected file is deleted. Errors are `application/problem+json`. New: the `uploads` table (published by `mediatheque:install`), the `Upload` model, and the `uploads` config (`disk`, `path`, `expires_after`, `url_ttl`) ([decisions/0015](docs/decisions/0015-new-install-schema-attributes-and-uploads.md), #54).
 - Releases are tagged by CI, from a commit of `v2.x` whose lint and test jobs passed, when `CHANGELOG.md` gets a dated section for a new version (#30).
 
-[Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.7...v2.x
+[Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.8...v2.x
+[2.0.0-alpha.8]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.7...v2.0.0-alpha.8
 [2.0.0-alpha.7]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.6...v2.0.0-alpha.7
 [2.0.0-alpha.6]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.5...v2.0.0-alpha.6
 [2.0.0-alpha.5]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.4...v2.0.0-alpha.5

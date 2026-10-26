@@ -52,23 +52,23 @@ Uploads shipped here too, then left the package: presigned multipart uploads (al
 
 Released with [#85](https://github.com/folkloreinc/laravel-mediatheque/issues/85).
 
-## Content and usages (2.0.0-alpha.5 to alpha.7, continues)
+## Content and usages (2.0.0-alpha.5 to alpha.8)
 
 - [x] `replaceOriginal()` ([decisions/0019](decisions/0019-replace-original.md), [#87](https://github.com/folkloreinc/laravel-mediatheque/issues/87)), in 2.0.0-alpha.5
 - [x] `HasMedias` with `attachMedia`, `syncMedias`, `media()`; usage graph; media in use protected from deletion ([decisions/0020](decisions/0020-attachments-by-handle-and-usages.md), [#92](https://github.com/folkloreinc/laravel-mediatheque/issues/92)), in 2.0.0-alpha.6
 - [x] Migrations that run on MySQL, and a CI job on MySQL 8.4 ([#98](https://github.com/folkloreinc/laravel-mediatheque/issues/98)), in 2.0.0-alpha.7
-- [x] The handle of JSON references in the usage graph is `json`, for every JSON column of a model, as `laravel-json-data` and `laravel-folklore` 2 sync it ([decisions/0021](decisions/0021-json-references-handle.md), [#104](https://github.com/folkloreinc/laravel-mediatheque/issues/104))
-- [x] The test suite on PostgreSQL, with `jsonb` ([#103](https://github.com/folkloreinc/laravel-mediatheque/issues/103))
-- [x] Path placeholders that read a model accessor, for a tenant's public id ([#64](https://github.com/folkloreinc/laravel-mediatheque/issues/64))
+- [x] The handle of JSON references in the usage graph is `json`, for every JSON column of a model, as `laravel-json-data` and `laravel-folklore` 2 sync it ([decisions/0021](decisions/0021-json-references-handle.md), [#104](https://github.com/folkloreinc/laravel-mediatheque/issues/104)), in 2.0.0-alpha.8
+- [x] The test suite on PostgreSQL, with `jsonb` ([#103](https://github.com/folkloreinc/laravel-mediatheque/issues/103)), in 2.0.0-alpha.8
+- [x] Path placeholders that read a model accessor, for a tenant's public id ([#64](https://github.com/folkloreinc/laravel-mediatheque/issues/64)), in 2.0.0-alpha.8
 
 ## Protected playback (next)
 
 What the pilot needs for its reserved videos.
 
 - [ ] Visibility changes, and CDN prefixes for public files
-- [x] Temporary URLs that download the file, with its name ([#102](https://github.com/folkloreinc/laravel-mediatheque/issues/102))
+- [x] Temporary URLs that download the file, with its name ([#102](https://github.com/folkloreinc/laravel-mediatheque/issues/102)), in 2.0.0-alpha.8
 - [ ] `MediaResource` and `FileResource`, in sync with Panneau 5's protocol, and with the `legacy` shape that `laravel-folklore` 2's `MediaResource` uses
-- [x] The `transform`, focal point and `orientation` of an image, settled with `laravel-image` 2 and Panneau 5 ([laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88)), then stored on the media ([#107](https://github.com/folkloreinc/laravel-mediatheque/issues/107))
+- [x] The `transform`, focal point and `orientation` of an image, settled with `laravel-image` 2 and Panneau 5 ([laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88)), then stored on the media ([#107](https://github.com/folkloreinc/laravel-mediatheque/issues/107)), in 2.0.0-alpha.8
 - [ ] Images at ingest: HEIC, orientation, GPS removal, ThumbHash placeholder
 - [ ] Soft deletes, `mediatheque:prune` of deleted media, deferred file cleanup
 
