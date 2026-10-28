@@ -21,10 +21,12 @@ use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
 use Folklore\Mediatheque\Jobs\DeleteStoredFiles;
 use Folklore\Mediatheque\Pipelines\Processing;
+use Folklore\Mediatheque\Pipelines\RunFailure;
 use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Support\MediaUsage;
 use Folklore\Mediatheque\Support\Models;
 use Folklore\Mediatheque\Support\Uid;
+use Folklore\Mediatheque\Transcoders\TranscoderError;
 use Folklore\Mediatheque\Urls\Download;
 use Illuminate\Contracts\Bus\Dispatcher as Jobs;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -216,6 +218,24 @@ class Media extends Model implements MediaContract
         $run->setRelation('pipelinable', $this);
 
         return Processing::of($this, [$run]);
+    }
+
+    /**
+     * Two queries, when the media is failed.
+     */
+    public function failure(): ?TranscoderError
+    {
+        if ($this->status() !== MediaStatus::Failed) {
+            return null;
+        }
+
+        $run = $this->pipelineRuns()
+            ->whereIn('status', [PipelineStatus::Failed, PipelineStatus::Canceled])
+            ->orderByDesc('id')
+            ->with('pipelineJobs')
+            ->first();
+
+        return $run instanceof PipelineRun ? RunFailure::of($run) : null;
     }
 
     public function original(): ?FileContract

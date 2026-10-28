@@ -70,7 +70,7 @@ What the pilot needs for its reserved videos. URL import ([#91](https://github.c
 - [ ] A `UrlSigner` for CDNs that sign their own URLs ([#129](https://github.com/folkloreinc/laravel-mediatheque/issues/129)), when a project needs one
 - [x] Temporary URLs that download the file, with its name ([#102](https://github.com/folkloreinc/laravel-mediatheque/issues/102)), in 2.0.0-alpha.8
 - [x] The progress of runs: null until measured, weighted by the input's duration, `Media::processing()` for Panneau 5's media field, and `RenditionProgressed` ([decisions/0023](decisions/0023-progress-of-runs.md), [#117](https://github.com/folkloreinc/laravel-mediatheque/issues/117)), in 2.0.0-alpha.9
-- [ ] `MediaResource` and `FileResource`, in sync with Panneau 5's protocol, and with the `legacy` shape that `laravel-folklore` 2's `MediaResource` uses
+- [x] `MediaResource` and `FileResource`, with the meaning of Panneau 5's `MediaInfo` in snake_case, and `Media::failure()`; `laravel-folklore` keeps its legacy shape ([#133](https://github.com/folkloreinc/laravel-mediatheque/issues/133))
 - [x] The `transform`, focal point and `orientation` of an image, settled with `laravel-image` 2 and Panneau 5 ([laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88)), then stored on the media ([#107](https://github.com/folkloreinc/laravel-mediatheque/issues/107)), in 2.0.0-alpha.8
 - [x] GPS removal at ingest, as the `Ingestor` contract says ([#120](https://github.com/folkloreinc/laravel-mediatheque/issues/120)), in 2.0.0-alpha.9
 - [x] Images at ingest: a ThumbHash placeholder, for images and posters ([#131](https://github.com/folkloreinc/laravel-mediatheque/issues/131)); the orientation is read since 2.0.0-alpha.8

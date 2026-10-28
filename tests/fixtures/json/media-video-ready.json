@@ -1,0 +1,89 @@
+{
+    "id": "med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P",
+    "type": "video",
+    "name": "Episode 1",
+    "status": "ready",
+    "visibility": "public",
+    "error": null,
+    "processing": null,
+    "mime": "video/quicktime",
+    "size": 7340032,
+    "width": 1920,
+    "height": 1080,
+    "duration": 2851.2,
+    "url": "/storage/video/med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P/run/h264.mp4",
+    "thumbnail_url": "/storage/video/med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P/run/poster.jpg",
+    "transform": null,
+    "metadata": {
+        "kind": "video",
+        "mime": "video/quicktime",
+        "filename": "episode-1.mov",
+        "size": 7340032,
+        "width": 1920,
+        "height": 1080,
+        "duration": 2851.2,
+        "frame_rate": 25,
+        "video_codec": "h264"
+    },
+    "files": {
+        "original": {
+            "handle": "original",
+            "role": "original",
+            "name": "episode-1.mov",
+            "url": "/storage/video/med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P/original.mov",
+            "mime": "video/quicktime",
+            "size": 7340032,
+            "width": 1920,
+            "height": 1080,
+            "duration": 2851.2
+        },
+        "h264": {
+            "handle": "h264",
+            "role": "main",
+            "name": "h264.mp4",
+            "url": "/storage/video/med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P/run/h264.mp4",
+            "mime": "video/mp4",
+            "size": 2107637,
+            "width": 1920,
+            "height": 1080,
+            "duration": 2851.2,
+            "bitrate": 5913000
+        },
+        "poster": {
+            "handle": "poster",
+            "role": "poster",
+            "name": "poster.jpg",
+            "url": "/storage/video/med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P/run/poster.jpg",
+            "mime": "image/jpeg",
+            "size": 81920,
+            "width": 1920,
+            "height": 1080
+        },
+        "thumbnails": [
+            {
+                "handle": "thumbnails",
+                "index": 0,
+                "role": "thumbnail",
+                "name": "thumbnails-0.jpg",
+                "url": "/storage/video/med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P/run/thumbnails-0.jpg",
+                "mime": "image/jpeg",
+                "size": 20480,
+                "width": 640,
+                "height": 360
+            },
+            {
+                "handle": "thumbnails",
+                "index": 1,
+                "role": "thumbnail",
+                "name": "thumbnails-1.jpg",
+                "url": "/storage/video/med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P/run/thumbnails-1.jpg",
+                "mime": "image/jpeg",
+                "size": 20480,
+                "width": 640,
+                "height": 360
+            }
+        ]
+    },
+    "created_at": "2026-10-21T14:00:00Z",
+    "updated_at": "2026-10-21T14:00:00Z"
+}

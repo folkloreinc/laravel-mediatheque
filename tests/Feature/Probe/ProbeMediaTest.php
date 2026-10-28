@@ -149,6 +149,7 @@ class ProbeMediaTest extends DatabaseTestCase
         $this->probe($media);
 
         $this->assertSame(MediaStatus::Failed, $this->fresh($media)->status());
+        $this->assertSame('Unreadable', $this->fresh($media)->failure()?->message);
         Event::assertDispatched(MediaFailed::class, fn (MediaFailed $event) => $event->error?->code === TranscoderErrorCode::InputUnreadable);
     }
 

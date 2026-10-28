@@ -330,6 +330,7 @@ class MediathequeFakeTest extends TestCase
         $media = Mediatheque::ingest($this->video());
 
         $this->assertSame(MediaStatus::Failed, $media->status());
+        $this->assertSame(TranscoderErrorCode::InputUnreadable, $media->failure()?->code);
         Mediatheque::assertPipelineNotRan($media);
         Event::assertDispatched(MediaFailed::class, fn (MediaFailed $event) => $event->error?->code === TranscoderErrorCode::InputUnreadable);
         Event::assertNotDispatched(MediaProbed::class);

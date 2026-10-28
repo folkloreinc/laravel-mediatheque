@@ -7,6 +7,7 @@ use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Pipelines\Processing;
 use Folklore\Mediatheque\Support\MediaUsage;
+use Folklore\Mediatheque\Transcoders\TranscoderError;
 use Illuminate\Support\Collection;
 
 /**
@@ -60,6 +61,13 @@ interface Media
      * when no run is in progress (docs/decisions/0023).
      */
     public function processing(): ?Processing;
+
+    /**
+     * Why a `failed` media failed: the error of its latest run that ended
+     * without completing, its probe's included. Null when the media is not
+     * `failed`, or when that run was canceled and has no error.
+     */
+    public function failure(): ?TranscoderError;
 
     /**
      * The ingested file. Null while a media imported from a URL waits for

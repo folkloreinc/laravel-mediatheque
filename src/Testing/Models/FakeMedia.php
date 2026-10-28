@@ -7,12 +7,15 @@ use Folklore\Mediatheque\Contracts\Mediatheque;
 use Folklore\Mediatheque\Contracts\Models\File;
 use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Enums\MediaStatus;
+use Folklore\Mediatheque\Enums\PipelineStatus;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Exceptions\FileRejected;
 use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
 use Folklore\Mediatheque\Pipelines\Processing;
+use Folklore\Mediatheque\Pipelines\RunFailure;
 use Folklore\Mediatheque\Support\MediaUsage;
+use Folklore\Mediatheque\Transcoders\TranscoderError;
 use Folklore\Mediatheque\Urls\Download;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
@@ -42,6 +45,9 @@ class FakeMedia implements Media
      * @var list<FakePipelineRun>
      */
     public array $runs = [];
+
+    /** The error of its failed probe, which is not a run in the fake */
+    public ?TranscoderError $probeFailure = null;
 
     /**
      * @param  array<string, mixed>  $metadata
@@ -101,6 +107,21 @@ class FakeMedia implements Media
     public function processing(): ?Processing
     {
         return Processing::of($this, $this->runs);
+    }
+
+    public function failure(): ?TranscoderError
+    {
+        if ($this->status !== MediaStatus::Failed) {
+            return null;
+        }
+
+        foreach (array_reverse($this->runs) as $run) {
+            if ($run->status() === PipelineStatus::Failed || $run->status() === PipelineStatus::Canceled) {
+                return RunFailure::of($run);
+            }
+        }
+
+        return $this->probeFailure;
     }
 
     public function original(): ?File
