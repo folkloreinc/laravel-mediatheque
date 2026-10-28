@@ -530,6 +530,24 @@ trait RecorderContractTests
     }
 
     #[Test]
+    public function the_media_is_ready_when_its_main_rendition_was_skipped(): void
+    {
+        Event::fake();
+        $run = $this->createRun($this->videoPipeline());
+
+        // h264, which reads from it, is skipped too: the media plays its original
+        $this->recorder()->skipped($this->job($run, 'normalized'), 'The input doesn\'t match the rendition\'s condition.');
+        $this->complete($run, 'poster');
+        $this->complete($run, 'palette');
+
+        $this->assertSame(JobStatus::Skipped, $this->freshJob($run, 'h264')->status());
+        $this->assertSame(PipelineStatus::Completed, $this->freshRun($run)->status());
+        $this->assertSame(MediaStatus::Ready, $this->freshMedia($run)->status());
+        Event::assertDispatchedTimes(MediaReady::class, 1);
+        Event::assertNotDispatched(MediaFailed::class);
+    }
+
+    #[Test]
     public function the_run_is_canceled_if_a_rendition_was_canceled_and_none_failed(): void
     {
         Event::fake();

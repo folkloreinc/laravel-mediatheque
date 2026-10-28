@@ -110,6 +110,7 @@ class FfmpegTranscoderTest extends DatabaseTestCase
         $poster = $media->file('poster');
         $this->assertSame(['image/jpeg', 'poster', 320, 180], [$poster?->mime(), $poster?->role(), $poster?->width(), $poster?->height()]);
         $this->assertSame($poster?->path(), $media->thumbnail()?->path());
+        $this->assertIsString($poster?->metadata('thumbhash'), 'A poster has its placeholder.');
 
         $thumbnails = $media->files('thumbnails');
         $this->assertSame([0, 1, 2, 3, 4], $thumbnails->map(fn (File $file) => $file->index())->all());

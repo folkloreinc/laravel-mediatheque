@@ -153,6 +153,23 @@ final readonly class PipelineDefinition
     }
 
     /**
+     * Whether the probed input matches the condition of at least one
+     * rendition that keeps its output: otherwise a run would only skip.
+     *
+     * @param  array<string, mixed>  $metadata  Canonical keys
+     */
+    public function appliesTo(array $metadata): bool
+    {
+        foreach ($this->renditions as $rendition) {
+            if ($rendition->keep && $rendition->when->matches($metadata)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @return array{transcoder: string, source: string|null, renditions: array<string, array<string, mixed>>}
      */
     public function toArray(): array

@@ -21,6 +21,7 @@
 
 - **Tenant-agnostic.** The package has no tenant, user or organisation concept. An application adds its columns in its own migrations, extends the models, adds scopes, and passes its attributes to the path formatter.
 - Image processing that must happen once, at ingest (HEIC to a web format, orientation, removing GPS data), belongs to this package. Everything that can be rendered on the fly belongs to `laravel-image`.
+- "HEIC to a web format" means a web version produced at ingest, the original kept (amended on 2026-10-28, [#132](https://github.com/folkloreinc/laravel-mediatheque/issues/132)), so a HEIC shows in every browser whatever the servers that render images can read. The default `image` pipeline has one rendition, `web`, its main rendition: a JPEG of the same size, upright, with the color profile and no other metadata, from the `ffmpeg` driver's `image.convert` operation (Imagick), for HEIC, HEIF and AVIF only (`when.mime`). The media plays it (`url()`, the `media` resolver's `med_…`) instead of its original, which stays available by handle. Other images run nothing, as before: sizes, crops and formats stay `laravel-image`'s, on the fly.
 
 ## Consequences
 

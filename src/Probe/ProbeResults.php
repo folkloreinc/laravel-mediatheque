@@ -20,8 +20,11 @@ use Illuminate\Database\Eloquent\Model;
  *
  * - Done: the metadata goes to the media, the dimensions and duration to its
  *   original, with an image's EXIF orientation in its metadata, and the media moves to `processing` (`MediaProbed`), or to
- *   `ready` (`MediaReady`) when its pipeline has no main rendition. Then its
- *   pipeline starts: the one ingest chose, or its type's.
+ *   `ready` (`MediaReady`) when its pipeline has no main rendition, or one
+ *   whose condition the probe doesn't match: the media plays its original.
+ *   Then its pipeline starts: the one ingest chose, or its type's, unless
+ *   the probe matches the condition of none of its renditions (a JPEG in
+ *   the `image` pipeline, whose `web` rendition is for HEIC).
  * - Failed: the media is `failed` (`MediaFailed`).
  *
  * Only a `pending` media is updated, so a repeated probe changes nothing.
@@ -58,10 +61,12 @@ class ProbeResults
         }
 
         $definition = $pipeline !== null ? $this->config->pipeline($pipeline) : $this->config->pipelineOfType($media->type());
-        $ready = $definition?->mainRendition() === null;
+        $probed = [...$media->metadata(), ...$metadata];
+        $main = $definition?->mainRendition();
+        $ready = $main === null || ! $main->when->matches($probed);
 
         $media->forceFill([
-            'metadata' => [...$media->metadata(), ...$metadata],
+            'metadata' => $probed,
             'status' => MediaStatus::Processing,
         ])->save();
 
@@ -72,7 +77,7 @@ class ProbeResults
             $this->events->dispatch(new MediaReady($media));
         }
 
-        if ($definition !== null) {
+        if ($definition !== null && $definition->appliesTo($probed)) {
             $this->runner->run($media, $definition->name);
         }
     }

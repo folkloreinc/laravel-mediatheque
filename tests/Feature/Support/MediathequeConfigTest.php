@@ -72,11 +72,12 @@ class MediathequeConfigTest extends TestCase
     public function a_type_runs_the_pipeline_of_its_name_unless_it_sets_one(): void
     {
         $this->assertSame('video', $this->reader()->pipelineOfType('video')?->name);
-        $this->assertNull($this->reader()->pipelineOfType('image'));
+        $this->assertSame('image', $this->reader()->pipelineOfType('image')?->name);
+        $this->assertNull($this->reader()->pipelineOfType('font'), 'A type without a pipeline of its name runs none.');
         $this->assertNull($this->reader()->pipelineOfType('model'));
         $this->assertSame('h264', $this->reader()->mainRenditionOfType('video'));
         $this->assertSame('mp3', $this->reader()->mainRenditionOfType('audio'));
-        $this->assertNull($this->reader()->mainRenditionOfType('image'));
+        $this->assertSame('web', $this->reader()->mainRenditionOfType('image'));
         $this->assertNull($this->reader()->mainRenditionOfType('unknown'));
     }
 
