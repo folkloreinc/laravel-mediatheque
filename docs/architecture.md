@@ -420,28 +420,40 @@ The edits of an image were settled with `laravel-image` 2 and Panneau 5 in [lara
 
 ## JSON resource
 
-The package ships the canonical JSON shape of a media ([decisions/0010](decisions/0010-json-resource.md)), so `laravel-folklore`, Panneau 5 and applications share one contract:
+The package ships the canonical JSON shape of a media, `MediaResource`, and of its files, `FileResource` ([decisions/0010](decisions/0010-json-resource.md)). It has the meaning of Panneau 5's `MediaInfo` in snake_case, so laravel-panneau only renames its keys, and applications extend it to add their fields:
 
 ```json
 {
   "id": "med_01JAB…",
   "type": "video",
   "name": "Episode 1",
-  "status": "ready",
+  "status": "processing",
   "visibility": "public",
+  "error": null,
+  "processing": { "pipeline": "video", "progress": 0.42, "rendition": "h264" },
+  "mime": "video/quicktime",
+  "size": 7340032,
+  "width": 1920,
+  "height": 1080,
+  "duration": 2851.2,
   "url": "https://cdn.example.com/…/h264.mp4",
   "thumbnail_url": "https://cdn.example.com/…/poster.jpg",
-  "metadata": { "filename": "episode-1.mov", "mime": "video/quicktime", "size": 734003200, "width": 1920, "height": 1080, "duration": 2851.2 },
+  "transform": null,
+  "metadata": { "kind": "video", "filename": "episode-1.mov", "frame_rate": 25, "…": "…" },
   "files": {
-    "original": { "handle": "original", "url": "…", "mime": "video/quicktime", "size": 734003200 },
-    "h264": { "handle": "h264", "url": "…", "mime": "video/mp4", "size": 210763776, "width": 1920, "height": 1080 },
-    "thumbnails": [ { "handle": "thumbnails", "index": 0, "url": "…" } ]
+    "original": { "handle": "original", "role": "original", "name": "episode-1.mov", "url": "…", "mime": "video/quicktime", "size": 7340032, "width": 1920, "height": 1080, "duration": 2851.2 },
+    "h264": { "handle": "h264", "role": "main", "name": "h264.mp4", "url": "…", "mime": "video/mp4", "size": 2107637, "width": 1920, "height": 1080, "duration": 2851.2, "bitrate": 5913000 },
+    "thumbnails": [ { "handle": "thumbnails", "index": 0, "role": "thumbnail", "name": "thumbnails-0.jpg", "url": "…", "mime": "image/jpeg", "size": 20480, "width": 640, "height": 360 } ]
   },
-  "created_at": "2026-10-15T14:00:00Z"
+  "created_at": "2026-10-21T14:00:00Z",
+  "updated_at": "2026-10-21T14:00:00Z"
 }
 ```
 
-`files` is an object keyed by handle; groups are lists. A `legacy` option emits the 1.x `laravel-folklore` shape (`id` as the internal id, `files` as a list) during the upgrade.
+- `mime` and `size` are the original's; `width`, `height` and `duration` come from the metadata. `url` is the file the media plays; `thumbnail_url` is that file for an image, and `thumbnail()`'s for other types (override `thumbnailUrl()` for a `laravel-image` preset).
+- `error` is `$media->failure()` while the media is `failed`; `processing` is `$media->processing()` while it is `pending` or `processing`. Each costs a query, for those media only.
+- `files` is an object keyed by handle, the original first; a group is a list. A file has `index` in a group only, and `width`, `height`, `duration`, `bitrate` and `parts_count` when known. A URL the disk can't give is null.
+- The shapes are in [`tests/fixtures/json/`](../tests/fixtures/json/): `media-video-ready`, `media-video-processing`, `media-video-failed` and `media-image`. There is no legacy shape: `laravel-folklore` builds its 1.x `MediaResource` from the contracts.
 
 Runs and their renditions have their own resources, for monitoring ([decisions/0017](decisions/0017-monitoring-dashboard.md)): `PipelineRunResource` and `PipelineJobResource`. A run gives its media in short (`id`, `type`, `name`, `status`) and its renditions in the order of its definition. Times are ISO 8601 in UTC; `duration` and a rendition's `wait` in the queue are in seconds. The shapes are in [`tests/fixtures/json/`](../tests/fixtures/json/):
 

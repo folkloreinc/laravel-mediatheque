@@ -695,6 +695,7 @@ class MediathequeFake implements Fake, Mediatheque
 
         if ($outcome->isFailed()) {
             $media->status = MediaStatus::Failed;
+            $media->probeFailure = $outcome->error;
             $this->events->dispatch(new MediaFailed($media, $outcome->error));
 
             return;

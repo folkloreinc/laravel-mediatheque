@@ -6,6 +6,15 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Breaking changes
+
+- The `Media` contract has `failure()`: a class that implements it implements it too (#133).
+
+### Added
+
+- `MediaResource` and `FileResource`, the canonical JSON shape of a media and its files. They have the meaning of Panneau 5's `MediaInfo` in snake_case, plus `error`, `processing`, `transform`, the original's `mime` and `size`, and `files` by handle, the original first, a group as a list. The fixtures in `tests/fixtures/json/` are the shapes an adapter tests against. There is no `legacy` shape: `laravel-folklore` keeps its own ([decisions/0010](docs/decisions/0010-json-resource.md), #133).
+- `$media->failure()`, on the contract, the package's model and the fake's media: why a `failed` media failed, the error of the first rendition of its latest unfinished run that failed for its own reason, or its probe's; null otherwise (#133).
+
 ## [2.0.0-alpha.9] - 2026-10-28
 
 The progress of runs is null until something measures it, weighted by each input's duration, and read by `$media->processing()` and the new `RenditionProgressed` event (#117). A media's visibility can change, and its stored files follow (#119). Ingest removes the location from images, without re-encoding them (#120). `mediatheque:prune` force-deletes media deleted long ago and deletes old runs, and force deletion deletes the stored files (#121). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new `make_mediatheque_progress_nullable` migration only. Then schedule `mediatheque:prune` daily.

@@ -507,6 +507,7 @@ trait RecorderContractTests
 
         $this->assertSame(PipelineStatus::Failed, $this->freshRun($run)->status());
         $this->assertSame(MediaStatus::Ready, $this->freshMedia($run)->status());
+        $this->assertNull($this->freshMedia($run)->failure(), 'A ready media has no failure.');
         Event::assertDispatchedTimes(PipelineFailed::class, 1);
         Event::assertDispatchedTimes(MediaReady::class, 1);
     }
@@ -523,6 +524,7 @@ trait RecorderContractTests
 
         $this->assertSame(PipelineStatus::Failed, $this->freshRun($run)->status());
         $this->assertSame(MediaStatus::Failed, $this->freshMedia($run)->status());
+        $this->assertSame([TranscoderErrorCode::InputUnreadable, 'Corrupted'], [$this->freshMedia($run)->failure()?->code, $this->freshMedia($run)->failure()?->message], 'Its failure is the run\'s: the first rendition that failed.');
         Event::assertDispatched(MediaFailed::class, fn (MediaFailed $event) => $event->error?->code === TranscoderErrorCode::DependencyFailed);
         Event::assertNotDispatched(MediaReady::class);
     }

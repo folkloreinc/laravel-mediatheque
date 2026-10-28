@@ -1,0 +1,45 @@
+{
+    "id": "med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P",
+    "type": "image",
+    "name": "Portrait",
+    "status": "ready",
+    "visibility": "public",
+    "error": null,
+    "processing": null,
+    "mime": "image/jpeg",
+    "size": 204800,
+    "width": 600,
+    "height": 800,
+    "duration": null,
+    "url": "/storage/image/med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P/original.jpg",
+    "thumbnail_url": "/storage/image/med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P/original.jpg",
+    "transform": {
+        "crop": {
+            "x": 0,
+            "y": 100,
+            "width": 600,
+            "height": 600
+        }
+    },
+    "metadata": {
+        "kind": "image",
+        "mime": "image/jpeg",
+        "width": 600,
+        "height": 800,
+        "orientation": 6
+    },
+    "files": {
+        "original": {
+            "handle": "original",
+            "role": "original",
+            "name": "portrait.jpg",
+            "url": "/storage/image/med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P/original.jpg",
+            "mime": "image/jpeg",
+            "size": 204800,
+            "width": 600,
+            "height": 800
+        }
+    },
+    "created_at": "2026-10-21T14:00:00Z",
+    "updated_at": "2026-10-21T14:00:00Z"
+}
