@@ -3,6 +3,7 @@
 namespace Folklore\Mediatheque\Testing;
 
 use Carbon\CarbonImmutable;
+use Folklore\Mediatheque\Contracts\Models\File;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob;
 use Folklore\Mediatheque\Contracts\Recorder;
 use Folklore\Mediatheque\Contracts\UrlGenerator;
@@ -28,6 +29,7 @@ use Folklore\Mediatheque\Testing\Models\FakePipelineJob;
 use Folklore\Mediatheque\Testing\Models\FakePipelineRun;
 use Folklore\Mediatheque\Transcoders\TranscoderError;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Contracts\Filesystem\Factory as Filesystems;
 use Illuminate\Support\Facades\Date;
 use InvalidArgumentException;
 
@@ -42,6 +44,7 @@ class InMemoryRecorder implements Recorder
         private readonly Dispatcher $events,
         private readonly UrlGenerator $urls,
         private readonly MediathequeConfig $config,
+        private readonly Filesystems $filesystems,
     ) {}
 
     public function started(PipelineJob $job): void
@@ -223,6 +226,23 @@ class InMemoryRecorder implements Recorder
                 definitionHash: $rendition->definitionHash(),
                 name: basename($output->path),
             ));
+        }
+
+        foreach ($media->files($rendition->name) as $file) {
+            $this->applyVisibility($file);
+        }
+    }
+
+    /**
+     * Give a stored file its media's visibility, as ApplyVisibility does.
+     */
+    public function applyVisibility(File $file): void
+    {
+        $source = $file->source();
+        $path = $file->path();
+
+        if ($source !== null && $path !== null && $this->filesystems->disk($source)->exists($path)) {
+            $this->filesystems->disk($source)->setVisibility($path, $file->visibility()->value);
         }
     }
 

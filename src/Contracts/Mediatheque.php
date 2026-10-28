@@ -69,6 +69,21 @@ interface Mediatheque
     public function replaceOriginal(Media $media, mixed $source, ?IngestOptions $options = null, bool $allowTypeChange = false): Media;
 
     /**
+     * Change a media's visibility (docs/decisions/0007). False when it has
+     * this visibility already: nothing changes, and nothing is dispatched.
+     *
+     * - The media has its new visibility at once, so `url()` gives
+     *   temporary URLs of a media made private before its files follow.
+     * - Its stored files, the original and the renditions, follow in a
+     *   queued job, which applies the media's visibility when it runs: a
+     *   later change wins, and a retried job changes nothing.
+     * - The files of a run in progress get it when the run records them.
+     * - `MediaVisibilityChanged` is dispatched, with the previous and the
+     *   new visibility.
+     */
+    public function setVisibility(Media $media, Visibility $visibility): bool;
+
+    /**
      * A media by reference: `media://med_…`, `medias://123` (1.x), or a uid.
      * Null when it doesn't exist or is deleted.
      */

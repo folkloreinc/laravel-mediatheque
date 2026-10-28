@@ -20,8 +20,11 @@ use Folklore\Mediatheque\MediathequeManager;
 use Folklore\Mediatheque\Models\Media;
 use Folklore\Mediatheque\Models\PipelineJob;
 use Folklore\Mediatheque\Models\PipelineRun;
+use Folklore\Mediatheque\Pipelines\OutputFile;
+use Folklore\Mediatheque\Pipelines\Outputs;
 use Folklore\Mediatheque\Probe\ProbeOutcome;
 use Folklore\Mediatheque\Tests\Concerns\CreatesMedia;
+use Folklore\Mediatheque\Tests\Contracts\ChangesVisibilityContractTests;
 use Folklore\Mediatheque\Tests\Contracts\ReplacesOriginalsContractTests;
 use Folklore\Mediatheque\Tests\Contracts\ResolvesReferencesContractTests;
 use Folklore\Mediatheque\Tests\Contracts\RunActionsContractTests;
@@ -38,6 +41,7 @@ use PHPUnit\Framework\Attributes\Test;
 
 class MediathequeManagerTest extends DatabaseTestCase
 {
+    use ChangesVisibilityContractTests;
     use CreatesMedia;
     use ReplacesOriginalsContractTests;
     use ResolvesReferencesContractTests;
@@ -66,6 +70,26 @@ class MediathequeManagerTest extends DatabaseTestCase
         $this->createFile($media, 'original', ['mime' => 'video/mp4']);
 
         return $media;
+    }
+
+    protected function videoWithStoredFiles(): MediaContract
+    {
+        $media = $this->createMedia(['status' => MediaStatus::Ready, 'metadata' => ['kind' => 'video']]);
+        foreach (['original' => 'video/mp4', 'h264' => 'video/mp4'] as $handle => $mime) {
+            $file = $this->createFile($media, $handle, ['mime' => $mime]);
+            Storage::disk('public')->put((string) $file->path, $handle, 'public');
+        }
+
+        return $media;
+    }
+
+    protected function completeHeldRun(PipelineRunContract $run): void
+    {
+        foreach ($this->freshRun($run)->jobs() as $job) {
+            $path = $run->pathPrefix().'/'.$job->rendition()->name.'.bin';
+            Storage::disk($run->outputSource())->put($path, $job->rendition()->name, $run->visibility()->value);
+            app(Recorder::class)->completed($job, Outputs::file(new OutputFile($path, mime: 'application/octet-stream')));
+        }
     }
 
     protected function videoWhoseProbeFailed(): MediaContract

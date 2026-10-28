@@ -10,6 +10,7 @@ use Folklore\Mediatheque\Enums\JobStatus;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\PipelineStatus;
 use Folklore\Mediatheque\Enums\TranscoderErrorCode;
+use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Events\MediaFailed;
 use Folklore\Mediatheque\Events\MediaReady;
 use Folklore\Mediatheque\Events\PipelineCanceled;
@@ -21,6 +22,7 @@ use Folklore\Mediatheque\Events\RenditionCompleted;
 use Folklore\Mediatheque\Events\RenditionFailed;
 use Folklore\Mediatheque\Events\RenditionProgressed;
 use Folklore\Mediatheque\Events\RenditionSkipped;
+use Folklore\Mediatheque\Jobs\ApplyVisibility;
 use Folklore\Mediatheque\Jobs\DeleteStoredFiles;
 use Folklore\Mediatheque\Models\PipelineRun;
 use Folklore\Mediatheque\Probe\ProbeResults;
@@ -46,6 +48,11 @@ use InvalidArgumentException;
  * move a rendition back, or change a final status, changes nothing. The
  * run's progress is stored with each call, for queries. Events are
  * dispatched after the commit.
+ *
+ * Drivers write a run's files with the visibility of its start. Once its
+ * files are recorded, the recorder reads the media's visibility again, after
+ * the commit, and queues ApplyVisibility if it changed since: a change that
+ * commits later queues its own job, which finds the files.
  */
 class EloquentRecorder implements Recorder
 {
@@ -57,6 +64,9 @@ class EloquentRecorder implements Recorder
 
     /** @var list<array{string, list<string>}> */
     private array $replaced = [];
+
+    /** @var list<array{Model&MediaContract, Visibility}> */
+    private array $written = [];
 
     private int $depth = 0;
 
@@ -395,6 +405,7 @@ class EloquentRecorder implements Recorder
         }
 
         $media->unsetRelation('mediaFiles');
+        $this->written[] = [$media, $run->visibility()];
     }
 
     /**
@@ -485,13 +496,21 @@ class EloquentRecorder implements Recorder
 
     private function flush(): void
     {
-        [$events, $callbacks, $replaced] = [$this->events, $this->callbacks, $this->replaced];
+        [$events, $callbacks, $replaced, $written] = [$this->events, $this->callbacks, $this->replaced, $this->written];
         $this->events = [];
         $this->callbacks = [];
         $this->replaced = [];
+        $this->written = [];
 
         foreach ($replaced as [$source, $paths]) {
             $this->jobs->dispatch(new DeleteStoredFiles($source, $paths));
+        }
+
+        foreach ($written as [$media, $visibility]) {
+            $current = $media->newQueryWithoutScopes()->whereKey($media->getKey())->value('visibility');
+            if ($current !== null && $current !== $visibility) {
+                $this->jobs->dispatch(new ApplyVisibility($media->uid()));
+            }
         }
 
         foreach ($events as $event) {
