@@ -6,6 +6,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Added
+
+- Images get a ThumbHash placeholder, in the `thumbhash` metadata key, which the `media` resolver passes to `laravel-image`. The local prober computes it for every image but SVG, and the `ffmpeg` driver for the image files it writes, such as a video's poster: the first frame, upright, downsized to fit 100×100, with Imagick, or GD without it. It doesn't need `laravel-image`. An image it can't compute one for has no `thumbhash`, and is probed all the same. Images probed before keep none until they are probed again ([decisions/0013](docs/decisions/0013-media-resolver-for-laravel-image.md), #131).
+
 ## [2.0.0-alpha.9] - 2026-10-28
 
 The progress of runs is null until something measures it, weighted by each input's duration, and read by `$media->processing()` and the new `RenditionProgressed` event (#117). A media's visibility can change, and its stored files follow (#119). Ingest removes the location from images, without re-encoding them (#120). `mediatheque:prune` force-deletes media deleted long ago and deletes old runs, and force deletion deletes the stored files (#121). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the new `make_mediatheque_progress_nullable` migration only. Then schedule `mediatheque:prune` daily.

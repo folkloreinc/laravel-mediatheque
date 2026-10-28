@@ -114,7 +114,10 @@ class LocalProberTest extends TestCase
         $jpeg = $this->probe('media/image.jpg', 'image/jpeg')->metadata;
         $gif = $this->probe('media/animated.gif', 'image/gif')->metadata;
 
+        $this->assertIsString($jpeg['thumbhash'] ?? null);
+        unset($jpeg['thumbhash']);
         $this->assertSame(['kind' => 'image', 'mime' => 'image/jpeg', 'width' => 800, 'height' => 600, 'orientation' => 1, 'animated' => false], $jpeg);
+        $this->assertIsString($gif['thumbhash'] ?? null, 'An animated image gets the placeholder of its first frame.');
         $this->assertSame([400, 400, true], [$gif['width'], $gif['height'], $gif['animated']]);
         $this->assertArrayNotHasKey('orientation', $gif, 'A GIF declares no orientation.');
     }
@@ -137,6 +140,22 @@ class LocalProberTest extends TestCase
 
         $this->assertSame('image', $metadata['kind']);
         $this->assertArrayHasKey('width', $metadata);
+        $this->assertArrayNotHasKey('thumbhash', $metadata, 'An SVG is not rasterized.');
+    }
+
+    #[Test]
+    public function an_image_whose_placeholder_cannot_be_computed_is_still_probed(): void
+    {
+        $this->requiresImagick();
+
+        // A PNG whose header is valid, and whose pixels are not
+        $chunk = fn (string $type, string $data) => pack('N', strlen($data)).$type.$data.pack('N', crc32($type.$data));
+        $png = "\x89PNG\r\n\x1a\n".$chunk('IHDR', pack('NNCCCCC', 20, 10, 8, 6, 0, 0, 0)).$chunk('IDAT', 'not zlib data').$chunk('IEND', '');
+        $outcome = $this->probe('media/broken.png', 'image/png', contents: $png);
+
+        $this->assertTrue($outcome->isDone());
+        $this->assertSame([20, 10], [$outcome->metadata['width'] ?? null, $outcome->metadata['height'] ?? null]);
+        $this->assertArrayNotHasKey('thumbhash', $outcome->metadata);
     }
 
     #[Test]

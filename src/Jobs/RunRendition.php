@@ -6,6 +6,7 @@ use Folklore\Mediatheque\Contracts\Models\PipelineJob;
 use Folklore\Mediatheque\Contracts\Recorder;
 use Folklore\Mediatheque\Enums\TranscoderErrorCode;
 use Folklore\Mediatheque\Ingest\PathFormatter;
+use Folklore\Mediatheque\Metadata\MetadataKey;
 use Folklore\Mediatheque\Models\PipelineRun;
 use Folklore\Mediatheque\Pipelines\OutputFile;
 use Folklore\Mediatheque\Pipelines\Outputs;
@@ -36,8 +37,8 @@ use Throwable;
  * - Its input is the original, or the file of the rendition it reads from,
  *   which the same run wrote under its prefix.
  * - Its files are written under the run's prefix, with the media's
- *   visibility, then reported to the recorder. A rendition canceled while
- *   ffmpeg runs drops its output.
+ *   visibility, then probed and reported to the recorder, an image with
+ *   its ThumbHash. A rendition canceled while ffmpeg runs drops its output.
  * - Temporary files are removed, whatever happens.
  */
 class RunRendition implements ShouldQueue
@@ -207,6 +208,7 @@ class RunRendition implements ShouldQueue
                 height: is_int($metadata['height'] ?? null) ? $metadata['height'] : null,
                 duration: is_float($metadata['duration'] ?? null) ? $metadata['duration'] : null,
                 bitrate: is_int($metadata['bitrate'] ?? null) ? $metadata['bitrate'] : null,
+                metadata: is_string($metadata[MetadataKey::Thumbhash->value] ?? null) ? [MetadataKey::Thumbhash->value => $metadata[MetadataKey::Thumbhash->value]] : [],
             );
         }
 
