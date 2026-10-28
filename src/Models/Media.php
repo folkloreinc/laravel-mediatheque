@@ -10,6 +10,7 @@ use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineRun;
 use Folklore\Mediatheque\Enums\MediaStatus;
+use Folklore\Mediatheque\Enums\PipelineStatus;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Events\MediaDeleted;
 use Folklore\Mediatheque\Events\MediaRestored;
@@ -18,6 +19,7 @@ use Folklore\Mediatheque\Exceptions\FileRejected;
 use Folklore\Mediatheque\Exceptions\MediaInUse;
 use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
+use Folklore\Mediatheque\Pipelines\Processing;
 use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Support\MediaUsage;
 use Folklore\Mediatheque\Support\Models;
@@ -192,6 +194,26 @@ class Media extends Model implements MediaContract
     public function transform(): ?array
     {
         return $this->transform;
+    }
+
+    /**
+     * The latest run that hasn't ended, in one query with its renditions.
+     */
+    public function processing(): ?Processing
+    {
+        $run = $this->pipelineRuns()
+            ->whereIn('status', [PipelineStatus::Pending, PipelineStatus::Running])
+            ->orderByDesc('id')
+            ->with('pipelineJobs')
+            ->first();
+
+        if (! $run instanceof PipelineRun) {
+            return null;
+        }
+
+        $run->setRelation('pipelinable', $this);
+
+        return Processing::of($this, [$run]);
     }
 
     public function original(): ?FileContract

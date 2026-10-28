@@ -59,4 +59,14 @@ class InMemoryRecorderTest extends TestCase
 
         return Mediatheque::fake()->createRun($run->media(), $run->pipeline, $renditions);
     }
+
+    protected function setDuration(PipelineRun $run, ?float $seconds): void
+    {
+        $this->assertInstanceOf(FakePipelineRun::class, $run);
+        unset($run->media->metadata['duration']);
+
+        if ($seconds !== null) {
+            $run->media->metadata['duration'] = $seconds;
+        }
+    }
 }

@@ -105,4 +105,22 @@ class ResourcesTest extends DatabaseTestCase
         $this->assertSame('completed', $json['status']);
         $this->assertNotNull($json['ended_at']);
     }
+
+    #[Test]
+    public function a_progress_that_nothing_measured_is_null_not_zero(): void
+    {
+        $media = Mediatheque::fake()->holdPipelines()->ingest(UploadedFile::fake()->create('clip.mp4', 10, 'video/mp4'));
+        $run = Mediatheque::fake()->runs($media)->first();
+        $this->assertNotNull($run);
+
+        $json = self::rendered(new PipelineRunResource($run));
+
+        $this->assertNull($json['progress']);
+        $this->assertIsArray($json['renditions']);
+        foreach ($json['renditions'] as $rendition) {
+            $this->assertIsArray($rendition);
+            $this->assertArrayHasKey('progress', $rendition);
+            $this->assertNull($rendition['progress']);
+        }
+    }
 }

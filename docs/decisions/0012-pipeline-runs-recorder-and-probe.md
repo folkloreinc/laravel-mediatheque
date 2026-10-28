@@ -1,6 +1,6 @@
 # 0012: Pipeline runs, the recorder and an asynchronous probe
 
-- Status: accepted, amended by [0014](0014-run-outcomes-and-model-contracts.md) and [0017](0017-monitoring-dashboard.md)
+- Status: accepted, amended by [0014](0014-run-outcomes-and-model-contracts.md), [0017](0017-monitoring-dashboard.md) and [0023](0023-progress-of-runs.md)
 - Date: 2026-10-16
 - Amends: [0005](0005-asynchronous-transcoders.md)
 

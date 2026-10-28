@@ -14,13 +14,16 @@ use Folklore\Mediatheque\Events\MediaFailed;
 use Folklore\Mediatheque\Events\MediaReady;
 use Folklore\Mediatheque\Events\PipelineCompleted;
 use Folklore\Mediatheque\Events\RenditionCompleted;
+use Folklore\Mediatheque\Events\RenditionProgressed;
 use Folklore\Mediatheque\Facades\Mediatheque;
 use Folklore\Mediatheque\Jobs\RunRendition;
 use Folklore\Mediatheque\Models\Media;
 use Folklore\Mediatheque\Models\PipelineRun;
+use Folklore\Mediatheque\Pipelines\Rendition;
 use Folklore\Mediatheque\Support\LocalFiles;
 use Folklore\Mediatheque\Tests\DatabaseTestCase;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\FfmpegTranscoder;
+use Folklore\Mediatheque\Transcoders\Ffmpeg\OperationContext;
 use Folklore\Mediatheque\Transcoders\TranscoderManager;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
@@ -255,5 +258,51 @@ class FfmpegTranscoderTest extends DatabaseTestCase
         $this->assertSame('clip', PipelineRun::query()->where('name', '!=', 'probe')->sole()->name());
         $this->assertNotNull($media->file('poster'));
         $this->assertSame(MediaStatus::Ready, $media->status(), 'A pipeline without a main rendition makes the media ready once probed.');
+    }
+
+    /**
+     * What a transcode of the fixture reports to its progress callback.
+     *
+     * @param  array<string, mixed>  $metadata
+     * @return list<float>
+     */
+    private function transcodeReports(array $metadata): array
+    {
+        $reports = [];
+        $directory = app(LocalFiles::class)->temporaryDirectory();
+
+        try {
+            app(FfmpegTranscoder::class)->operation('video.transcode')->run(new OperationContext(
+                input: self::fixturePath('media/test.mp4'),
+                outputDirectory: $directory,
+                rendition: Rendition::fromArray('h264', ['op' => 'video.transcode', 'preset' => 'ultrafast']),
+                metadata: $metadata,
+                progress: function (float $progress) use (&$reports) {
+                    $reports[] = $progress;
+                },
+                timeout: 60,
+            ));
+        } finally {
+            LocalFiles::removeDirectory($directory);
+        }
+
+        return $reports;
+    }
+
+    #[Test]
+    public function a_transcode_reports_its_progress_only_when_the_input_duration_is_known(): void
+    {
+        $this->assertSame([], $this->transcodeReports([]), 'Without a duration, ffmpeg measures nothing: the rendition\'s progress stays null until it ends.');
+        $this->assertNotSame([], $this->transcodeReports(['duration' => 1.0]));
+    }
+
+    #[Test]
+    public function a_transcode_dispatches_its_progress(): void
+    {
+        Event::fake([RenditionProgressed::class]);
+
+        $this->ingest('media/test.mp4', 'clip.mp4');
+
+        Event::assertDispatched(RenditionProgressed::class, fn (RenditionProgressed $event) => $event->rendition() === 'h264' && $event->progress > 0 && $event->progress < 1);
     }
 }

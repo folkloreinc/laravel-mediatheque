@@ -11,6 +11,7 @@ use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Exceptions\FileRejected;
 use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
+use Folklore\Mediatheque\Pipelines\Processing;
 use Folklore\Mediatheque\Support\MediaUsage;
 use Folklore\Mediatheque\Urls\Download;
 use Illuminate\Http\UploadedFile;
@@ -33,6 +34,14 @@ class FakeMedia implements Media
      * @var list<MediaUsage>
      */
     public array $usages = [];
+
+    /**
+     * Its pipeline runs, oldest first. A run adds itself when the fake
+     * creates it.
+     *
+     * @var list<FakePipelineRun>
+     */
+    public array $runs = [];
 
     /**
      * @param  array<string, mixed>  $metadata
@@ -87,6 +96,11 @@ class FakeMedia implements Media
     public function transform(): ?array
     {
         return $this->transform;
+    }
+
+    public function processing(): ?Processing
+    {
+        return Processing::of($this, $this->runs);
     }
 
     public function original(): ?File

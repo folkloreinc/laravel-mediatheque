@@ -19,9 +19,11 @@ interface PipelineJob
     public function status(): JobStatus;
 
     /**
-     * Between 0 and 1. Never goes down.
+     * Between 0 and 1, or null while nothing measured it: a transcoder that
+     * reports no progress, ffmpeg without the input's duration, an
+     * operation that reports none. Never goes down. 1 once completed.
      */
-    public function progress(): float;
+    public function progress(): ?float;
 
     /**
      * Attempts of the `ffmpeg` driver's queued job.

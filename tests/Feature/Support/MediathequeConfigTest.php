@@ -81,6 +81,12 @@ class MediathequeConfigTest extends TestCase
     }
 
     #[Test]
+    public function the_progress_step_is_five_percent_by_default(): void
+    {
+        $this->assertSame(0.05, $this->reader()->progressStep());
+    }
+
+    #[Test]
     public function sizes_are_read_in_bytes(): void
     {
         $this->assertSame(1000, $this->reader()->maxSize($this->reader()->type('model')));
@@ -104,6 +110,8 @@ class MediathequeConfigTest extends TestCase
         yield 'pipeline source' => ['mediatheque.pipelines.video.source', 'missing', 'mediatheque.pipelines.video.source'];
         yield 'reserved pipeline name' => ['mediatheque.pipelines.probe', ['renditions' => []], 'mediatheque.pipelines.probe'];
         yield 'uid prefix' => ['mediatheque.ids.media_prefix', 'Med', 'mediatheque.ids.media_prefix'];
+        yield 'progress step of 0' => ['mediatheque.events.progress_step', 0, 'mediatheque.events.progress_step'];
+        yield 'progress step over 1' => ['mediatheque.events.progress_step', 5, 'mediatheque.events.progress_step'];
     }
 
     #[Test]

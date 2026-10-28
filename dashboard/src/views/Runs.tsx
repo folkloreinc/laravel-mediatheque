@@ -2,9 +2,9 @@ import { Alert, Button, Select, Switch, TextInput } from '@panneau/ui';
 import { useEffect, useState } from 'react';
 
 import { useDashboard } from '../api';
-import { Loading, StatusBadge, Table } from '../components';
+import { Loading, Progress, StatusBadge, Table } from '../components';
 import styles from '../dashboard.module.css';
-import { formatDuration, formatPercent, formatRelative } from '../format';
+import { formatDuration, formatRelative } from '../format';
 import { pollingInterval, usePolling } from '../polling';
 import type { Page, Run, RunFilters, RunStatus } from '../types';
 
@@ -99,7 +99,11 @@ export function Runs({ filters, onFilters, onOpen }: { filters: RunFilters; onFi
                                 ),
                             },
                             { label: 'Status', nowrap: true, render: (run) => <StatusBadge status={run.status} /> },
-                            { label: 'Progress', numeric: true, render: (run) => formatPercent(run.progress) },
+                            {
+                                label: 'Progress',
+                                numeric: true,
+                                render: (run) => <Progress value={run.progress} running={run.status === 'running'} label={`Progress of ${run.id}`} />,
+                            },
                             { label: 'Error', nowrap: true, render: (run) => (run.error !== null ? <span className={styles.mono}>{run.error.code}</span> : null) },
                             { label: 'Transcoder', render: (run) => run.transcoder },
                             { label: 'Created', nowrap: true, render: (run) => formatRelative(run.created_at) },

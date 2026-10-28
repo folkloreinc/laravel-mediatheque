@@ -53,13 +53,14 @@ class InstallCommandTest extends TestCase
         $this->assertFileExists(config_path('mediatheque.php'));
         $published = $this->published();
         sort($published);
-        $this->assertCount(6, $published);
+        $this->assertCount(7, $published);
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_create_mediatheque_tables\.php$/', $published[0]);
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_update_mediatheque_tables_for_monitoring\.php$/', $published[1], 'Later migrations run after the first one.');
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_drop_mediatheque_uploads_table\.php$/', $published[2]);
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_create_mediatheque_medias_pivot_table\.php$/', $published[3]);
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_add_transform_to_mediatheque_medias_table\.php$/', $published[4]);
         $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_use_jsonb_in_mediatheque_tables_on_postgresql\.php$/', $published[5]);
+        $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_make_mediatheque_progress_nullable\.php$/', $published[6]);
     }
 
     #[Test]
@@ -70,7 +71,7 @@ class InstallCommandTest extends TestCase
 
         $this->install();
 
-        $this->assertCount(6, $this->published());
+        $this->assertCount(7, $this->published());
         $this->assertStringContainsString("'local'", (string) file_get_contents(config_path('mediatheque.php')));
     }
 
@@ -86,7 +87,7 @@ class InstallCommandTest extends TestCase
         $this->install();
 
         $published = $this->published();
-        $this->assertCount(6, $published);
+        $this->assertCount(7, $published);
         $this->assertSame($earlier, array_values(array_intersect($published, $earlier)), 'Published migrations are left as they are.');
     }
 
@@ -121,7 +122,8 @@ class InstallCommandTest extends TestCase
 
         Artisan::call('migrate', ['--path' => $this->migrations, '--realpath' => true]);
         $migrated = $this->jsonColumnTypes();
-        Artisan::call('migrate:rollback', ['--path' => $this->migrations, '--realpath' => true, '--step' => 1]);
+        // The jsonb migration, and the one after it
+        Artisan::call('migrate:rollback', ['--path' => $this->migrations, '--realpath' => true, '--step' => 2]);
         $before = $this->jsonColumnTypes();
 
         if (DB::getDriverName() === 'pgsql') {
@@ -160,6 +162,41 @@ class InstallCommandTest extends TestCase
         $types = $this->jsonColumnTypes();
         $this->assertSame('text', $types['medias.data']);
         $this->assertSame('jsonb', $types['medias.metadata']);
+
+        Artisan::call('migrate:rollback', ['--path' => $this->migrations, '--realpath' => true]);
+    }
+
+    #[Test]
+    public function a_progress_that_nothing_measured_becomes_null(): void
+    {
+        $this->install();
+        $this->startFromAnEmptyDatabase();
+        foreach (glob($this->migrations.'/*_make_mediatheque_progress_nullable.php') ?: [] as $nullable) {
+            rename($nullable, $nullable.'.later');
+        }
+        Artisan::call('migrate', ['--path' => $this->migrations, '--realpath' => true]);
+
+        $run = fn (string $uid, string $status, float $progress) => DB::table('mediatheque_pipelines')->insertGetId([
+            'uid' => $uid, 'name' => 'video', 'pipelinable_type' => 'media', 'pipelinable_id' => 1, 'transcoder' => 'ffmpeg',
+            'definition' => '{}', 'output_source' => 'public', 'path_prefix' => $uid, 'visibility' => 'public', 'status' => $status, 'progress' => $progress,
+        ]);
+        $running = $run('run_1', 'running', 0.0);
+        $run('run_2', 'completed', 1.0);
+        foreach ([['h264', 'running', 0.0], ['webm', 'running', 0.4], ['poster', 'completed', 1.0], ['thumbnails', 'failed', 0.0], ['waveform', 'queued', 0.0]] as [$name, $status, $progress]) {
+            DB::table('mediatheque_pipelines_jobs')->insert(['pipeline_id' => $running, 'name' => $name, 'status' => $status, 'progress' => $progress]);
+        }
+        foreach (glob($this->migrations.'/*.later') ?: [] as $nullable) {
+            rename($nullable, substr($nullable, 0, -strlen('.later')));
+        }
+
+        Artisan::call('migrate', ['--path' => $this->migrations, '--realpath' => true]);
+
+        $progress = fn (string $table) => DB::table($table)->orderBy('id')->pluck('progress')->map(fn (mixed $value) => is_numeric($value) ? (float) $value : $value)->all();
+        $this->assertSame([null, 0.4, 1.0, null, null], $progress('mediatheque_pipelines_jobs'));
+        $this->assertSame([null, 1.0], $progress('mediatheque_pipelines'));
+
+        Artisan::call('migrate:rollback', ['--path' => $this->migrations, '--realpath' => true, '--step' => 1]);
+        $this->assertSame([0.0, 0.4, 1.0, 0.0, 0.0], $progress('mediatheque_pipelines_jobs'), 'Rolled back, unknown is 0 again.');
 
         Artisan::call('migrate:rollback', ['--path' => $this->migrations, '--realpath' => true]);
     }

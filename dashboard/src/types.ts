@@ -17,7 +17,8 @@ export interface Rendition {
     operation: string;
     from: string | null;
     status: RenditionStatus;
-    progress: number;
+    /** Null while nothing measured it */
+    progress: number | null;
     attempts: number;
     error: TranscoderError | null;
     reason: string | null;
@@ -41,7 +42,8 @@ export interface Run {
     status: RunStatus;
     transcoder: string;
     external_id: string | null;
-    progress: number;
+    /** Weighted by the input's duration; null while none of its renditions was measured or ended */
+    progress: number | null;
     error: TranscoderError | null;
     media: { id: string; type: string; name: string | null; status: MediaStatus };
     renditions: Rendition[];

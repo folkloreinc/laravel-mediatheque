@@ -184,6 +184,19 @@ final class MediathequeConfig
     }
 
     /**
+     * The step of a rendition's progress at which RenditionProgressed is
+     * dispatched: more than 0, at most 1.
+     */
+    public function progressStep(): float
+    {
+        $step = $this->config->get('mediatheque.events.progress_step', 0.05);
+
+        return (is_int($step) || is_float($step)) && $step > 0 && $step <= 1
+            ? (float) $step
+            : throw InvalidConfig::at('events.progress_step', 'expected a number more than 0 and at most 1');
+    }
+
+    /**
      * Seconds after which a run that is still running is stuck.
      */
     public function monitoringStuckAfter(): int
@@ -320,6 +333,7 @@ final class MediathequeConfig
         $this->jobsQueue();
         $this->jobsTries();
         $this->jobsTimeout();
+        $this->progressStep();
         $this->monitoringStuckAfter();
         $this->monitoringMaxRows();
         $this->types();

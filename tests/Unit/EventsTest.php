@@ -25,13 +25,13 @@ class EventsTest extends TestCase
         'MediaCreated', 'MediaUpdated', 'MediaDeleted', 'MediaRestored', 'MediaProbed',
         'MediaReady', 'MediaFailed', 'MediaVisibilityChanged', 'OriginalReplaced',
         'PipelineStarted', 'PipelineCompleted', 'PipelineFailed', 'PipelineCanceled',
-        'RenditionCompleted', 'RenditionFailed', 'RenditionSkipped', 'RenditionCanceled',
+        'RenditionProgressed', 'RenditionCompleted', 'RenditionFailed', 'RenditionSkipped', 'RenditionCanceled',
         'IngestRejected',
     ];
 
     private const array ALLOWED_TYPES = [
         Media::class, File::class, PipelineRun::class, PipelineJob::class,
-        Outputs::class, TranscoderError::class, Visibility::class, RejectionReason::class, 'array', 'string',
+        Outputs::class, TranscoderError::class, Visibility::class, RejectionReason::class, 'array', 'string', 'float',
     ];
 
     #[Test]

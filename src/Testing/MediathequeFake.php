@@ -34,6 +34,7 @@ use Folklore\Mediatheque\Metadata\MetadataKey;
 use Folklore\Mediatheque\Pipelines\PipelineDefinition;
 use Folklore\Mediatheque\Pipelines\Rendition;
 use Folklore\Mediatheque\References\MediaReference;
+use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Support\Uid;
 use Folklore\Mediatheque\Testing\Models\FakeFile;
 use Folklore\Mediatheque\Testing\Models\FakeMedia;
@@ -93,7 +94,7 @@ class MediathequeFake implements Fake, Mediatheque
     ) {
         $ttl = $config->get('mediatheque.urls.temporary_ttl', 3600);
         $this->urls = new FakeUrlGenerator($filesystems, is_int($ttl) ? $ttl : 3600);
-        $this->recorder = new InMemoryRecorder($events, $this->urls);
+        $this->recorder = new InMemoryRecorder($events, $this->urls, new MediathequeConfig($config));
         $this->transcoder = new FakeTranscoder($this->recorder, $filesystems);
         $this->prober = new FakeProber;
         $this->ingestor = new FakeIngestor($this);
@@ -439,6 +440,25 @@ class MediathequeFake implements Fake, Mediatheque
         $this->transcoder->hold = true;
 
         return $this;
+    }
+
+    /**
+     * Report the progress of a rendition of the media's latest run that has
+     * it, as a driver does, through the recorder: RenditionProgressed is
+     * dispatched when it passes a step. With holdPipelines(), so the
+     * rendition doesn't complete at once.
+     */
+    public function progressRendition(Media $media, string $rendition, float $progress): static
+    {
+        foreach (array_reverse($this->runs) as $run) {
+            if ($run->media->uid === $media->uid() && isset($run->jobs[$rendition])) {
+                $this->recorder->progress($run->jobs[$rendition], $progress);
+
+                return $this;
+            }
+        }
+
+        throw new InvalidArgumentException(sprintf('No run of %s has the rendition "%s".', $media->uid(), $rendition));
     }
 
     /**

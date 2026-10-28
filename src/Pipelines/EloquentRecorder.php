@@ -19,11 +19,13 @@ use Folklore\Mediatheque\Events\PipelineStarted;
 use Folklore\Mediatheque\Events\RenditionCanceled;
 use Folklore\Mediatheque\Events\RenditionCompleted;
 use Folklore\Mediatheque\Events\RenditionFailed;
+use Folklore\Mediatheque\Events\RenditionProgressed;
 use Folklore\Mediatheque\Events\RenditionSkipped;
 use Folklore\Mediatheque\Jobs\DeleteStoredFiles;
 use Folklore\Mediatheque\Models\PipelineRun;
 use Folklore\Mediatheque\Probe\ProbeResults;
 use Folklore\Mediatheque\Support\LocalFiles;
+use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Support\Models;
 use Folklore\Mediatheque\Transcoders\TranscoderError;
 use Illuminate\Contracts\Bus\Dispatcher as Jobs;
@@ -41,8 +43,9 @@ use InvalidArgumentException;
  * Each call locks its run's row, reads the run and its jobs again, and
  * changes them in a transaction, so concurrent workers and webhooks
  * reconcile in any order. Statuses only move forward: a call that would
- * move a rendition back, or change a final status, changes nothing. Events
- * are dispatched after the commit.
+ * move a rendition back, or change a final status, changes nothing. The
+ * run's progress is stored with each call, for queries. Events are
+ * dispatched after the commit.
  */
 class EloquentRecorder implements Recorder
 {
@@ -64,6 +67,7 @@ class EloquentRecorder implements Recorder
         private readonly Filesystems $filesystems,
         private readonly LocalFiles $files,
         private readonly ProbeResults $probes,
+        private readonly MediathequeConfig $config,
     ) {}
 
     public function started(PipelineJob $job): void
@@ -81,7 +85,13 @@ class EloquentRecorder implements Recorder
             }
 
             $this->start($job, $run);
-            $job->forceFill(['progress' => max($job->progress(), min(1.0, max(0.0, $progress)))])->save();
+            $before = $job->progress();
+            $after = max($before ?? 0.0, min(1.0, max(0.0, $progress)));
+            $job->forceFill(['progress' => $after])->save();
+
+            if (Progress::passesStep($before, $after, $this->config->progressStep())) {
+                $this->events[] = new RenditionProgressed($job, $after, $run->progress() ?? $after);
+            }
         });
     }
 
@@ -165,6 +175,7 @@ class EloquentRecorder implements Recorder
                 }
 
                 $change($fresh, $run);
+                $run->forceFill(['progress' => $run->progress()])->save();
             });
         } finally {
             $this->depth--;

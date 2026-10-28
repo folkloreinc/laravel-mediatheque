@@ -18,8 +18,11 @@ use Folklore\Mediatheque\Events\PipelineStarted;
 use Folklore\Mediatheque\Events\RenditionCanceled;
 use Folklore\Mediatheque\Events\RenditionCompleted;
 use Folklore\Mediatheque\Events\RenditionFailed;
+use Folklore\Mediatheque\Events\RenditionProgressed;
 use Folklore\Mediatheque\Events\RenditionSkipped;
 use Folklore\Mediatheque\Pipelines\Outputs;
+use Folklore\Mediatheque\Pipelines\Progress;
+use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Testing\Models\FakeFile;
 use Folklore\Mediatheque\Testing\Models\FakePipelineJob;
 use Folklore\Mediatheque\Testing\Models\FakePipelineRun;
@@ -38,6 +41,7 @@ class InMemoryRecorder implements Recorder
     public function __construct(
         private readonly Dispatcher $events,
         private readonly UrlGenerator $urls,
+        private readonly MediathequeConfig $config,
     ) {}
 
     public function started(PipelineJob $job): void
@@ -60,7 +64,12 @@ class InMemoryRecorder implements Recorder
         }
 
         $this->started($job);
-        $job->progress = max($job->progress, min(1.0, max(0.0, $progress)));
+        $before = $job->progress;
+        $job->progress = max($before ?? 0.0, min(1.0, max(0.0, $progress)));
+
+        if (Progress::passesStep($before, $job->progress, $this->config->progressStep())) {
+            $this->events->dispatch(new RenditionProgressed($job, $job->progress, $job->run->progress() ?? $job->progress));
+        }
     }
 
     public function completed(PipelineJob $job, Outputs $outputs): void

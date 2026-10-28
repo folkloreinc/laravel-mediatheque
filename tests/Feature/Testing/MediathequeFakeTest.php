@@ -21,6 +21,7 @@ use Folklore\Mediatheque\Events\PipelineFailed;
 use Folklore\Mediatheque\Events\PipelineStarted;
 use Folklore\Mediatheque\Events\RenditionCompleted;
 use Folklore\Mediatheque\Events\RenditionFailed;
+use Folklore\Mediatheque\Events\RenditionProgressed;
 use Folklore\Mediatheque\Exceptions\FileRejected;
 use Folklore\Mediatheque\Facades\Mediatheque;
 use Folklore\Mediatheque\Ingest\IngestOptions;
@@ -304,6 +305,26 @@ class MediathequeFakeTest extends TestCase
 
         $fake->releasePipelines();
         $this->assertSame(MediaStatus::Ready, $media->status());
+    }
+
+    #[Test]
+    public function a_held_rendition_reports_progress_that_a_test_can_assert(): void
+    {
+        Event::fake([RenditionProgressed::class]);
+        $fake = Mediatheque::fake()->holdPipelines();
+        $media = Mediatheque::ingest($this->video());
+        $this->assertNull($media->processing()?->progress, 'Nothing measured yet.');
+
+        $fake->progressRendition($media, 'h264', 0.42);
+
+        Event::assertDispatched(RenditionProgressed::class, fn (RenditionProgressed $event) => $event->media()->uid() === $media->uid() && $event->rendition() === 'h264' && $event->progress === 0.42);
+        $processing = $media->processing();
+        $this->assertNotNull($processing);
+        $this->assertSame('h264', $processing->rendition);
+        $this->assertNotNull($processing->progress);
+
+        $fake->releasePipelines();
+        $this->assertNull($media->processing());
     }
 
     #[Test]

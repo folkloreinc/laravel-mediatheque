@@ -17,7 +17,7 @@ class FakePipelineJob implements PipelineJob
 {
     public JobStatus $status = JobStatus::Queued;
 
-    public float $progress = 0.0;
+    public ?float $progress = null;
 
     public int $attempts = 0;
 
@@ -51,7 +51,7 @@ class FakePipelineJob implements PipelineJob
         return $this->status;
     }
 
-    public function progress(): float
+    public function progress(): ?float
     {
         return $this->progress;
     }

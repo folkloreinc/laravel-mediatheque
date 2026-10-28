@@ -76,7 +76,10 @@ $media->file('thumbnails', 2);        // third file of a group
 $media->files('thumbnails');          // Collection<File>
 $media->thumbnail();                  // the poster, else the first thumbnail, whatever the type
 $media->url('h264');                  // string|null, see Visibility and URLs
+$media->processing();                 // Processing|null: the run in progress
 ```
+
+`processing()` is the media's latest run that hasn't ended, as an editor's interface shows it ("transcoding: 42 %"), or null when nothing runs ([decisions/0023](decisions/0023-progress-of-runs.md)). It is a readonly `Pipelines\Processing`: the media's `status`, the run's uid (`run`), its `pipeline` (`video`, `probe`…), its `progress` (`?float`) and the `rendition` that is running (`h264`, or null while none started). Clients poll it: the package pushes nothing.
 
 ### Files and renditions
 
@@ -132,9 +135,10 @@ A **pipeline run** (`pipelines` table) records one execution:
 | `transcoder`, `external_id` | The driver and its job id (an Eclair job, a MediaConvert job) |
 | `definition` | JSON snapshot of the renditions, the output source, the run's path prefix and the media's visibility; never `serialize()` |
 | `status` | `PipelineStatus` enum: `pending`, `running`, `completed`, `failed`, `canceled` |
-| `progress`, `attempts`, `error` (`{code, message}`), `started_at`, `ended_at` | |
+| `progress` | Null until one of its renditions is measured or ended; the recorder stores it with each call, for queries. `progress()` computes it ([Progress](#progress)) |
+| `attempts`, `error` (`{code, message}`), `started_at`, `ended_at` | |
 
-Each rendition gets a **pipeline job** (`pipelines_jobs`) with its own `status` (`queued`, `running`, `completed`, `failed`, `skipped`, `canceled`), `progress`, `attempts`, `error`, and `queued_at`, `started_at` and `ended_at`. `queued_at` is when the rendition can run: when its run is created, or when the rendition it reads from completes ([decisions/0017](decisions/0017-monitoring-dashboard.md)). Statuses only move forward ([Recorder](#transcoders)). A failed job fails the jobs that read from it (`dependency_failed`); a skipped job skips them; independent jobs continue. `skipped` is a normal outcome: a condition did not match the probed input (an audio-only video, a short clip).
+Each rendition gets a **pipeline job** (`pipelines_jobs`) with its own `status` (`queued`, `running`, `completed`, `failed`, `skipped`, `canceled`), `progress` (null until measured), `attempts`, `error`, and `queued_at`, `started_at` and `ended_at`. `queued_at` is when the rendition can run: when its run is created, or when the rendition it reads from completes ([decisions/0017](decisions/0017-monitoring-dashboard.md)). Statuses only move forward ([Recorder](#transcoders)). A failed job fails the jobs that read from it (`dependency_failed`); a skipped job skips them; independent jobs continue. `skipped` is a normal outcome: a condition did not match the probed input (an audio-only video, a short clip).
 
 A run is never retried in place: retrying failed renditions creates a new run, with its own driver job ([decisions/0012](decisions/0012-pipeline-runs-recorder-and-probe.md)). Queue retries of the `ffmpeg` driver's jobs stay within their run and count in `attempts`.
 
@@ -337,11 +341,26 @@ The rules below are in [decisions/0012](decisions/0012-pipeline-runs-recorder-an
 - **Idempotent and forward only.** A duplicated webhook or a retried queue job changes nothing the second time. Statuses only move forward (`queued` → `running` → `completed`, `failed`, `skipped` or `canceled`): a call that would move a rendition back, or change a final status, is ignored, and progress never goes down. A driver that receives the whole job on every webhook reports every rendition each time, in whatever order deliveries arrive.
 - **Dependencies.** A failed rendition fails the renditions that read from it (`dependency_failed`), a skipped one skips them, a canceled one cancels them; independent renditions continue.
 - **End of a run.** A run ends when every rendition has a final status: `failed` if one failed, else `canceled` if one was canceled, else `completed` (skipped renditions are a normal outcome). After a run that includes its main rendition, the media is `ready` if the main rendition completed, `failed` otherwise; a `ready` media that still has a file for it stays `ready` when a rerun fails. The main rendition is the first one with the `main` role (the default role) that keeps its output ([decisions/0014](decisions/0014-run-outcomes-and-model-contracts.md)).
-- **Progress** is a number from 0 to 1. Reporting progress moves a queued rendition to `running`.
+- **Progress** is a number from 0 to 1, or null while nothing measured it. Reporting progress moves a queued rendition to `running`, and completing it sets it to 1. Each time a rendition's progress passes a multiple of `events.progress_step`, the recorder dispatches `RenditionProgressed` ([Progress](#progress)).
 - **Errors.** `TranscoderError` has a `code` from the `TranscoderErrorCode` enum (`input_unreadable`, `unsupported_input`, `timeout`, `limit_exceeded`, `operation_failed`, `storage_failed`, `provider_failed`, `dependency_failed`, the same as Eclair's) and a message for humans. An unknown code is read as `operation_failed`.
 - **Refresh.** `mediatheque:refresh`, scheduled by the application, calls `refresh()` for runs that have been running too long (a lost webhook) and for every running run of a driver that reports progress only by polling. The MediaConvert poller is this command.
 - **Retries.** A webhook for a run that has ended changes nothing. Retrying creates a new run.
 - **Outputs.** The run tells the driver the output source, a path prefix for the run (`run_path_format`) and the media's visibility. Remote drivers write under the prefix with their own file names and apply the visibility to what they write; the file records the path the driver reports. Only the `ffmpeg` driver also builds each file's path with `file_path_format`.
+
+### Progress
+
+A rendition's progress is null until something measures it ([decisions/0023](decisions/0023-progress-of-runs.md)). Null is not 0: a transcoder that reports no progress (`ProgressReporting::None`, such as Eclair), ffmpeg when the input's duration is unknown, and operations that report nothing leave it null until the rendition ends. The `ffmpeg` driver reports `video.transcode` and `audio.transcode` from ffmpeg's `-progress` when the probe found the duration, and `video.thumbnails` thumbnail by thumbnail.
+
+A run's progress is the mean of its renditions, weighted:
+
+- a rendition that transcodes the whole input (`video.transcode`, `video.hls`, `video.reframe`, `audio.transcode`) weighs the input's duration in seconds; any other rendition (poster, thumbnails, waveform, probe) weighs one second. Without a duration, every rendition weighs the same;
+- an ended rendition (completed, failed, skipped or canceled) is done;
+- a rendition that nothing measured yet counts as not started, so a poster that ends first doesn't make the run look done, and the run's progress never goes down;
+- the run is null until one of its renditions is measured or ended.
+
+With a 98-second video, `h264` at 50 % and the poster done, a run of `h264`, `poster` and `thumbnails` is at (49 + 1) / 100 = 50 %.
+
+`RenditionProgressed` carries the job, the rendition's progress and the run's. The recorder dispatches it each time the rendition's progress passes a multiple of `events.progress_step` (0.05 by default), once per call however many steps it passed: never for a call that changes nothing (a duplicated or late report), never for a status change, which has its own event.
 
 | Driver | Runs | Completion | Package |
 |---|---|---|---|
@@ -436,6 +455,8 @@ Runs and their renditions have their own resources, for monitoring ([decisions/0
 }
 ```
 
+A progress that nothing measured is `null`, not `0`, in both resources.
+
 ## HTTP
 
 Routes are off by default ([decisions/0008](decisions/0008-secure-http.md)). The package has no upload routes ([decisions/0018](decisions/0018-ingest-only.md)): the application's routes, or Panneau's, take files and call `ingest()`. Its only route is the monitoring dashboard's, `Route::mediathequeDashboard()`, which the application registers inside its own middleware ([decisions/0017](decisions/0017-monitoring-dashboard.md)).
@@ -450,6 +471,7 @@ Private files on local disks are served by Laravel's `serve` option, not by a ro
 | `MediaProbed` | Probe results stored |
 | `PipelineStarted`, `PipelineCompleted`, `PipelineFailed`, `PipelineCanceled` | Pipeline run |
 | `RenditionCompleted`, `RenditionFailed`, `RenditionSkipped`, `RenditionCanceled` | Each rendition. Drivers that report from webhook snapshots may dispatch them some time after the fact |
+| `RenditionProgressed` | A rendition's progress passed a multiple of `events.progress_step`: the job, the rendition's progress and the run's ([Progress](#progress)) |
 | `MediaReady` | Every rendition of the default pipeline ended, at least the main one completed |
 | `MediaFailed` | The probe failed, or the main rendition did not complete |
 | `MediaVisibilityChanged` | |
@@ -457,6 +479,33 @@ Private files on local disks are served by Laravel's `serve` option, not by a ro
 | `IngestRejected` | Ingest, or the replacement of an original, refused a file: its reason, message and file name. Nothing was stored |
 
 Events carry contracts, not concrete classes, so they work with the application's models.
+
+### Broadcasting progress
+
+The package broadcasts nothing: clients poll `processing()` or the resources ([decisions/0023](decisions/0023-progress-of-runs.md)). An application that wants progress live (Reverb, Pusher, Ably) broadcasts `RenditionProgressed` from its own listener, on channels it authorizes, since the package doesn't know who may see a media:
+
+```php
+use Folklore\Mediatheque\Events\RenditionProgressed;
+use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+
+class MediaProgressed implements ShouldBroadcastNow
+{
+    public function __construct(public string $media, public ?float $progress, public string $rendition, private string $team) {}
+
+    public function broadcastOn(): PrivateChannel
+    {
+        return new PrivateChannel('teams.'.$this->team.'.media'); // authorized in routes/channels.php
+    }
+}
+
+Event::listen(function (RenditionProgressed $event) {
+    $media = $event->media();
+    broadcast(new MediaProgressed($media->uid(), $event->runProgress, $event->rendition(), $media->team_uid)); // an application column
+});
+```
+
+The listener runs where the recorder runs (a queue worker, a webhook request), after the change is committed. Keep it cheap, or queue it.
 
 ## Testing
 
@@ -472,6 +521,8 @@ Mediatheque::assertRendition($media, 'h264', JobStatus::Completed);
 Mediatheque::fake()->failRendition('h264');                 // or skipRendition(), failProbe()
 Mediatheque::fake()->probeWith(['duration' => 12.5]);       // over the probe fixtures
 Mediatheque::fake()->holdPipelines();                       // renditions stay queued until releasePipelines()
+Mediatheque::fake()->progressRendition($media, 'h264', 0.42); // as a driver reports it, while held
+Event::assertDispatched(RenditionProgressed::class);
 ```
 
 The fake stores files on fake disks, returns probe fixtures, and completes renditions with placeholder files, without ffmpeg, a database or a queue worker. It dispatches the package's events, and reports renditions through an in-memory recorder that passes the same contract tests as the package's recorder (`tests/Contracts/`). The fake binds the `Mediatheque`, `Ingestor`, `Recorder`, `Prober` and `UrlGenerator` contracts.
@@ -550,7 +601,7 @@ $media->replaceOriginal($file, allowTypeChange: true);     // an image replaced 
 
 ## Configuration
 
-The 1.x keys keep their meaning where the concept is unchanged (`table_prefix`, `source`, `file_path_format`, `types`, `pipelines`, `jobs`). `routes` is gone: the package has no routes but the dashboard's, which the application registers. A source is a Laravel disk name, so 2.0 has no `sources` key: `mediatheque:upgrade --config` turns 1.x sources into disks ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)). New keys: `models`, `ingest`, `urls`, `transcoders`, `probe`, `prune`, `monitoring`, `run_path_format`.
+The 1.x keys keep their meaning where the concept is unchanged (`table_prefix`, `source`, `file_path_format`, `types`, `pipelines`, `jobs`). `routes` is gone: the package has no routes but the dashboard's, which the application registers. A source is a Laravel disk name, so 2.0 has no `sources` key: `mediatheque:upgrade --config` turns 1.x sources into disks ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)). New keys: `models`, `ingest`, `urls`, `transcoders`, `probe`, `prune`, `events`, `monitoring`, `run_path_format`.
 
 The package merges its defaults deeply with the application's file, so a published config only needs its overrides. Lists (`mimes`) and a pipeline's `renditions` replace the defaults as a whole, and `false` removes a default type or pipeline. Every value is validated when it is read, with the key that is wrong. The 1.x shapes of `types` and `pipelines` are read with deprecation warnings (see [upgrade.md](upgrade.md)).
 
@@ -569,7 +620,7 @@ src/                                  PSR-4: Folklore\Mediatheque\
   Metadata/                           Canonical keys
   Ingest/                             Sources, validation, sanitizers, path formatter
   Probe/                              Prober contract implementations
-  Pipelines/                          Renditions, runner, recorder
+  Pipelines/                          Renditions, runner, recorder, progress
   Transcoders/Ffmpeg/                 (MediaConvert/ to come)
   Images/                             The `media` resolver of laravel-image 2
   Casts/

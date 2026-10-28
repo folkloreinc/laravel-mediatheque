@@ -22,7 +22,7 @@ use LogicException;
  * @property int $pipeline_id
  * @property string $name
  * @property JobStatus $status
- * @property float $progress
+ * @property float|null $progress
  * @property int $attempts
  * @property array{code?: mixed, message?: mixed}|null $error
  * @property string|null $reason
@@ -40,7 +40,6 @@ class PipelineJob extends Model implements PipelineJobContract
      */
     protected $attributes = [
         'status' => 'queued',
-        'progress' => 0,
         'attempts' => 0,
     ];
 
@@ -89,7 +88,7 @@ class PipelineJob extends Model implements PipelineJobContract
         return $this->status;
     }
 
-    public function progress(): float
+    public function progress(): ?float
     {
         return $this->progress;
     }

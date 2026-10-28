@@ -67,6 +67,7 @@ What the pilot needs for its reserved videos.
 
 - [ ] Visibility changes, and CDN prefixes for public files
 - [x] Temporary URLs that download the file, with its name ([#102](https://github.com/folkloreinc/laravel-mediatheque/issues/102)), in 2.0.0-alpha.8
+- [x] The progress of runs: null until measured, weighted by the input's duration, `Media::processing()` for Panneau 5's media field, and `RenditionProgressed` ([decisions/0023](decisions/0023-progress-of-runs.md), [#117](https://github.com/folkloreinc/laravel-mediatheque/issues/117))
 - [ ] `MediaResource` and `FileResource`, in sync with Panneau 5's protocol, and with the `legacy` shape that `laravel-folklore` 2's `MediaResource` uses
 - [x] The `transform`, focal point and `orientation` of an image, settled with `laravel-image` 2 and Panneau 5 ([laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88)), then stored on the media ([#107](https://github.com/folkloreinc/laravel-mediatheque/issues/107)), in 2.0.0-alpha.8
 - [ ] Images at ingest: HEIC, orientation, GPS removal, ThumbHash placeholder
@@ -121,7 +122,7 @@ Needed before the pilot launches: `laravel-mediatheque`, `laravel-image` and Pan
 - Cloudflare Stream transcoder, with remote renditions, if a project needs it
 - Storyboards, vertical reframing (9:16), scene detection, highlights, through Eclair
 - Upgrade of the active 1.x projects, through `laravel-folklore` 2 first
-- Monitoring, if a project needs it: a Pulse recorder, an aggregates table, events broadcast over Reverb ([decisions/0017](decisions/0017-monitoring-dashboard.md))
+- Monitoring, if a project needs it: a Pulse recorder, an aggregates table ([decisions/0017](decisions/0017-monitoring-dashboard.md)). Broadcasting stays the application's, from `RenditionProgressed` and the other events ([decisions/0023](decisions/0023-progress-of-runs.md))
 - 3.0, later: remove the compatibility layer and the unused 1.x tables
 
 ## Open questions

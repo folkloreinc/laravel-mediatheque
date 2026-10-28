@@ -1,10 +1,10 @@
 import { Alert, Button, Card, Heading, Inline, Stack, Text, useToast } from '@panneau/ui';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
 import { ApiError, useDashboard } from '../api';
-import { Loading, StatusBadge, Table } from '../components';
+import { Loading, Progress, StatusBadge, Table } from '../components';
 import styles from '../dashboard.module.css';
-import { formatDuration, formatPercent, formatTime } from '../format';
+import { formatDuration, formatTime } from '../format';
 import { usePolling } from '../polling';
 import type { Run } from '../types';
 import { isInProgress } from './Runs';
@@ -106,7 +106,7 @@ function RunCard({ run, canOperate, busy, onAct }: { run: Run; canOperate: boole
                     <Field label="Pipeline" value={run.pipeline} />
                     <Field label="Transcoder" value={run.external_id !== null ? `${run.transcoder} (${run.external_id})` : run.transcoder} />
                     <Field label="Media" value={`${run.media.name ?? '—'} · ${run.media.id} · ${run.media.type} · ${run.media.status}`} />
-                    <Field label="Progress" value={formatPercent(run.progress)} />
+                    <Field label="Progress" value={<Progress value={run.progress} running={run.status === 'running'} label="Progress of the run" />} />
                     <Field label="Created" value={formatTime(run.created_at)} />
                     <Field label="Started" value={formatTime(run.started_at)} />
                     <Field label="Ended" value={formatTime(run.ended_at)} />
@@ -139,7 +139,13 @@ function RunCard({ run, canOperate, busy, onAct }: { run: Run; canOperate: boole
                             ),
                         },
                         { label: 'Status', nowrap: true, render: (rendition) => <StatusBadge status={rendition.status} /> },
-                        { label: 'Progress', numeric: true, render: (rendition) => formatPercent(rendition.progress) },
+                        {
+                            label: 'Progress',
+                            numeric: true,
+                            render: (rendition) => (
+                                <Progress value={rendition.progress} running={rendition.status === 'running'} label={`Progress of ${rendition.rendition}`} />
+                            ),
+                        },
                         { label: 'Attempts', numeric: true, render: (rendition) => rendition.attempts },
                         { label: 'Wait', numeric: true, render: (rendition) => formatDuration(rendition.wait) },
                         { label: 'Duration', numeric: true, render: (rendition) => formatDuration(rendition.duration) },
@@ -161,15 +167,19 @@ function RunCard({ run, canOperate, busy, onAct }: { run: Run; canOperate: boole
     );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function Field({ label, value }: { label: string; value: ReactNode }) {
     return (
         <div className={styles.stat}>
             <Text as="span" size="sm" muted>
                 {label}
             </Text>
-            <Text as="span" size="sm">
-                {value}
-            </Text>
+            {typeof value === 'string' ? (
+                <Text as="span" size="sm">
+                    {value}
+                </Text>
+            ) : (
+                value
+            )}
         </div>
     );
 }
