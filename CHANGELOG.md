@@ -6,6 +6,24 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Breaking changes
+
+- `PipelineJob::progress()` and `PipelineRun::progress()` return `?float`: null while nothing measured the progress, instead of 0. Code that reads them handles null, and a class that implements the contracts returns it. `PipelineRunResource` and `PipelineJobResource` give `progress: null` rather than `0` ([decisions/0023](docs/decisions/0023-progress-of-runs.md), #117).
+- The `progress` columns of `pipelines` and `pipelines_jobs` are nullable, `null` by default: run `php artisan mediatheque:install`, then `php artisan migrate`. The new `make_mediatheque_progress_nullable` migration turns the 0 of renditions that didn't complete, and of runs that haven't ended, into null (#117).
+- A run's progress is weighted: a transcode weighs the input's duration in seconds and any other rendition a second, an ended rendition is done, and one that nothing measured counts as not started. It was the plain mean of its renditions (#117).
+- The `Media` contract has `processing()`: a class that implements it implements it too (#117).
+
+### Added
+
+- `$media->processing()`, on the contract, the package's model and the fake's media: the media's latest run in progress as a readonly `Pipelines\Processing` (the media's `status`, the run's uid, `pipeline` and `progress`, and the `rendition` that is running), or null when nothing runs. For editors' interfaces, such as Panneau 5's media field: "transcoding: 42 %" (#117).
+- The `RenditionProgressed` event: the job, the rendition's progress and the run's. The recorder dispatches it each time a rendition's progress passes a multiple of the new `events.progress_step` setting (0.05 by default), never for a call that changes nothing or for a status change. The package doesn't broadcast it: `docs/architecture.md` shows how an application does, on its own channels (#117).
+- `Mediatheque::fake()->progressRendition($media, 'h264', 0.42)`: reports a rendition's progress through the fake's recorder, as a driver would (#117).
+
+### Changed
+
+- The recorder stores the run's progress in `pipelines.progress` with each call, for queries; it was 0 until the run ended (#117).
+- The monitoring dashboard shows progress as a bar: indeterminate while nothing measured a running run or rendition, a dash for an unknown progress otherwise. `mediatheque:status` shows a dash too (#117).
+
 ## [2.0.0-alpha.8] - 2026-10-26
 
 The migrations and the test suite run on PostgreSQL, with `jsonb` columns, and CI runs the tests on PostgreSQL 17 (#103). A media stores the edits of its image, which the `media` resolver passes to `laravel-image` 2.0.0-alpha.2, and images their EXIF orientation (#107). Temporary URLs can download their file under a name (#102), and path placeholders read a model's accessors (#64). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the two new migrations only, which add the `transform` column and turn the JSON columns into `jsonb` on PostgreSQL. Update `folklore/laravel-image` to 2.0.0-alpha.2 or later.
