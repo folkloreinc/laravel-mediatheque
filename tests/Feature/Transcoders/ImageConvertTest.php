@@ -105,6 +105,7 @@ class ImageConvertTest extends DatabaseTestCase
         $web = $media->file('web');
         $this->assertNotNull($web);
         $this->assertSame(['image/jpeg', 3, 4], [$web->mime(), $web->width(), $web->height()], 'Upright, of the same size.');
+        $this->assertIsString($web->metadata('thumbhash'), 'The JPEG has its own placeholder.');
         $this->assertSame($web->url(), $media->url(), 'The media plays its JPEG.');
         $this->assertNotSame($web->url(), $media->original()?->url(), 'The HEIC is kept.');
         Storage::disk('public')->assertExists((string) $media->original()?->path());
