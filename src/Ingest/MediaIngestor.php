@@ -38,7 +38,8 @@ use Throwable;
  *    client's file name, extension or `Content-Type`. Files of mimes that a
  *    server could execute or a browser render as an active document are
  *    never stored, whatever the types allow.
- * 2. The type's maximum size; SVG files are sanitized.
+ * 2. The type's maximum size; SVG files are sanitized, and the location is
+ *    removed from images (GpsStripper), without re-encoding them.
  * 3. The media is created in memory with its uid and the application's
  *    attributes, and the path formatter builds the original's path, with an
  *    extension derived from the detected mime.
@@ -59,6 +60,7 @@ class MediaIngestor implements Ingestor
         private readonly MediathequeConfig $config,
         private readonly PathFormatter $paths,
         private readonly SvgSanitizer $svg,
+        private readonly GpsStripper $gps,
         private readonly LocalFiles $files,
         private readonly Filesystems $filesystems,
         private readonly ConnectionResolverInterface $database,
@@ -110,6 +112,14 @@ class MediaIngestor implements Ingestor
                 $local = $this->sanitizeSvg($source, $local, $temporary);
                 $size = (int) filesize($local);
                 $sanitized = true;
+            }
+
+            if ($this->config->stripsLocation() && GpsStripper::supports($mime)) {
+                $stripped = $this->stripGps($source, $local, $mime, $temporary);
+                if ($stripped !== null) {
+                    $local = $stripped;
+                    $sanitized = true;
+                }
             }
 
             return $then(new IncomingFile($source, $type, $mime, $size, $local, $sanitized));
@@ -266,6 +276,41 @@ class MediaIngestor implements Ingestor
         $path = $this->files->temporaryPath('svg');
         $temporary[] = $path;
         file_put_contents($path, $sanitized);
+
+        return $path;
+    }
+
+    /**
+     * The path of a copy of an image without its location, or null when it
+     * has none. An image on a disk is downloaded to be read whole; it is
+     * still copied from its disk when it has no location.
+     *
+     * @param  list<string>  $temporary
+     */
+    private function stripGps(Source $source, string $local, string $mime, array &$temporary): ?string
+    {
+        $path = $this->files->temporaryPath();
+        $temporary[] = $path;
+
+        if ($source->kind === SourceKind::Disk) {
+            $stream = $this->filesystems->disk((string) $source->disk)->readStream((string) $source->path);
+            $output = fopen($path, 'wb');
+            if (! is_resource($stream) || $output === false) {
+                throw FileRejected::because(RejectionReason::Unreadable, sprintf('The file "%s" can\'t be read.', $source->filename ?? 'file'));
+            }
+            stream_copy_to_stream($stream, $output);
+            fclose($stream);
+            fclose($output);
+        } elseif (! copy($local, $path)) {
+            throw FileRejected::because(RejectionReason::Unreadable, sprintf('The file "%s" can\'t be read.', $source->filename ?? 'file'));
+        }
+
+        $patches = $this->gps->patches($path, $mime);
+        if ($patches === []) {
+            return null;
+        }
+
+        GpsStripper::apply($path, $patches);
 
         return $path;
     }

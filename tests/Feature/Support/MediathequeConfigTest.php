@@ -112,6 +112,7 @@ class MediathequeConfigTest extends TestCase
         yield 'uid prefix' => ['mediatheque.ids.media_prefix', 'Med', 'mediatheque.ids.media_prefix'];
         yield 'progress step of 0' => ['mediatheque.events.progress_step', 0, 'mediatheque.events.progress_step'];
         yield 'progress step over 1' => ['mediatheque.events.progress_step', 5, 'mediatheque.events.progress_step'];
+        yield 'strip_location not a boolean' => ['mediatheque.ingest.images.strip_location', 'yes', 'mediatheque.ingest.images.strip_location'];
     }
 
     #[Test]

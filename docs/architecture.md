@@ -208,7 +208,7 @@ $media = Mediatheque::ingest($file, attributes: ['tenant_id' => $tenant->id]);  
 Ingest steps:
 
 1. Detect the type from the content; check the type's maximum size and allowed mimes.
-2. Sanitize SVG. For images, remove GPS data from the stored original by default (`ingest.images.strip_location`).
+2. Sanitize SVG. For JPEG, PNG, WebP, TIFF, HEIF and AVIF images, remove the location from the stored original by default (`ingest.images.strip_location`): the EXIF GPS entries and the XMP `GPS…` properties are blanked in place, without re-encoding, so the orientation, the camera and the pixels stay ([decisions/0006](decisions/0006-ingest-and-uploads.md)). An image on a disk is downloaded for it.
 3. Build the path with the path formatter, which receives the media (`{media.uid}`, or an application attribute such as a tenant id).
 4. Store the original, create the media (`pending`) and dispatch `MediaCreated`.
 5. Queue the probe, then the type's pipeline.

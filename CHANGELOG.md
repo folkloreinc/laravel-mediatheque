@@ -28,6 +28,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 - When the recorder records the files of a run that started before the media's visibility changed, it queues `ApplyVisibility`, so they get the media's current visibility (#119).
 - The monitoring dashboard shows progress as a bar: indeterminate while nothing measured a running run or rendition, a dash for an unknown progress otherwise. `mediatheque:status` shows a dash too (#117).
 
+### Fixed
+
+- Ingest removes the location from images, as the `Ingestor` contract says: the EXIF GPS entries and the XMP `GPS…` properties of JPEG, PNG, WebP, TIFF, HEIF and AVIF images are blanked before the original is stored, also when an original is replaced. The image is not re-encoded: it keeps its length, its pixels, its orientation and its other metadata, and its checksum is the stripped file's. An image on a disk is downloaded to be read whole. The new `ingest.images.strip_location` setting, true by default, keeps the location when it is false ([decisions/0006](docs/decisions/0006-ingest-and-uploads.md), #120).
+
 ## [2.0.0-alpha.8] - 2026-10-26
 
 The migrations and the test suite run on PostgreSQL, with `jsonb` columns, and CI runs the tests on PostgreSQL 17 (#103). A media stores the edits of its image, which the `media` resolver passes to `laravel-image` 2.0.0-alpha.2, and images their EXIF orientation (#107). Temporary URLs can download their file under a name (#102), and path placeholders read a model's accessors (#64). Run `php artisan mediatheque:install`, then `php artisan migrate`: it publishes the two new migrations only, which add the `transform` column and turn the JSON columns into `jsonb` on PostgreSQL. Update `folklore/laravel-image` to 2.0.0-alpha.2 or later.

@@ -71,7 +71,7 @@ What the pilot needs for its reserved videos. The next alpha is planned with vis
 - [x] The progress of runs: null until measured, weighted by the input's duration, `Media::processing()` for Panneau 5's media field, and `RenditionProgressed` ([decisions/0023](decisions/0023-progress-of-runs.md), [#117](https://github.com/folkloreinc/laravel-mediatheque/issues/117))
 - [ ] `MediaResource` and `FileResource`, in sync with Panneau 5's protocol, and with the `legacy` shape that `laravel-folklore` 2's `MediaResource` uses
 - [x] The `transform`, focal point and `orientation` of an image, settled with `laravel-image` 2 and Panneau 5 ([laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88)), then stored on the media ([#107](https://github.com/folkloreinc/laravel-mediatheque/issues/107)), in 2.0.0-alpha.8
-- [ ] GPS removal at ingest, as the `Ingestor` contract says ([#120](https://github.com/folkloreinc/laravel-mediatheque/issues/120))
+- [x] GPS removal at ingest, as the `Ingestor` contract says ([#120](https://github.com/folkloreinc/laravel-mediatheque/issues/120))
 - [ ] Images at ingest: HEIC, ThumbHash placeholder (the orientation is read since 2.0.0-alpha.8)
 - [ ] `mediatheque:prune` of soft-deleted media and ended runs, and the stored files of force-deleted media deleted in the queue ([#121](https://github.com/folkloreinc/laravel-mediatheque/issues/121))
 
