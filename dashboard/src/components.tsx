@@ -1,7 +1,9 @@
 import { Badge, Card, Spinner, Text, type Tone } from '@panneau/ui';
 import type { ReactNode } from 'react';
+import { ProgressBar } from 'react-aria-components';
 
 import styles from './dashboard.module.css';
+import { formatPercent } from './format';
 
 const TONES: Record<string, Tone> = {
     completed: 'success',
@@ -15,6 +17,39 @@ const TONES: Record<string, Tone> = {
 /** A run, rendition or media status. */
 export function StatusBadge({ status }: { status: string }) {
     return <Badge tone={TONES[status] ?? 'neutral'}>{status}</Badge>;
+}
+
+/**
+ * A run's or a rendition's progress. While it runs and nothing measured it
+ * (a transcoder that reports no progress, ffmpeg without the input's
+ * duration), the bar is indeterminate; otherwise an unknown progress is a
+ * dash.
+ */
+export function Progress({ value, running, label }: { value: number | null; running: boolean; label: string }) {
+    if (value === null && !running) {
+        return <span className={styles.muted}>{formatPercent(null)}</span>;
+    }
+    return (
+        <ProgressBar
+            aria-label={label}
+            value={value !== null ? value * 100 : undefined}
+            isIndeterminate={value === null}
+            valueLabel={value !== null ? formatPercent(value) : undefined}
+            className={styles.progress}
+        >
+            {({ percentage, isIndeterminate }) => (
+                <>
+                    <span className={styles.progressTrack}>
+                        <span
+                            className={isIndeterminate ? `${styles.progressFill} ${styles.indeterminate}` : styles.progressFill}
+                            style={isIndeterminate ? undefined : { inlineSize: `${percentage ?? 0}%` }}
+                        />
+                    </span>
+                    <span className={styles.progressValue}>{formatPercent(value)}</span>
+                </>
+            )}
+        </ProgressBar>
+    );
 }
 
 export function Stat({ label, value, tone, hint }: { label: string; value: ReactNode; tone?: Tone; hint?: ReactNode }) {

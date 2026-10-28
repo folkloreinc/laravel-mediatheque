@@ -63,6 +63,10 @@ export function formatTime(iso: string | null | undefined): string {
     return new Date(iso).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'medium' });
 }
 
-export function formatPercent(progress: number): string {
+/** A progress from 0 to 1, or a dash while nothing measured it. */
+export function formatPercent(progress: number | null): string {
+    if (progress === null) {
+        return '—';
+    }
     return `${Math.round(progress * 100)} %`;
 }

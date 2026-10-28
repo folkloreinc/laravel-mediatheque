@@ -35,5 +35,7 @@ describe('formatRelative', () => {
 describe('formatPercent', () => {
     it('rounds', () => {
         expect(formatPercent(0.666)).toBe('67 %');
+        expect(formatPercent(0)).toBe('0 %');
+        expect(formatPercent(null)).toBe('—');
     });
 });

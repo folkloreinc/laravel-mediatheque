@@ -31,6 +31,22 @@ const failedRun: Run = {
     actions: { retry: true, cancel: false, refresh: false, probe_again: false },
 };
 
+const rendition: Run['renditions'][number] = {
+    rendition: 'h264',
+    operation: 'video.transcode',
+    from: null,
+    status: 'queued',
+    progress: null,
+    attempts: 0,
+    error: null,
+    reason: null,
+    queued_at: '2026-10-21T14:00:00Z',
+    started_at: null,
+    ended_at: null,
+    wait: null,
+    duration: null,
+};
+
 function respond(body: unknown, status = 200): Response {
     return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
@@ -77,6 +93,33 @@ describe('the dashboard', () => {
             ),
         );
         await waitFor(() => expect(window.location.search).toContain('run=run_new'));
+    });
+
+    it('shows an indeterminate bar while nothing measured a running rendition', async () => {
+        const runningRun: Run = {
+            ...failedRun,
+            status: 'running',
+            progress: 0.42,
+            error: null,
+            ended_at: null,
+            renditions: [
+                { ...rendition, rendition: 'h264', status: 'running', progress: null },
+                { ...rendition, rendition: 'poster', operation: 'video.poster', status: 'completed', progress: 1 },
+                { ...rendition, rendition: 'thumbnails', operation: 'video.thumbnails', status: 'skipped', progress: null },
+            ],
+        };
+        fetcher.mockImplementation(async () => respond({ data: runningRun }));
+        window.history.replaceState(null, '', `/?view=runs&run=${runningRun.id}`);
+        render(<App api={createApi({ api: '/mediatheque/api', csrfToken: 'token', canOperate: false }, fetcher as typeof fetch)} canOperate={false} />);
+
+        const run = await screen.findByRole('progressbar', { name: 'Progress of the run' });
+        expect(run.getAttribute('aria-valuenow')).toBe('42');
+        expect(run.getAttribute('aria-valuetext')).toBe('42 %');
+
+        const h264 = screen.getByRole('progressbar', { name: 'Progress of h264' });
+        expect(h264.getAttribute('aria-valuenow')).toBeNull();
+        expect(screen.getByRole('progressbar', { name: 'Progress of poster' }).getAttribute('aria-valuenow')).toBe('100');
+        expect(screen.queryByRole('progressbar', { name: 'Progress of thumbnails' })).toBeNull();
     });
 
     it('hides actions from users who can only view', async () => {

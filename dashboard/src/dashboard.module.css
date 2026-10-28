@@ -142,3 +142,57 @@
     text-align: center;
     color: var(--panneau-color-text-muted);
 }
+
+.progress {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+    min-inline-size: 120px;
+}
+
+.progressTrack {
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+    block-size: 6px;
+    min-inline-size: 64px;
+    border-radius: 3px;
+    background: var(--panneau-color-surface-sunken);
+}
+
+.progressFill {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    border-radius: 3px;
+    background: var(--panneau-color-info);
+}
+
+.indeterminate {
+    inline-size: 40%;
+    animation: indeterminate 1.4s ease-in-out infinite;
+}
+
+@keyframes indeterminate {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(250%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .indeterminate {
+        inline-size: 100%;
+        opacity: 0.4;
+        animation: none;
+    }
+}
+
+.progressValue {
+    min-inline-size: 4ch;
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+}
