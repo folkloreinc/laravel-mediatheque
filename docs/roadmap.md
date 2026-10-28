@@ -61,20 +61,20 @@ Released with [#85](https://github.com/folkloreinc/laravel-mediatheque/issues/85
 - [x] The test suite on PostgreSQL, with `jsonb` ([#103](https://github.com/folkloreinc/laravel-mediatheque/issues/103)), in 2.0.0-alpha.8
 - [x] Path placeholders that read a model accessor, for a tenant's public id ([#64](https://github.com/folkloreinc/laravel-mediatheque/issues/64)), in 2.0.0-alpha.8
 
-## Protected playback (2.0.0-alpha.8 to alpha.9, continues)
+## Protected playback (2.0.0-alpha.8 to alpha.10)
 
-What the pilot needs for its reserved videos. URL import ([#91](https://github.com/folkloreinc/laravel-mediatheque/issues/91)) comes in the alpha that follows, if the pilot needs it.
+What the pilot needs for its reserved videos. URL import ([#91](https://github.com/folkloreinc/laravel-mediatheque/issues/91)) and a `UrlSigner` come when a project needs them.
 
 - [x] Visibility changes, which update the files and dispatch `MediaVisibilityChanged` ([#119](https://github.com/folkloreinc/laravel-mediatheque/issues/119)), in 2.0.0-alpha.9
-- [x] CDN prefixes for public files: the disk's `url` ([#128](https://github.com/folkloreinc/laravel-mediatheque/issues/128))
+- [x] CDN prefixes for public files: the disk's `url` ([#128](https://github.com/folkloreinc/laravel-mediatheque/issues/128)), in 2.0.0-alpha.10
 - [ ] A `UrlSigner` for CDNs that sign their own URLs ([#129](https://github.com/folkloreinc/laravel-mediatheque/issues/129)), when a project needs one
 - [x] Temporary URLs that download the file, with its name ([#102](https://github.com/folkloreinc/laravel-mediatheque/issues/102)), in 2.0.0-alpha.8
 - [x] The progress of runs: null until measured, weighted by the input's duration, `Media::processing()` for Panneau 5's media field, and `RenditionProgressed` ([decisions/0023](decisions/0023-progress-of-runs.md), [#117](https://github.com/folkloreinc/laravel-mediatheque/issues/117)), in 2.0.0-alpha.9
-- [x] `MediaResource` and `FileResource`, with the meaning of Panneau 5's `MediaInfo` in snake_case, and `Media::failure()`; `laravel-folklore` keeps its legacy shape ([#133](https://github.com/folkloreinc/laravel-mediatheque/issues/133))
+- [x] `MediaResource` and `FileResource`, with the meaning of Panneau 5's `MediaInfo` in snake_case, and `Media::failure()`; `laravel-folklore` keeps its legacy shape ([#133](https://github.com/folkloreinc/laravel-mediatheque/issues/133)), in 2.0.0-alpha.10
 - [x] The `transform`, focal point and `orientation` of an image, settled with `laravel-image` 2 and Panneau 5 ([laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88)), then stored on the media ([#107](https://github.com/folkloreinc/laravel-mediatheque/issues/107)), in 2.0.0-alpha.8
 - [x] GPS removal at ingest, as the `Ingestor` contract says ([#120](https://github.com/folkloreinc/laravel-mediatheque/issues/120)), in 2.0.0-alpha.9
-- [x] Images at ingest: a ThumbHash placeholder, for images and posters ([#131](https://github.com/folkloreinc/laravel-mediatheque/issues/131)); the orientation is read since 2.0.0-alpha.8
-- [x] Images at ingest: a web version of HEIC, HEIF and AVIF images, played instead of the original ([#132](https://github.com/folkloreinc/laravel-mediatheque/issues/132))
+- [x] Images at ingest: a ThumbHash placeholder, for images and posters ([#131](https://github.com/folkloreinc/laravel-mediatheque/issues/131)), in 2.0.0-alpha.10; the orientation is read since 2.0.0-alpha.8
+- [x] Images at ingest: a web version of HEIC, HEIF and AVIF images, played instead of the original ([#132](https://github.com/folkloreinc/laravel-mediatheque/issues/132)), in 2.0.0-alpha.10
 - [x] `mediatheque:prune` of soft-deleted media and ended runs, and the stored files of force-deleted media deleted in the queue ([#121](https://github.com/folkloreinc/laravel-mediatheque/issues/121)), in 2.0.0-alpha.9
 
 ## Parity with 1.x

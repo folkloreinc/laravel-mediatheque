@@ -6,6 +6,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+## [2.0.0-alpha.10] - 2026-10-28
+
+Images get a ThumbHash placeholder at probe, and so do video posters (#131). HEIC, HEIF and AVIF images get a JPEG web version at ingest, which the media plays instead of its original (#132). `MediaResource` and `FileResource` give the canonical JSON shape of a media, with `Media::failure()` (#133). A CDN in front of public files is the disk's `url` (#128). There is no new migration. If your published config sets `types.image.pipeline` to `null`, remove that line to get the web version of HEIC images. Images probed before keep no placeholder until they are probed again.
+
 ### Breaking changes
 
 - A skipped main rendition makes the media `ready`, played from its original, instead of `failed`. A media whose main rendition's condition (`when`) doesn't match its probe is `ready` once probed, and a pipeline none of whose kept renditions match the probe doesn't run. A main rendition that failed or was canceled still fails the media ([decisions/0014](docs/decisions/0014-run-outcomes-and-model-contracts.md), #132).
@@ -237,7 +241,8 @@ The first alpha of 2.0, for new projects: upload and play a video. The [README](
 - Presigned multipart uploads to an S3-compatible disk, for Uppy's `AwsS3` plugin: `Route::mediatheque()` registers routes to create an upload, sign its parts, list them, complete and abort it, inside the application's own middleware. A fresh install still exposes no route. Each step is authorized with the `create` ability of the media policy (denied without a policy); an upload belongs to the user who created it, and guests can't upload. Completing an upload ingests the file from the disk with the options of `Mediatheque::uploadsUsing()` (the application's attributes, such as a tenant id, chosen on the server); a rejected file is deleted. Errors are `application/problem+json`. New: the `uploads` table (published by `mediatheque:install`), the `Upload` model, and the `uploads` config (`disk`, `path`, `expires_after`, `url_ttl`) ([decisions/0015](docs/decisions/0015-new-install-schema-attributes-and-uploads.md), #54).
 - Releases are tagged by CI, from a commit of `v2.x` whose lint and test jobs passed, when `CHANGELOG.md` gets a dated section for a new version (#30).
 
-[Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.9...v2.x
+[Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.10...v2.x
+[2.0.0-alpha.10]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.9...v2.0.0-alpha.10
 [2.0.0-alpha.9]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.8...v2.0.0-alpha.9
 [2.0.0-alpha.8]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.7...v2.0.0-alpha.8
 [2.0.0-alpha.7]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.6...v2.0.0-alpha.7
