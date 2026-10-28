@@ -27,9 +27,10 @@ One case wasn't covered: a run that produces the main rendition again, on a medi
 
 - A pipeline's **main rendition** is the first one, in the order of its definition, with the `main` role (the default role) that keeps its output (`keep` is not `false`). `video` has `h264`.
 - A media goes `pending` → `processing` when its probe completes → `ready` or `failed`.
-- After a run that includes the main rendition, the media is **`ready`** if the main rendition completed, and **`failed`** if it failed, was skipped or was canceled. A run that doesn't include it (thumbnails only) leaves the media's status as it is.
+- After a run that includes the main rendition, the media is **`ready`** if the main rendition completed, and **`failed`** if it failed, was skipped or was canceled (a skipped main rendition makes it `ready` since 2026-10-28, below). A run that doesn't include it (thumbnails only) leaves the media's status as it is.
 - **A `ready` media stays `ready`** when a later run fails to produce its main rendition again, if the media still has a file for it: the previous file is still served, since a run's files only replace the previous ones when they are recorded. The failure is on the run and its events. A `failed` media becomes `ready` when a later run completes its main rendition.
 - A type without a pipeline (images), or a pipeline without a main rendition, makes the media `ready` once it is probed.
+- A skipped main rendition makes the media `ready`, played from its original (amended on 2026-10-28, [#132](https://github.com/folkloreinc/laravel-mediatheque/issues/132)): skipping is a normal outcome, and a condition (`when`) on a main rendition says the inputs it doesn't match need none, as the `image` pipeline's `web` rendition does for every image but HEIC, HEIF and AVIF. So a media whose main rendition's condition doesn't match its probe is `ready` once it is probed, and a pipeline none of whose kept renditions' conditions match the probe doesn't run at all: a JPEG runs nothing. A main rendition that failed or was canceled still fails the media.
 
 ### Events
 

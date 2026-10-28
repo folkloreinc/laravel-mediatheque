@@ -240,6 +240,22 @@ class MediaResolverTest extends DatabaseTestCase
     }
 
     #[Test]
+    public function a_heic_resolves_to_its_web_version_with_its_transform(): void
+    {
+        $media = $this->image(['transform' => self::transform(), 'metadata' => ['thumbhash' => 'HBkSHYSIeHiPiHh8eJd4eTN0EEQG', 'orientation' => 6]]);
+        $media->mediaFiles()->update(['mime' => 'image/heic', 'path' => 'image/'.$media->uid.'/original.heic']);
+        $this->createFile($media, 'web', ['mime' => 'image/jpeg', 'width' => 600, 'height' => 800, 'checksum' => str_repeat('9', 64), 'path' => 'image/'.$media->uid.'/run/web.jpg']);
+
+        $source = $this->resolver()->resolveKey($media->uid);
+
+        $this->assertSame(['image/'.$media->uid.'/run/web.jpg', 'image/jpeg', '99999999'], [$source->path, $source->mime, $source->version]);
+        $this->assertNull($source->orientation, 'The web version is upright.');
+        $this->assertSame(90, $source->transform?->rotate, 'It has the size of the upright original: the transform applies.');
+        $this->assertSame('HBkSHYSIeHiPiHh8eJd4eTN0EEQG', $source->placeholder);
+        $this->assertSame('image/heic', $this->resolver()->resolveKey($media->uid.'/original')->mime, 'The original stays available.');
+    }
+
+    #[Test]
     public function an_image_without_a_transform_resolves_without_edits(): void
     {
         $source = $this->resolver()->resolve($this->image());

@@ -76,11 +76,11 @@ class PipelineRunnerTest extends DatabaseTestCase
     #[Test]
     public function a_type_without_a_pipeline_has_nothing_to_run(): void
     {
-        $image = $this->createMedia(['type' => 'image']);
-        $this->createFile($image);
+        $font = $this->createMedia(['type' => 'font']);
+        $this->createFile($font);
 
         $this->expectException(InvalidArgumentException::class);
 
-        app(PipelineRunner::class)->run($image);
+        app(PipelineRunner::class)->run($font);
     }
 }

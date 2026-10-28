@@ -73,7 +73,8 @@ What the pilot needs for its reserved videos. URL import ([#91](https://github.c
 - [ ] `MediaResource` and `FileResource`, in sync with Panneau 5's protocol, and with the `legacy` shape that `laravel-folklore` 2's `MediaResource` uses
 - [x] The `transform`, focal point and `orientation` of an image, settled with `laravel-image` 2 and Panneau 5 ([laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88)), then stored on the media ([#107](https://github.com/folkloreinc/laravel-mediatheque/issues/107)), in 2.0.0-alpha.8
 - [x] GPS removal at ingest, as the `Ingestor` contract says ([#120](https://github.com/folkloreinc/laravel-mediatheque/issues/120)), in 2.0.0-alpha.9
-- [ ] Images at ingest: HEIC, ThumbHash placeholder (the orientation is read since 2.0.0-alpha.8)
+- [ ] Images at ingest: a ThumbHash placeholder ([#131](https://github.com/folkloreinc/laravel-mediatheque/issues/131)); the orientation is read since 2.0.0-alpha.8
+- [x] Images at ingest: a web version of HEIC, HEIF and AVIF images, played instead of the original ([#132](https://github.com/folkloreinc/laravel-mediatheque/issues/132))
 - [x] `mediatheque:prune` of soft-deleted media and ended runs, and the stored files of force-deleted media deleted in the queue ([#121](https://github.com/folkloreinc/laravel-mediatheque/issues/121)), in 2.0.0-alpha.9
 
 ## Parity with 1.x

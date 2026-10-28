@@ -715,16 +715,18 @@ class MediathequeFake implements Fake, Mediatheque
         $media->status = MediaStatus::Processing;
         $this->events->dispatch(new MediaProbed($media, $outcome->metadata));
 
-        if ($pipeline === null || $media->mainRendition === null) {
+        // As ProbeResults: a media whose main rendition doesn't apply plays
+        // its original, and a pipeline none of whose renditions apply doesn't run
+        $definition = $pipeline !== null ? $this->pipeline($pipeline) : null;
+        $main = $definition?->mainRendition();
+        if ($main === null || ! $main->when->matches($media->metadata)) {
             $media->status = MediaStatus::Ready;
             $this->events->dispatch(new MediaReady($media));
-
-            if ($pipeline === null) {
-                return;
-            }
         }
 
-        $this->runPipeline($media, $pipeline);
+        if ($pipeline !== null && $definition?->appliesTo($media->metadata) === true) {
+            $this->runPipeline($media, $pipeline);
+        }
     }
 
     /**

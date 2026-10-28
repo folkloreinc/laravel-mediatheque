@@ -278,8 +278,9 @@ class InMemoryRecorder implements Recorder
 
     /**
      * After a run that includes the media's main rendition: ready if it
-     * completed, failed otherwise, unless the media is ready and still has a
-     * file for it (docs/decisions/0014).
+     * completed, or was skipped (the media plays its original), failed
+     * otherwise, unless the media is ready and still has a file for it
+     * (docs/decisions/0014).
      */
     private function updateMedia(FakePipelineRun $run): void
     {
@@ -291,7 +292,7 @@ class InMemoryRecorder implements Recorder
         }
 
         $job = $run->jobs[$main];
-        $status = $job->status === JobStatus::Completed ? MediaStatus::Ready : MediaStatus::Failed;
+        $status = $job->status === JobStatus::Completed || $job->status === JobStatus::Skipped ? MediaStatus::Ready : MediaStatus::Failed;
 
         // A ready media keeps playing its previous file (docs/decisions/0014)
         $keepsPlaying = $status === MediaStatus::Failed && $media->status === MediaStatus::Ready && $media->file($main) !== null;

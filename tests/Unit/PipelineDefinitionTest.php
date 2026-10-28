@@ -102,4 +102,17 @@ class PipelineDefinitionTest extends TestCase
 
         $this->assertEquals($pipeline, PipelineDefinition::fromArray('video', $stored));
     }
+
+    #[Test]
+    public function it_applies_when_a_rendition_it_keeps_matches_the_probe(): void
+    {
+        $pipeline = PipelineDefinition::fromArray('image', ['renditions' => [
+            'web' => ['op' => 'image.convert', 'when' => ['mime' => ['image/heic', 'image/avif']]],
+            'grey' => ['op' => 'image.convert', 'keep' => false],
+        ]]);
+
+        $this->assertTrue($pipeline->appliesTo(['kind' => 'image', 'mime' => 'image/heic']));
+        $this->assertFalse($pipeline->appliesTo(['kind' => 'image', 'mime' => 'image/jpeg']), 'A rendition that keeps nothing doesn\'t count.');
+        $this->assertTrue($this->video()->appliesTo(['kind' => 'video']), 'A rendition without a condition always applies.');
+    }
 }

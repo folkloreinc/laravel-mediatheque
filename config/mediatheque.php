@@ -127,8 +127,6 @@ return [
         'image' => [
             'mimes' => ['image/*'],
             'max_size' => '50M',
-            // Image renditions come from laravel-image, on the fly
-            'pipeline' => null,
         ],
         'document' => [
             'mimes' => ['application/pdf'],
@@ -174,6 +172,21 @@ return [
             'renditions' => [
                 'mp3' => ['op' => 'audio.transcode', 'codec' => 'mp3'],
                 'waveform' => ['op' => 'audio.waveform', 'role' => 'thumbnail'],
+            ],
+        ],
+        // Other sizes and formats of images come from laravel-image, on the
+        // fly. This pipeline only gives the HEIC, HEIF and AVIF images phones
+        // take a JPEG every browser shows, played instead of the original,
+        // which is kept. Other images run nothing, and are ready once probed
+        'image' => [
+            'transcoder' => 'ffmpeg',
+            'source' => null,
+            'renditions' => [
+                'web' => [
+                    'op' => 'image.convert',
+                    'format' => 'jpeg',
+                    'when' => ['mime' => ['image/heic', 'image/heif', 'image/heic-sequence', 'image/heif-sequence', 'image/avif']],
+                ],
             ],
         ],
     ],

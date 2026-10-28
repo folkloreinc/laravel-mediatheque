@@ -280,6 +280,35 @@ class MediathequeFakeTest extends TestCase
     }
 
     #[Test]
+    public function a_heic_gets_a_web_version_that_its_media_plays(): void
+    {
+        Mediatheque::fake();
+
+        $media = Mediatheque::ingest(UploadedFile::fake()->create('IMG_0001.HEIC', 512, 'image/heic'));
+
+        $this->assertSame(MediaStatus::Ready, $media->status());
+        Mediatheque::assertRendition($media, 'web', JobStatus::Completed);
+        $web = $media->file('web');
+        $this->assertNotNull($web);
+        $this->assertSame($web->url(), $media->url());
+        $this->assertNotNull($media->original());
+    }
+
+    #[Test]
+    public function other_images_run_no_pipeline_and_are_ready_once_probed(): void
+    {
+        Event::fake();
+        Mediatheque::fake();
+
+        $media = Mediatheque::ingest(UploadedFile::fake()->image('photo.jpg', 40, 30));
+
+        $this->assertSame(MediaStatus::Ready, $media->status());
+        $this->assertCount(0, Mediatheque::fake()->runs($media));
+        $this->assertSame($media->original()?->url(), $media->url());
+        Event::assertDispatchedTimes(MediaReady::class, 1);
+    }
+
+    #[Test]
     public function conditions_are_checked_against_the_probe(): void
     {
         config(['mediatheque.pipelines.video.renditions.highlights' => ['op' => 'video.highlights', 'when' => ['min_duration' => 60]]]);
