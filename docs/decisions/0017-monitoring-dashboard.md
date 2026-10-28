@@ -77,7 +77,7 @@ E is not a technology but where B lives. A separate package for the dashboard al
   - **`reason` and `ended_at` on `uploads`**: `aborted`, `expired`, or the `RejectionReason` of a rejected file.
   - **An `IngestRejected` event**, with the reason, for ingests that write no row.
   - **Indexes** on `ended_at` and `created_at` of `pipelines` and `pipelines_jobs`.
-- **Pruning runs:** `mediatheque:prune` deletes ended runs older than `prune.runs_after_days`, and keeps each media's last run of each pipeline, so the dashboard and a media's history always show why it is in its current state. The default is longer than the 24 hours Eclair retries its webhooks for, since a late webhook needs its run.
+- **Pruning runs:** `mediatheque:prune` deletes ended runs older than `prune.runs_after_days`, and keeps each media's last run of each pipeline, so the dashboard and a media's history always show why it is in its current state. The default is longer than the 24 hours Eclair retries its webhooks for, since a late webhook needs its run. Since force-deleting a media must delete its runs, which a morph doesn't cascade to, the model deletes them (amended on 2026-10-28, [#121](https://github.com/folkloreinc/laravel-mediatheque/issues/121)). A file whose rendition's run is pruned keeps its row, without its `pipeline_job_id`.
 - **A read model**, `Folklore\Mediatheque\Monitoring\`, through the model contracts:
   - query objects for runs, renditions, media and uploads, with filters, cursor pagination and a period;
   - an overview, failures grouped by code, durations and throughput over a bounded period;

@@ -73,7 +73,7 @@ What the pilot needs for its reserved videos. The next alpha is planned with vis
 - [x] The `transform`, focal point and `orientation` of an image, settled with `laravel-image` 2 and Panneau 5 ([laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88)), then stored on the media ([#107](https://github.com/folkloreinc/laravel-mediatheque/issues/107)), in 2.0.0-alpha.8
 - [ ] GPS removal at ingest, as the `Ingestor` contract says ([#120](https://github.com/folkloreinc/laravel-mediatheque/issues/120))
 - [ ] Images at ingest: HEIC, ThumbHash placeholder (the orientation is read since 2.0.0-alpha.8)
-- [ ] `mediatheque:prune` of soft-deleted media and ended runs, and the stored files of force-deleted media deleted in the queue ([#121](https://github.com/folkloreinc/laravel-mediatheque/issues/121))
+- [x] `mediatheque:prune` of soft-deleted media and ended runs, and the stored files of force-deleted media deleted in the queue ([#121](https://github.com/folkloreinc/laravel-mediatheque/issues/121))
 
 ## Parity with 1.x
 

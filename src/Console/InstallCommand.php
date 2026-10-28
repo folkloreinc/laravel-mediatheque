@@ -45,6 +45,7 @@ class InstallCommand extends Command
         $this->components->info($published > 0
             ? 'Run `php artisan migrate` to create the mediatheque tables.'
             : 'The migrations are already published.');
+        $this->components->info('Schedule `mediatheque:prune` daily, in routes/console.php: Schedule::command(\'mediatheque:prune\')->daily();');
 
         return self::SUCCESS;
     }
