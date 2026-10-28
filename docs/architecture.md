@@ -373,7 +373,7 @@ One transcoder runs a whole pipeline run. A pipeline whose renditions need two t
 
 ## Visibility and URLs
 
-A media is `public` or `private`. Its files follow its visibility on their source (object ACL on S3-compatible disks). Transcoders write their outputs with the media's visibility. Changing the visibility updates the files in a queued job; files of a run in progress are updated when it ends.
+A media is `public` or `private`. Its files follow its visibility on their source (object ACL on S3-compatible disks). Transcoders write their outputs with the media's visibility. Changing the visibility updates the files in a queued job; files of a run in progress are updated when it ends. This comes with [#119](https://github.com/folkloreinc/laravel-mediatheque/issues/119): until then, a media keeps the visibility it was ingested with.
 
 ```php
 $media->url();                                    // the main rendition, or the original
@@ -537,14 +537,16 @@ The fake stores files on fake disks, returns probe fixtures, and completes rendi
 
 ## Commands
 
+`mediatheque:install` and `mediatheque:status` exist today; the other commands are planned ([roadmap](roadmap.md)).
+
 | Command | Purpose |
 |---|---|
 | `mediatheque:install` | Publish the config and migrations, check the environment |
-| `mediatheque:doctor` | Binaries and versions, disks and visibility, queue `retry_after` against job timeouts, transcoders against pipelines (operations, `when.kind`, `queue` on remote drivers), `mediatheque:refresh` scheduled when a driver needs it |
-| `mediatheque:upgrade` | Convert a 1.x database (see [upgrade.md](upgrade.md)); `--check` lists what would change |
-| `mediatheque:run-pipeline` | Run a pipeline on media, by type or uid |
-| `mediatheque:refresh` | Scheduled: fetch the state of runs that have been running too long, and the progress of drivers that only report it by polling |
-| `mediatheque:prune` | Force-delete soft-deleted media after the grace period, and orphan files |
+| `mediatheque:doctor` (to come) | Binaries and versions, disks and visibility, queue `retry_after` against job timeouts, transcoders against pipelines (operations, `when.kind`, `queue` on remote drivers), `mediatheque:refresh` scheduled when a driver needs it |
+| `mediatheque:upgrade` (to come) | Convert a 1.x database (see [upgrade.md](upgrade.md)); `--check` lists what would change |
+| `mediatheque:run-pipeline` (to come) | Run a pipeline on media, by type or uid |
+| `mediatheque:refresh` (to come) | Scheduled: fetch the state of runs that have been running too long, and the progress of drivers that only report it by polling |
+| `mediatheque:prune` (to come) | Force-delete soft-deleted media after the grace period, and orphan files |
 | `mediatheque:install --dashboard` | Also publish and register the provider of the dashboard's gates |
 | `mediatheque:status` | Media by status, runs in progress and stuck, what ended in the last hours, and the latest failures (`--hours`, 24 by default) |
 
@@ -582,7 +584,7 @@ Route::middleware(['web', 'auth'])->group(function () {
 
 ## Deletion and replacement
 
-- Deleting a media soft-deletes it. Its files stay until `mediatheque:prune` force-deletes it after `prune.after_days`. Force deletion removes files, renditions, pipeline runs, metadata and pivot rows.
+- Deleting a media soft-deletes it. Its files stay until `mediatheque:prune` force-deletes it after `prune.after_days`. Force deletion removes files, renditions, pipeline runs, metadata and pivot rows. Until [#121](https://github.com/folkloreinc/laravel-mediatheque/issues/121), `mediatheque:prune` doesn't exist and force deletion leaves the stored files on their disks.
 - A media in use can't be deleted unless the deletion is forced: `delete()` throws `MediaInUse` ([decisions/0020](decisions/0020-attachments-by-handle-and-usages.md)).
 - `$media->replaceOriginal($source)`, or `Mediatheque::replaceOriginal($media, $source)`, replaces the original and keeps the media ([decisions/0019](decisions/0019-replace-original.md)):
 
