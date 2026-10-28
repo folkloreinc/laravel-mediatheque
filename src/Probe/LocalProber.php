@@ -31,6 +31,9 @@ use Symfony\Component\Process\Process;
  *   or the EXIF orientation of an image; `rotation` is the video's, and
  *   `orientation` the image's EXIF orientation (1 to 8), when it declares
  *   one. The original is never turned upright.
+ * - An image other than SVG gets a ThumbHash placeholder (`thumbhash`),
+ *   of its first frame, upright. An image it can't compute one for has no
+ *   such key: the probe doesn't fail.
  * - ffprobe reads a file on a remote disk through a temporary URL when the
  *   disk signs them, so only what it needs is downloaded. Images are copied
  *   locally.
@@ -259,9 +262,18 @@ class LocalProber implements Prober
 
         $metadata = class_exists(Imagick::class) ? self::imagick($path) : self::getImageSize($path);
 
-        return $metadata !== null
-            ? ProbeOutcome::done([...$base, ...$metadata])
-            : ProbeOutcome::failed(new TranscoderError(TranscoderErrorCode::InputUnreadable, 'The image can\'t be read.'));
+        if ($metadata === null) {
+            return ProbeOutcome::failed(new TranscoderError(TranscoderErrorCode::InputUnreadable, 'The image can\'t be read.'));
+        }
+
+        $orientation = $metadata[MetadataKey::Orientation->value] ?? null;
+        $thumbhash = ImagePlaceholder::thumbhash($path, is_int($orientation) ? $orientation : null);
+
+        return ProbeOutcome::done([
+            ...$base,
+            ...$metadata,
+            ...($thumbhash !== null ? [MetadataKey::Thumbhash->value => $thumbhash] : []),
+        ]);
     }
 
     /**
