@@ -65,7 +65,7 @@ Released with [#85](https://github.com/folkloreinc/laravel-mediatheque/issues/85
 
 What the pilot needs for its reserved videos. The next alpha is planned with visibility changes, GPS removal and `mediatheque:prune`, and URL import ([#91](https://github.com/folkloreinc/laravel-mediatheque/issues/91)) if the pilot needs it then.
 
-- [ ] Visibility changes, which update the files and dispatch `MediaVisibilityChanged` ([#119](https://github.com/folkloreinc/laravel-mediatheque/issues/119))
+- [x] Visibility changes, which update the files and dispatch `MediaVisibilityChanged` ([#119](https://github.com/folkloreinc/laravel-mediatheque/issues/119))
 - [ ] CDN prefixes for public files
 - [x] Temporary URLs that download the file, with its name ([#102](https://github.com/folkloreinc/laravel-mediatheque/issues/102)), in 2.0.0-alpha.8
 - [x] The progress of runs: null until measured, weighted by the input's duration, `Media::processing()` for Panneau 5's media field, and `RenditionProgressed` ([decisions/0023](decisions/0023-progress-of-runs.md), [#117](https://github.com/folkloreinc/laravel-mediatheque/issues/117))

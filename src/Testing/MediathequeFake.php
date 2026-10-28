@@ -23,6 +23,7 @@ use Folklore\Mediatheque\Events\MediaCreated;
 use Folklore\Mediatheque\Events\MediaFailed;
 use Folklore\Mediatheque\Events\MediaProbed;
 use Folklore\Mediatheque\Events\MediaReady;
+use Folklore\Mediatheque\Events\MediaVisibilityChanged;
 use Folklore\Mediatheque\Events\OriginalReplaced;
 use Folklore\Mediatheque\Events\PipelineCanceled;
 use Folklore\Mediatheque\Events\RenditionCanceled;
@@ -94,7 +95,7 @@ class MediathequeFake implements Fake, Mediatheque
     ) {
         $ttl = $config->get('mediatheque.urls.temporary_ttl', 3600);
         $this->urls = new FakeUrlGenerator($filesystems, is_int($ttl) ? $ttl : 3600);
-        $this->recorder = new InMemoryRecorder($events, $this->urls, new MediathequeConfig($config));
+        $this->recorder = new InMemoryRecorder($events, $this->urls, new MediathequeConfig($config), $filesystems);
         $this->transcoder = new FakeTranscoder($this->recorder, $filesystems);
         $this->prober = new FakeProber;
         $this->ingestor = new FakeIngestor($this);
@@ -271,6 +272,29 @@ class MediathequeFake implements Fake, Mediatheque
         $this->probe($media, $pipeline);
 
         return $media;
+    }
+
+    /**
+     * The fake applies the visibility to the files on their fake disks at
+     * once, and to the files its runs record later.
+     */
+    public function setVisibility(Media $media, Visibility $visibility): bool
+    {
+        $media = $this->find($media);
+        $previous = $media->visibility;
+
+        if ($previous === $visibility) {
+            return false;
+        }
+
+        $media->visibility = $visibility;
+        foreach ($media->files as $file) {
+            $this->recorder->applyVisibility($file);
+        }
+
+        $this->events->dispatch(new MediaVisibilityChanged($media, $previous, $visibility));
+
+        return true;
     }
 
     public function resolve(MediaReference|string $reference): ?Media
