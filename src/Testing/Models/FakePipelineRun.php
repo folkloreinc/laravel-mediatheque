@@ -11,6 +11,7 @@ use Folklore\Mediatheque\Contracts\Models\PipelineRun;
 use Folklore\Mediatheque\Enums\PipelineStatus;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Pipelines\PipelineDefinition;
+use Folklore\Mediatheque\Pipelines\Progress;
 use Folklore\Mediatheque\Pipelines\Rendition;
 use Folklore\Mediatheque\Transcoders\TranscoderError;
 use Illuminate\Support\Collection;
@@ -54,6 +55,8 @@ class FakePipelineRun implements PipelineRun
             $this->jobs[$name] = new FakePipelineJob($this, $rendition);
             $this->jobs[$name]->queuedAt = $rendition->from === null ? $this->createdAt : null;
         }
+
+        $media->runs[] = $this;
     }
 
     public function key(): string
@@ -121,16 +124,9 @@ class FakePipelineRun implements PipelineRun
         return $this->media->visibility;
     }
 
-    public function progress(): float
+    public function progress(): ?float
     {
-        if ($this->jobs === []) {
-            return $this->status->isFinal() ? 1.0 : 0.0;
-        }
-
-        return array_sum(array_map(
-            fn (FakePipelineJob $job) => $job->status->isFinal() ? 1.0 : $job->progress,
-            $this->jobs,
-        )) / count($this->jobs);
+        return Progress::ofRun($this);
     }
 
     public function error(): ?TranscoderError

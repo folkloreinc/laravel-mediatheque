@@ -106,6 +106,16 @@ class EloquentRecorderTest extends DatabaseTestCase
         return app(PipelineRunner::class)->create($media, PipelineDefinition::fromArray($run->name(), (array) config('mediatheque.pipelines.'.$run->name())), $renditions);
     }
 
+    protected function setDuration(PipelineRunContract $run, ?float $seconds): void
+    {
+        $media = $this->freshMedia($run);
+        $this->assertInstanceOf(Media::class, $media);
+        $metadata = $media->metadata();
+        unset($metadata['duration']);
+
+        $media->forceFill(['metadata' => $seconds !== null ? [...$metadata, 'duration' => $seconds] : $metadata])->save();
+    }
+
     #[Test]
     public function the_package_binds_the_eloquent_recorder(): void
     {

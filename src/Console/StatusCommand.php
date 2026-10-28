@@ -62,7 +62,7 @@ class StatusCommand extends Command
                 $run->transcoder(),
                 $run->media()->uid(),
                 $run->status()->value,
-                round($run->progress() * 100).' %',
+                $run->progress() !== null ? round($run->progress() * 100).' %' : '—',
             ], $monitoring->runs(new RunFilters(stuck: true), limit: 20)->items));
         }
 

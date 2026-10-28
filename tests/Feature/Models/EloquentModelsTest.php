@@ -163,7 +163,7 @@ class EloquentModelsTest extends DatabaseTestCase
         $this->assertSame($run->key(), $webm->run()->key());
         $this->assertNull($run->job('poster'));
         $this->assertCount(2, $run->jobs());
-        $this->assertSame(0.0, $run->progress());
+        $this->assertNull($run->progress(), 'Nothing measured it yet.');
         $this->assertNull(TenantMedia::query()->find($media->id), 'The application scope hides it from the application.');
     }
 

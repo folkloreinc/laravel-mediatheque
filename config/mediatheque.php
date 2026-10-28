@@ -228,6 +228,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Events
+    |--------------------------------------------------------------------------
+    |
+    | `RenditionProgressed` is dispatched each time a rendition's progress
+    | passes a multiple of `progress_step`, between 0 and 1: every 5 % by
+    | default. The package doesn't broadcast it.
+    |
+    */
+    'events' => [
+        'progress_step' => 0.05,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Monitoring
     |--------------------------------------------------------------------------
     |

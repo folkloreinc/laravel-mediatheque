@@ -36,7 +36,7 @@
             "operation": "video.poster",
             "from": null,
             "status": "failed",
-            "progress": 0.0,
+            "progress": null,
             "attempts": 3,
             "error": {
                 "code": "timeout",
@@ -54,7 +54,7 @@
             "operation": "video.thumbnails",
             "from": "h264",
             "status": "skipped",
-            "progress": 0.0,
+            "progress": null,
             "attempts": 0,
             "error": null,
             "reason": "The input doesn't match the rendition's condition.",

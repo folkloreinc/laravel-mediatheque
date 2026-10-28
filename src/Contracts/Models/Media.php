@@ -5,6 +5,7 @@ namespace Folklore\Mediatheque\Contracts\Models;
 use DateTimeInterface;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\Visibility;
+use Folklore\Mediatheque\Pipelines\Processing;
 use Folklore\Mediatheque\Support\MediaUsage;
 use Illuminate\Support\Collection;
 
@@ -52,6 +53,13 @@ interface Media
      * @return array<string, mixed>|null
      */
     public function transform(): ?array;
+
+    /**
+     * Its run in progress, the latest one: the media's status, the run's
+     * uid, pipeline and progress, and the rendition that is running. Null
+     * when no run is in progress (docs/decisions/0023).
+     */
+    public function processing(): ?Processing;
 
     /**
      * The ingested file. Null while a media imported from a URL waits for

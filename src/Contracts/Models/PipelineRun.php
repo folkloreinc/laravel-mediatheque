@@ -77,9 +77,12 @@ interface PipelineRun
     public function visibility(): Visibility;
 
     /**
-     * Between 0 and 1.
+     * Between 0 and 1: the mean of its renditions, weighted by the input's
+     * duration for transcodes, where an ended rendition is done
+     * (Pipelines\Progress). Null while none of its renditions was measured
+     * or ended.
      */
-    public function progress(): float;
+    public function progress(): ?float;
 
     public function error(): ?TranscoderError;
 

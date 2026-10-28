@@ -11,6 +11,7 @@ use Folklore\Mediatheque\Enums\JobStatus;
 use Folklore\Mediatheque\Enums\PipelineStatus;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Pipelines\PipelineDefinition;
+use Folklore\Mediatheque\Pipelines\Progress;
 use Folklore\Mediatheque\Pipelines\Rendition;
 use Folklore\Mediatheque\Support\Models;
 use Folklore\Mediatheque\Support\Uid;
@@ -42,7 +43,7 @@ use LogicException;
  * @property string $path_prefix
  * @property Visibility $visibility
  * @property PipelineStatus $status
- * @property float $progress
+ * @property float|null $progress The run's progress as the recorder last stored it, for queries; progress() computes it
  * @property int $attempts
  * @property array{code?: mixed, message?: mixed}|null $error
  * @property Carbon|null $started_at
@@ -61,7 +62,6 @@ class PipelineRun extends Model implements PipelineRunContract
      */
     protected $attributes = [
         'status' => 'pending',
-        'progress' => 0,
         'attempts' => 0,
     ];
 
@@ -249,15 +249,9 @@ class PipelineRun extends Model implements PipelineRunContract
         return $this->visibility;
     }
 
-    public function progress(): float
+    public function progress(): ?float
     {
-        $jobs = $this->pipelineJobs;
-
-        if ($jobs->isEmpty()) {
-            return $this->status->isFinal() ? 1.0 : 0.0;
-        }
-
-        return $jobs->sum(fn (PipelineJobContract $job) => $job->status()->isFinal() ? 1.0 : $job->progress()) / $jobs->count();
+        return Progress::ofRun($this);
     }
 
     public function error(): ?TranscoderError

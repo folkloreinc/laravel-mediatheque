@@ -19,6 +19,7 @@ use Folklore\Mediatheque\Events\PipelineFailed;
 use Folklore\Mediatheque\Events\PipelineStarted;
 use Folklore\Mediatheque\Events\RenditionCompleted;
 use Folklore\Mediatheque\Events\RenditionFailed;
+use Folklore\Mediatheque\Events\RenditionProgressed;
 use Folklore\Mediatheque\Events\RenditionSkipped;
 use Folklore\Mediatheque\Pipelines\OutputFile;
 use Folklore\Mediatheque\Pipelines\Outputs;
@@ -59,6 +60,11 @@ trait RecorderContractTests
      */
     abstract protected function rerun(PipelineRun $run, array $renditions): PipelineRun;
 
+    /**
+     * Set the duration of the run's media in its metadata, or remove it.
+     */
+    abstract protected function setDuration(PipelineRun $run, ?float $seconds): void;
+
     protected function videoPipeline(): PipelineDefinition
     {
         return PipelineDefinition::fromArray('video', ['renditions' => [
@@ -68,6 +74,19 @@ trait RecorderContractTests
             'poster' => ['op' => 'video.poster', 'role' => 'poster'],
             'thumbnails' => ['op' => 'video.thumbnails', 'count' => 3, 'role' => 'thumbnail', 'from' => 'h264'],
             'palette' => ['op' => 'image.palette', 'role' => 'metadata'],
+        ]]);
+    }
+
+    /**
+     * A transcode and two short renditions: with a 98-second input, they
+     * weigh 98, 1 and 1.
+     */
+    protected function progressPipeline(): PipelineDefinition
+    {
+        return PipelineDefinition::fromArray('video', ['renditions' => [
+            'h264' => ['op' => 'video.transcode', 'codec' => 'h264'],
+            'poster' => ['op' => 'video.poster', 'role' => 'poster'],
+            'thumbnails' => ['op' => 'video.thumbnails', 'count' => 3, 'role' => 'thumbnail'],
         ]]);
     }
 
@@ -276,6 +295,147 @@ trait RecorderContractTests
 
         $recorder->progress($this->job($run, 'normalized'), 7.0);
         $this->assertSame(1.0, $this->job($run, 'normalized')->progress());
+    }
+
+    #[Test]
+    public function progress_is_null_until_something_measures_it(): void
+    {
+        Event::fake();
+        $run = $this->createRun($this->progressPipeline());
+
+        $this->assertNull($this->job($run, 'h264')->progress());
+        $this->assertNull($this->freshRun($run)->progress(), 'Nothing is measurable yet.');
+
+        $this->recorder()->started($this->job($run, 'h264'));
+        $this->assertNull($this->job($run, 'h264')->progress(), 'Running is not a measure.');
+        $this->assertNull($this->freshRun($run)->progress());
+
+        $this->recorder()->progress($this->job($run, 'h264'), 0.0);
+        $this->assertSame(0.0, $this->job($run, 'h264')->progress(), 'A measured 0 is not unknown.');
+        $this->assertSame(0.0, $this->freshRun($run)->progress());
+    }
+
+    #[Test]
+    public function an_ended_rendition_is_done_and_one_without_a_measure_is_not_started(): void
+    {
+        Event::fake();
+        $run = $this->createRun($this->progressPipeline());
+        $this->setDuration($run, null);
+
+        $this->complete($run, 'poster');
+        $this->assertSame(1.0, $this->job($run, 'poster')->progress());
+        $this->assertEqualsWithDelta(1 / 3, $this->freshRun($run)->progress(), 0.0001, 'Without a duration, every rendition weighs the same, and the transcode is not started.');
+
+        $this->recorder()->skipped($this->job($run, 'thumbnails'), 'Too short');
+        $this->assertNull($this->job($run, 'thumbnails')->progress(), 'A rendition keeps what was measured.');
+        $this->assertEqualsWithDelta(2 / 3, $this->freshRun($run)->progress(), 0.0001, 'An ended rendition is done.');
+    }
+
+    #[Test]
+    public function a_run_weighs_its_transcodes_by_the_input_duration(): void
+    {
+        Event::fake();
+        $run = $this->createRun($this->progressPipeline());
+        $this->setDuration($run, 98.0);
+
+        $this->complete($run, 'poster');
+        $this->assertEqualsWithDelta(0.01, $this->freshRun($run)->progress(), 0.0001, 'A poster weighs a second.');
+
+        $this->recorder()->progress($this->job($run, 'thumbnails'), 0.5);
+        $this->assertEqualsWithDelta(0.015, $this->freshRun($run)->progress(), 0.0001);
+
+        $this->recorder()->progress($this->job($run, 'h264'), 0.5);
+        $this->assertEqualsWithDelta(0.505, $this->freshRun($run)->progress(), 0.0001, 'The transcode weighs the duration.');
+
+        $this->complete($run, 'thumbnails');
+        $this->complete($run, 'h264');
+        $this->assertSame(1.0, $this->freshRun($run)->progress());
+    }
+
+    #[Test]
+    public function rendition_progressed_is_dispatched_each_time_a_step_is_passed(): void
+    {
+        Event::fake([RenditionProgressed::class]);
+        $run = $this->createRun($this->progressPipeline());
+        $this->setDuration($run, 98.0);
+
+        foreach ([0.01, 0.04, 0.05, 0.07, 0.26, 0.26, 0.1] as $progress) {
+            $this->recorder()->progress($this->job($run, 'h264'), $progress);
+        }
+
+        Event::assertDispatchedTimes(RenditionProgressed::class, 2);
+        Event::assertDispatched(RenditionProgressed::class, fn (RenditionProgressed $event) => $event->progress === 0.05);
+        Event::assertDispatched(RenditionProgressed::class, fn (RenditionProgressed $event) => $event->progress === 0.26
+            && abs($event->runProgress - 0.2548) < 0.0001
+            && $event->rendition() === 'h264'
+            && $event->run()->key() === $run->key()
+            && $event->media()->uid() === $run->media()->uid());
+    }
+
+    #[Test]
+    public function rendition_progressed_is_not_dispatched_for_a_status_change_or_an_ended_rendition(): void
+    {
+        Event::fake([RenditionProgressed::class]);
+        $run = $this->createRun($this->progressPipeline());
+
+        $this->recorder()->started($this->job($run, 'h264'));
+        $this->complete($run, 'h264');
+        $this->recorder()->progress($this->job($run, 'h264'), 0.5);
+        $this->complete($run, 'poster');
+        $this->recorder()->failed($this->job($run, 'thumbnails'), new TranscoderError(TranscoderErrorCode::Timeout, 'Too slow'));
+
+        Event::assertNotDispatched(RenditionProgressed::class);
+    }
+
+    #[Test]
+    public function the_progress_step_is_configurable(): void
+    {
+        config(['mediatheque.events.progress_step' => 0.5]);
+        Event::fake([RenditionProgressed::class]);
+        $run = $this->createRun($this->progressPipeline());
+
+        foreach ([0.3, 0.6, 0.9] as $progress) {
+            $this->recorder()->progress($this->job($run, 'h264'), $progress);
+        }
+
+        Event::assertDispatchedTimes(RenditionProgressed::class, 1);
+        Event::assertDispatched(RenditionProgressed::class, fn (RenditionProgressed $event) => $event->progress === 0.6);
+    }
+
+    #[Test]
+    public function processing_is_the_run_in_progress_of_a_media(): void
+    {
+        Event::fake();
+        $run = $this->createRun($this->progressPipeline());
+        $this->setDuration($run, 98.0);
+
+        $processing = $this->freshMedia($run)->processing();
+        $this->assertNotNull($processing);
+        $this->assertSame([MediaStatus::Processing, $run->key(), 'video', null, null], [$processing->status, $processing->run, $processing->pipeline, $processing->progress, $processing->rendition]);
+
+        $this->recorder()->progress($this->job($run, 'h264'), 0.5);
+        $processing = $this->freshMedia($run)->processing();
+        $this->assertNotNull($processing);
+        $this->assertSame('h264', $processing->rendition);
+        $this->assertEqualsWithDelta(0.49, $processing->progress, 0.0001);
+
+        $this->complete($run, 'h264');
+        $this->complete($run, 'poster');
+        $this->complete($run, 'thumbnails');
+        $this->assertNull($this->freshMedia($run)->processing(), 'Nothing runs.');
+    }
+
+    #[Test]
+    public function processing_follows_the_latest_run_in_progress(): void
+    {
+        Event::fake();
+        $run = $this->createRun($this->progressPipeline());
+        $rerun = $this->rerun($run, ['poster']);
+
+        $this->assertSame($rerun->key(), $this->freshMedia($run)->processing()?->run);
+
+        $this->complete($rerun, 'poster');
+        $this->assertSame($run->key(), $this->freshMedia($run)->processing()?->run, 'The earlier run still runs.');
     }
 
     #[Test]
