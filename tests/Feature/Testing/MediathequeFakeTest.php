@@ -30,6 +30,7 @@ use Folklore\Mediatheque\Support\Uid;
 use Folklore\Mediatheque\Testing\FakeProber;
 use Folklore\Mediatheque\Testing\MediathequeFake;
 use Folklore\Mediatheque\Testing\Models\FakeMedia;
+use Folklore\Mediatheque\Tests\Contracts\ChangesVisibilityContractTests;
 use Folklore\Mediatheque\Tests\Contracts\ReplacesOriginalsContractTests;
 use Folklore\Mediatheque\Tests\Contracts\ResolvesReferencesContractTests;
 use Folklore\Mediatheque\Tests\Contracts\RunActionsContractTests;
@@ -42,6 +43,7 @@ use PHPUnit\Framework\Attributes\Test;
 
 class MediathequeFakeTest extends TestCase
 {
+    use ChangesVisibilityContractTests;
     use ReplacesOriginalsContractTests;
     use ResolvesReferencesContractTests;
     use RunActionsContractTests;
@@ -66,6 +68,16 @@ class MediathequeFakeTest extends TestCase
     protected function probedVideo(): Media
     {
         return Mediatheque::fake()->ingest($this->video());
+    }
+
+    protected function videoWithStoredFiles(): Media
+    {
+        return Mediatheque::fake()->ingest($this->video());
+    }
+
+    protected function completeHeldRun(PipelineRun $run): void
+    {
+        Mediatheque::fake()->releasePipelines();
     }
 
     protected function videoWhoseProbeFailed(): Media
