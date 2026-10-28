@@ -61,19 +61,19 @@ Released with [#85](https://github.com/folkloreinc/laravel-mediatheque/issues/85
 - [x] The test suite on PostgreSQL, with `jsonb` ([#103](https://github.com/folkloreinc/laravel-mediatheque/issues/103)), in 2.0.0-alpha.8
 - [x] Path placeholders that read a model accessor, for a tenant's public id ([#64](https://github.com/folkloreinc/laravel-mediatheque/issues/64)), in 2.0.0-alpha.8
 
-## Protected playback (next)
+## Protected playback (2.0.0-alpha.8 to alpha.9, continues)
 
-What the pilot needs for its reserved videos. The next alpha is planned with visibility changes, GPS removal and `mediatheque:prune`, and URL import ([#91](https://github.com/folkloreinc/laravel-mediatheque/issues/91)) if the pilot needs it then.
+What the pilot needs for its reserved videos. URL import ([#91](https://github.com/folkloreinc/laravel-mediatheque/issues/91)) comes in the alpha that follows, if the pilot needs it.
 
-- [x] Visibility changes, which update the files and dispatch `MediaVisibilityChanged` ([#119](https://github.com/folkloreinc/laravel-mediatheque/issues/119))
+- [x] Visibility changes, which update the files and dispatch `MediaVisibilityChanged` ([#119](https://github.com/folkloreinc/laravel-mediatheque/issues/119)), in 2.0.0-alpha.9
 - [ ] CDN prefixes for public files
 - [x] Temporary URLs that download the file, with its name ([#102](https://github.com/folkloreinc/laravel-mediatheque/issues/102)), in 2.0.0-alpha.8
-- [x] The progress of runs: null until measured, weighted by the input's duration, `Media::processing()` for Panneau 5's media field, and `RenditionProgressed` ([decisions/0023](decisions/0023-progress-of-runs.md), [#117](https://github.com/folkloreinc/laravel-mediatheque/issues/117))
+- [x] The progress of runs: null until measured, weighted by the input's duration, `Media::processing()` for Panneau 5's media field, and `RenditionProgressed` ([decisions/0023](decisions/0023-progress-of-runs.md), [#117](https://github.com/folkloreinc/laravel-mediatheque/issues/117)), in 2.0.0-alpha.9
 - [ ] `MediaResource` and `FileResource`, in sync with Panneau 5's protocol, and with the `legacy` shape that `laravel-folklore` 2's `MediaResource` uses
 - [x] The `transform`, focal point and `orientation` of an image, settled with `laravel-image` 2 and Panneau 5 ([laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88)), then stored on the media ([#107](https://github.com/folkloreinc/laravel-mediatheque/issues/107)), in 2.0.0-alpha.8
-- [x] GPS removal at ingest, as the `Ingestor` contract says ([#120](https://github.com/folkloreinc/laravel-mediatheque/issues/120))
+- [x] GPS removal at ingest, as the `Ingestor` contract says ([#120](https://github.com/folkloreinc/laravel-mediatheque/issues/120)), in 2.0.0-alpha.9
 - [ ] Images at ingest: HEIC, ThumbHash placeholder (the orientation is read since 2.0.0-alpha.8)
-- [x] `mediatheque:prune` of soft-deleted media and ended runs, and the stored files of force-deleted media deleted in the queue ([#121](https://github.com/folkloreinc/laravel-mediatheque/issues/121))
+- [x] `mediatheque:prune` of soft-deleted media and ended runs, and the stored files of force-deleted media deleted in the queue ([#121](https://github.com/folkloreinc/laravel-mediatheque/issues/121)), in 2.0.0-alpha.9
 
 ## Parity with 1.x
 
