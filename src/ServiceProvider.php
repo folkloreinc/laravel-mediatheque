@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque;
 
 use Folklore\Image\Contracts\SourceResolver;
 use Folklore\Mediatheque\Console\InstallCommand;
+use Folklore\Mediatheque\Console\PruneCommand;
 use Folklore\Mediatheque\Console\StatusCommand;
 use Folklore\Mediatheque\Contracts\Ingestor;
 use Folklore\Mediatheque\Contracts\Mediatheque;
@@ -55,6 +56,7 @@ class ServiceProvider extends BaseServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 InstallCommand::class,
+                PruneCommand::class,
                 StatusCommand::class,
             ]);
 

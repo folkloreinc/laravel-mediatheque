@@ -21,9 +21,11 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 - `Mediatheque::fake()->progressRendition($media, 'h264', 0.42)`: reports a rendition's progress through the fake's recorder, as a driver would (#117).
 - `Mediatheque::setVisibility($media, $visibility)` and `$media->setVisibility()` change a media's visibility; false when it has it already. The media has it at once, so `url()` gives temporary URLs of a media made private right away. The new `ApplyVisibility` job then applies the media's visibility to its stored files, the original and the renditions; it reads the visibility when it runs, skips a file its disk no longer has, and fails, to be retried, when a file's visibility can't be set. The fake applies it to its fake disks at once ([decisions/0007](docs/decisions/0007-visibility-and-urls.md), #119).
 - `MediaVisibilityChanged` is dispatched, with the previous and the new visibility (its new `visibility` property). It existed, but nothing dispatched it (#119).
+- `mediatheque:prune`, which the application schedules daily: it force-deletes media soft-deleted more than `prune.after_days` ago (30 by default), and deletes runs that ended more than `prune.runs_after_days` ago (7 by default) with their renditions, keeping each media's last run of each pipeline. `--dry-run` lists what it would delete. It works in batches; null leaves media or runs. `mediatheque:install` says how to schedule it ([decisions/0017](docs/decisions/0017-monitoring-dashboard.md), #121).
 
 ### Changed
 
+- Force-deleting a media deletes its stored files, the original and the renditions, in a queued job (`DeleteStoredFiles`) once committed, and its pipeline runs, which had no foreign key to remove them. Its file rows are deleted too, for tables upgraded from 1.x that have no foreign key yet (#121).
 - The recorder stores the run's progress in `pipelines.progress` with each call, for queries; it was 0 until the run ended (#117).
 - When the recorder records the files of a run that started before the media's visibility changed, it queues `ApplyVisibility`, so they get the media's current visibility (#119).
 - The monitoring dashboard shows progress as a bar: indeterminate while nothing measured a running run or rendition, a dash for an unknown progress otherwise. `mediatheque:status` shows a dash too (#117).

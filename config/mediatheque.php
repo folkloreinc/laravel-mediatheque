@@ -236,6 +236,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Prune
+    |--------------------------------------------------------------------------
+    |
+    | What `mediatheque:prune`, which the application schedules, deletes:
+    | media soft-deleted more than `after_days` ago, with their stored files,
+    | and ended runs older than `runs_after_days`, keeping each media's last
+    | run of each pipeline. Keep runs longer than a remote transcoder retries
+    | its webhooks for. Null leaves them.
+    |
+    */
+    'prune' => [
+        'after_days' => 30,
+        'runs_after_days' => 7,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Events
     |--------------------------------------------------------------------------
     |

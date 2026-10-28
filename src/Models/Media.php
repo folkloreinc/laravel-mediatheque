@@ -19,12 +19,14 @@ use Folklore\Mediatheque\Exceptions\FileRejected;
 use Folklore\Mediatheque\Exceptions\MediaInUse;
 use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
+use Folklore\Mediatheque\Jobs\DeleteStoredFiles;
 use Folklore\Mediatheque\Pipelines\Processing;
 use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Support\MediaUsage;
 use Folklore\Mediatheque\Support\Models;
 use Folklore\Mediatheque\Support\Uid;
 use Folklore\Mediatheque\Urls\Download;
+use Illuminate\Contracts\Bus\Dispatcher as Jobs;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -329,18 +331,49 @@ class Media extends Model implements MediaContract
     }
 
     /**
-     * A forced deletion removes the media's usages: the foreign key of a new
-     * install would, but a table upgraded from 1.x has none yet.
+     * A forced deletion removes the media's usages, files and runs: the
+     * foreign keys of a new install remove the first two, but tables upgraded
+     * from 1.x have none yet, and runs are attached through a morph. Once
+     * committed, its stored files are deleted from their disks in a queued
+     * job.
      *
      * @return mixed
      */
     protected function performDeleteOnModel()
     {
-        if ($this->isForceDeleting()) {
-            $this->usageRows()->delete();
+        if (! $this->isForceDeleting()) {
+            return $this->performSoftDeletableDeleteOnModel();
         }
 
-        return $this->performSoftDeletableDeleteOnModel();
+        $stored = [];
+        foreach (Models::file()::query()->where('media_id', $this->getKey())->get() as $file) {
+            $source = $file->source();
+            $path = $file->path();
+            if ($source !== null && $path !== null) {
+                $stored[$source][] = $path;
+            }
+        }
+
+        $runs = Models::pipelineRun()::query()
+            ->where('pipelinable_type', $this->getMorphClass())
+            ->where('pipelinable_id', $this->getKey())
+            ->pluck('id')
+            ->all();
+
+        $this->usageRows()->delete();
+        Models::file()::query()->where('media_id', $this->getKey())->delete();
+        if ($runs !== []) {
+            Models::pipelineJob()::query()->whereIn('pipeline_id', $runs)->delete();
+            Models::pipelineRun()::query()->whereKey($runs)->delete();
+        }
+
+        $deleted = $this->performSoftDeletableDeleteOnModel();
+
+        foreach ($stored as $source => $paths) {
+            app(Jobs::class)->dispatch((new DeleteStoredFiles($source, array_values(array_unique($paths))))->afterCommit());
+        }
+
+        return $deleted;
     }
 
     /**

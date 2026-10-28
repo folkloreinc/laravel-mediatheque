@@ -215,6 +215,24 @@ final class MediathequeConfig
     }
 
     /**
+     * After how many days `mediatheque:prune` force-deletes a soft-deleted
+     * media; null when it doesn't.
+     */
+    public function pruneAfterDays(): ?int
+    {
+        return $this->optionalPositiveInt('prune.after_days', 30);
+    }
+
+    /**
+     * After how many days `mediatheque:prune` deletes an ended run; null
+     * when it doesn't.
+     */
+    public function pruneRunsAfterDays(): ?int
+    {
+        return $this->optionalPositiveInt('prune.runs_after_days', 7);
+    }
+
+    /**
      * The most renditions the monitoring durations are computed over.
      */
     public function monitoringMaxRows(): int
@@ -345,6 +363,8 @@ final class MediathequeConfig
         $this->jobsTries();
         $this->jobsTimeout();
         $this->progressStep();
+        $this->pruneAfterDays();
+        $this->pruneRunsAfterDays();
         $this->monitoringStuckAfter();
         $this->monitoringMaxRows();
         $this->types();
@@ -446,6 +466,13 @@ final class MediathequeConfig
         $value = $this->config->get('mediatheque.'.$key, $default);
 
         return is_int($value) && $value > 0 ? $value : throw InvalidConfig::at($key, 'expected a positive integer');
+    }
+
+    private function optionalPositiveInt(string $key, int $default): ?int
+    {
+        $value = $this->config->get('mediatheque.'.$key, $default);
+
+        return $value === null || (is_int($value) && $value > 0) ? $value : throw InvalidConfig::at($key, 'expected a positive integer, or null');
     }
 
     private function optionalString(string $key): ?string

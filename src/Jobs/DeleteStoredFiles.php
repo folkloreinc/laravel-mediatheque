@@ -11,7 +11,8 @@ use Illuminate\Queue\InteractsWithQueue;
 
 /**
  * Deletes files from a disk once nothing records them: the files a run
- * replaced, and those of a replaced original. A path that a file records
+ * replaced, those of a replaced original, and those of a force-deleted
+ * media. A path that a file records
  * again by the time the job runs is kept, and deleting a file that is
  * already gone changes nothing.
  */

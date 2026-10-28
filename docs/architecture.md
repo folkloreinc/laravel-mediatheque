@@ -548,7 +548,7 @@ The fake stores files on fake disks, returns probe fixtures, and completes rendi
 
 ## Commands
 
-`mediatheque:install` and `mediatheque:status` exist today; the other commands are planned ([roadmap](roadmap.md)).
+`mediatheque:install`, `mediatheque:status` and `mediatheque:prune` exist today; the other commands are planned ([roadmap](roadmap.md)).
 
 | Command | Purpose |
 |---|---|
@@ -557,7 +557,7 @@ The fake stores files on fake disks, returns probe fixtures, and completes rendi
 | `mediatheque:upgrade` (to come) | Convert a 1.x database (see [upgrade.md](upgrade.md)); `--check` lists what would change |
 | `mediatheque:run-pipeline` (to come) | Run a pipeline on media, by type or uid |
 | `mediatheque:refresh` (to come) | Scheduled: fetch the state of runs that have been running too long, and the progress of drivers that only report it by polling |
-| `mediatheque:prune` (to come) | Force-delete soft-deleted media after the grace period, and orphan files |
+| `mediatheque:prune` | Scheduled daily: force-delete media soft-deleted more than `prune.after_days` ago (30), and delete runs that ended more than `prune.runs_after_days` ago (7), keeping each media's last run of each pipeline. `--dry-run` lists what it would delete |
 | `mediatheque:install --dashboard` | Also publish and register the provider of the dashboard's gates |
 | `mediatheque:status` | Media by status, runs in progress and stuck, what ended in the last hours, and the latest failures (`--hours`, 24 by default) |
 
@@ -595,7 +595,15 @@ Route::middleware(['web', 'auth'])->group(function () {
 
 ## Deletion and replacement
 
-- Deleting a media soft-deletes it. Its files stay until `mediatheque:prune` force-deletes it after `prune.after_days`. Force deletion removes files, renditions, pipeline runs, metadata and pivot rows. Until [#121](https://github.com/folkloreinc/laravel-mediatheque/issues/121), `mediatheque:prune` doesn't exist and force deletion leaves the stored files on their disks.
+- Deleting a media soft-deletes it. Its files stay until `mediatheque:prune` force-deletes it after `prune.after_days` ([#121](https://github.com/folkloreinc/laravel-mediatheque/issues/121)). Force deletion removes its rows, files, pipeline runs and their renditions, and pivot rows, then deletes its stored files, the original and the renditions, in a queued job (`DeleteStoredFiles`) once committed.
+- The application schedules the command:
+
+```php
+// routes/console.php
+Schedule::command('mediatheque:prune')->daily();
+```
+
+- `mediatheque:prune` works in batches, so a large table isn't locked, and running it again deletes nothing more. A setting set to null leaves media or runs. Files on a disk that no row references (orphans) are not looked for: listing a bucket is expensive. A later `--orphans` option can, if a project needs it.
 - A media in use can't be deleted unless the deletion is forced: `delete()` throws `MediaInUse` ([decisions/0020](decisions/0020-attachments-by-handle-and-usages.md)).
 - `$media->replaceOriginal($source)`, or `Mediatheque::replaceOriginal($media, $source)`, replaces the original and keeps the media ([decisions/0019](decisions/0019-replace-original.md)):
 
