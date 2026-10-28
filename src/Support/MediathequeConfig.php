@@ -97,6 +97,16 @@ final class MediathequeConfig
     }
 
     /**
+     * Whether ingest removes the location from images (`ingest.images.strip_location`).
+     */
+    public function stripsLocation(): bool
+    {
+        $strip = $this->config->get('mediatheque.ingest.images.strip_location', true);
+
+        return is_bool($strip) ? $strip : throw InvalidConfig::at('ingest.images.strip_location', 'expected true or false');
+    }
+
+    /**
      * The maximum size of an ingested file, in bytes: the type's, or the
      * default for every type. Null for no limit.
      */
@@ -340,6 +350,7 @@ final class MediathequeConfig
         $this->mediaPrefix();
         $this->defaultSource();
         $this->defaultVisibility();
+        $this->stripsLocation();
         $this->filePathFormat();
         $this->runPathFormat();
         $this->maxSize();

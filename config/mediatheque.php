@@ -91,6 +91,14 @@ return [
         // The largest file ingest accepts, for types that don't set their
         // own `max_size`: bytes, or a string such as "500M" or "2G"
         'max_size' => '2G',
+
+        'images' => [
+            // Remove the location (EXIF GPS and XMP GPS properties) from
+            // JPEG, PNG, WebP, TIFF, HEIF and AVIF images before they are
+            // stored. The file is not re-encoded: its other metadata and its
+            // pixels are kept
+            'strip_location' => true,
+        ],
     ],
 
     /*

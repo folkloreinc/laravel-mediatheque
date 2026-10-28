@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Facade;
 /**
  * @method static \Folklore\Mediatheque\Contracts\Models\Media ingest(mixed $source, \Folklore\Mediatheque\Enums\Visibility|null $visibility = null, string|null $pipeline = null, string|null $name = null, array<string, mixed> $data = [], array<string, mixed> $attributes = [])
  * @method static \Folklore\Mediatheque\Contracts\Models\Media replaceOriginal(\Folklore\Mediatheque\Contracts\Models\Media $media, mixed $source, \Folklore\Mediatheque\Ingest\IngestOptions|null $options = null, bool $allowTypeChange = false)
+ * @method static bool setVisibility(\Folklore\Mediatheque\Contracts\Models\Media $media, \Folklore\Mediatheque\Enums\Visibility $visibility)
  * @method static \Folklore\Mediatheque\Contracts\Models\Media|null resolve(\Folklore\Mediatheque\References\MediaReference|string $reference)
  * @method static \Illuminate\Support\Collection<string, \Folklore\Mediatheque\Contracts\Models\Media> resolveMany(iterable<\Folklore\Mediatheque\References\MediaReference|string> $references)
  * @method static \Folklore\Mediatheque\Contracts\Models\PipelineRun|null runPipeline(\Folklore\Mediatheque\Contracts\Models\Media $media, string|null $pipeline = null, list<string>|null $renditions = null, bool $force = false)

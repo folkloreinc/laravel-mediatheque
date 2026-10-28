@@ -400,6 +400,16 @@ class Media extends Model implements MediaContract
     }
 
     /**
+     * Change its visibility: see Mediatheque::setVisibility(). This media
+     * has the new visibility at once; its files follow in a queued job.
+     * False when it has this visibility already.
+     */
+    public function setVisibility(Visibility $visibility): bool
+    {
+        return app(Mediatheque::class)->setVisibility($this, $visibility);
+    }
+
+    /**
      * @param  list<FileContract>  $files
      * @return Collection<int, FileContract>
      */

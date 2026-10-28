@@ -12,19 +12,27 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 - The `progress` columns of `pipelines` and `pipelines_jobs` are nullable, `null` by default: run `php artisan mediatheque:install`, then `php artisan migrate`. The new `make_mediatheque_progress_nullable` migration turns the 0 of renditions that didn't complete, and of runs that haven't ended, into null (#117).
 - A run's progress is weighted: a transcode weighs the input's duration in seconds and any other rendition a second, an ended rendition is done, and one that nothing measured counts as not started. It was the plain mean of its renditions (#117).
 - The `Media` contract has `processing()`: a class that implements it implements it too (#117).
+- The `Mediatheque` contract has `setVisibility()`: a class that implements it implements it too (#119).
 
 ### Added
 
 - `$media->processing()`, on the contract, the package's model and the fake's media: the media's latest run in progress as a readonly `Pipelines\Processing` (the media's `status`, the run's uid, `pipeline` and `progress`, and the `rendition` that is running), or null when nothing runs. For editors' interfaces, such as Panneau 5's media field: "transcoding: 42 %" (#117).
 - The `RenditionProgressed` event: the job, the rendition's progress and the run's. The recorder dispatches it each time a rendition's progress passes a multiple of the new `events.progress_step` setting (0.05 by default), never for a call that changes nothing or for a status change. The package doesn't broadcast it: `docs/architecture.md` shows how an application does, on its own channels (#117).
 - `Mediatheque::fake()->progressRendition($media, 'h264', 0.42)`: reports a rendition's progress through the fake's recorder, as a driver would (#117).
+- `Mediatheque::setVisibility($media, $visibility)` and `$media->setVisibility()` change a media's visibility; false when it has it already. The media has it at once, so `url()` gives temporary URLs of a media made private right away. The new `ApplyVisibility` job then applies the media's visibility to its stored files, the original and the renditions; it reads the visibility when it runs, skips a file its disk no longer has, and fails, to be retried, when a file's visibility can't be set. The fake applies it to its fake disks at once ([decisions/0007](docs/decisions/0007-visibility-and-urls.md), #119).
+- `MediaVisibilityChanged` is dispatched, with the previous and the new visibility (its new `visibility` property). It existed, but nothing dispatched it (#119).
 - `mediatheque:prune`, which the application schedules daily: it force-deletes media soft-deleted more than `prune.after_days` ago (30 by default), and deletes runs that ended more than `prune.runs_after_days` ago (7 by default) with their renditions, keeping each media's last run of each pipeline. `--dry-run` lists what it would delete. It works in batches; null leaves media or runs. `mediatheque:install` says how to schedule it ([decisions/0017](docs/decisions/0017-monitoring-dashboard.md), #121).
 
 ### Changed
 
 - Force-deleting a media deletes its stored files, the original and the renditions, in a queued job (`DeleteStoredFiles`) once committed, and its pipeline runs, which had no foreign key to remove them. Its file rows are deleted too, for tables upgraded from 1.x that have no foreign key yet (#121).
 - The recorder stores the run's progress in `pipelines.progress` with each call, for queries; it was 0 until the run ended (#117).
+- When the recorder records the files of a run that started before the media's visibility changed, it queues `ApplyVisibility`, so they get the media's current visibility (#119).
 - The monitoring dashboard shows progress as a bar: indeterminate while nothing measured a running run or rendition, a dash for an unknown progress otherwise. `mediatheque:status` shows a dash too (#117).
+
+### Fixed
+
+- Ingest removes the location from images, as the `Ingestor` contract says: the EXIF GPS entries and the XMP `GPS…` properties of JPEG, PNG, WebP, TIFF, HEIF and AVIF images are blanked before the original is stored, also when an original is replaced. The image is not re-encoded: it keeps its length, its pixels, its orientation and its other metadata, and its checksum is the stripped file's. An image on a disk is downloaded to be read whole. The new `ingest.images.strip_location` setting, true by default, keeps the location when it is false ([decisions/0006](docs/decisions/0006-ingest-and-uploads.md), #120).
 
 ## [2.0.0-alpha.8] - 2026-10-26
 

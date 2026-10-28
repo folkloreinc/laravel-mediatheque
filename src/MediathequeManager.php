@@ -17,6 +17,7 @@ use Folklore\Mediatheque\Pipelines\RunActions;
 use Folklore\Mediatheque\References\MediaReference;
 use Folklore\Mediatheque\Support\Models;
 use Folklore\Mediatheque\Support\Uid;
+use Folklore\Mediatheque\Urls\VisibilityChanger;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -52,6 +53,11 @@ class MediathequeManager implements Mediatheque
     public function replaceOriginal(Media $media, mixed $source, ?IngestOptions $options = null, bool $allowTypeChange = false): Media
     {
         return $this->container->make(OriginalReplacer::class)->replace($media, Source::from($source), $options ?? new IngestOptions, $allowTypeChange);
+    }
+
+    public function setVisibility(Media $media, Visibility $visibility): bool
+    {
+        return $this->container->make(VisibilityChanger::class)->change($media, $visibility);
     }
 
     /**

@@ -208,7 +208,7 @@ $media = Mediatheque::ingest($file, attributes: ['tenant_id' => $tenant->id]);  
 Ingest steps:
 
 1. Detect the type from the content; check the type's maximum size and allowed mimes.
-2. Sanitize SVG. For images, remove GPS data from the stored original by default (`ingest.images.strip_location`).
+2. Sanitize SVG. For JPEG, PNG, WebP, TIFF, HEIF and AVIF images, remove the location from the stored original by default (`ingest.images.strip_location`): the EXIF GPS entries and the XMP `GPS…` properties are blanked in place, without re-encoding, so the orientation, the camera and the pixels stay ([decisions/0006](decisions/0006-ingest-and-uploads.md)). An image on a disk is downloaded for it.
 3. Build the path with the path formatter, which receives the media (`{media.uid}`, or an application attribute such as a tenant id).
 4. Store the original, create the media (`pending`) and dispatch `MediaCreated`.
 5. Queue the probe, then the type's pipeline.
@@ -373,7 +373,18 @@ One transcoder runs a whole pipeline run. A pipeline whose renditions need two t
 
 ## Visibility and URLs
 
-A media is `public` or `private`. Its files follow its visibility on their source (object ACL on S3-compatible disks). Transcoders write their outputs with the media's visibility. Changing the visibility updates the files in a queued job; files of a run in progress are updated when it ends. This comes with [#119](https://github.com/folkloreinc/laravel-mediatheque/issues/119): until then, a media keeps the visibility it was ingested with.
+A media is `public` or `private`. Its files follow its visibility on their source (object ACL on S3-compatible disks). Transcoders write their outputs with the visibility of the media when their run started.
+
+A media's visibility changes through `setVisibility()`, never through its column alone, which would leave its files as they are ([decisions/0007](decisions/0007-visibility-and-urls.md), [#119](https://github.com/folkloreinc/laravel-mediatheque/issues/119)):
+
+```php
+$media->setVisibility(Visibility::Private);                 // false when it is private already
+Mediatheque::setVisibility($media, Visibility::Public);
+```
+
+- The media has its new visibility at once: `url()` gives temporary URLs of a media made private right away.
+- `MediaVisibilityChanged` is dispatched with the previous and the new visibility, and the `ApplyVisibility` job applies the media's visibility to its stored files, the original and the renditions. It reads the visibility when it runs, so a later change wins, and it is safe to retry. A file its disk doesn't have any more is skipped; a file whose visibility can't be set fails the job.
+- A run in progress writes its files with the visibility it started with. When the recorder records them, it queues the same job if the media's visibility changed since.
 
 ```php
 $media->url();                                    // the main rendition, or the original
@@ -474,7 +485,7 @@ Private files on local disks are served by Laravel's `serve` option, not by a ro
 | `RenditionProgressed` | A rendition's progress passed a multiple of `events.progress_step`: the job, the rendition's progress and the run's ([Progress](#progress)) |
 | `MediaReady` | Every rendition of the default pipeline ended, at least the main one completed |
 | `MediaFailed` | The probe failed, or the main rendition did not complete |
-| `MediaVisibilityChanged` | |
+| `MediaVisibilityChanged` | `setVisibility()` changed a media's visibility: the media, the previous and the new visibility. Its files follow in a queued job |
 | `OriginalReplaced` | The original was replaced: the media, the previous and the new checksum ([decisions/0019](decisions/0019-replace-original.md)) |
 | `IngestRejected` | Ingest, or the replacement of an original, refused a file: its reason, message and file name. Nothing was stored |
 
@@ -634,8 +645,8 @@ src/                                  PSR-4: Folklore\Mediatheque\
   Transcoders/Ffmpeg/                 (MediaConvert/ to come)
   Images/                             The `media` resolver of laravel-image 2
   Casts/
-  Jobs/                               Probe and rendition jobs
-  Urls/                               UrlGenerator, signers
+  Jobs/                               Probe and rendition jobs, file visibility and deletion
+  Urls/                               UrlGenerator, signers, visibility changes
   References/                         media:// and medias:// parsing and resolution
   Support/                            Uid, MediaUsage
   Http/                               JSON resources

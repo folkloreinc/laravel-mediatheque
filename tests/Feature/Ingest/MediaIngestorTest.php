@@ -18,6 +18,7 @@ use Folklore\Mediatheque\Jobs\ProbeMedia;
 use Folklore\Mediatheque\Models\File;
 use Folklore\Mediatheque\Models\Media;
 use Folklore\Mediatheque\Tests\DatabaseTestCase;
+use Folklore\Mediatheque\Tests\Support\GpsImages;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
@@ -26,6 +27,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\Attributes\Test;
 
 class MediaIngestorTest extends DatabaseTestCase
@@ -251,6 +253,75 @@ class MediaIngestorTest extends DatabaseTestCase
         Storage::disk('public')->assertExists($path);
         $this->assertSame('private', Storage::disk('public')->getVisibility($path));
         $this->assertSame(Visibility::Private, $media->visibility());
+    }
+
+    #[Test]
+    #[RequiresPhpExtension('gd')]
+    public function an_image_is_stored_without_its_location(): void
+    {
+        $image = GpsImages::jpeg();
+
+        $media = Mediatheque::ingest($this->uploadWithContents($image, 'photo.jpg'));
+
+        $stored = Storage::disk('public')->get((string) $media->original()?->path());
+        $this->assertNotNull($stored);
+        $this->assertNotSame($image, $stored);
+        $this->assertStringNotContainsString(GpsImages::DATUM, $stored);
+        $this->assertStringNotContainsString(GpsImages::XMP_LATITUDE, $stored);
+        $this->assertStringContainsString(GpsImages::MAKE, $stored);
+        $this->assertSame([strlen($image), hash('sha256', $stored)], [$media->original()?->size(), $media->original()?->checksum()]);
+        $this->assertSame(hash('sha256', $stored), $media->metadata('checksum'));
+    }
+
+    #[Test]
+    #[RequiresPhpExtension('gd')]
+    public function an_image_on_a_disk_is_stored_without_its_location(): void
+    {
+        $this->useMemoryDisk('uploads');
+        Storage::disk('uploads')->put('incoming/photo', GpsImages::png());
+
+        $media = Mediatheque::ingest(Source::disk('uploads', 'incoming/photo', 'photo.png'));
+
+        $stored = (string) Storage::disk('public')->get((string) $media->original()?->path());
+        $this->assertStringNotContainsString(GpsImages::DATUM, $stored);
+        $this->assertSame(hash('sha256', $stored), $media->original()?->checksum(), 'The image was read whole, so its checksum is known.');
+        $this->assertStringContainsString(GpsImages::DATUM, (string) Storage::disk('uploads')->get('incoming/photo'), 'The file on its disk is not changed.');
+    }
+
+    #[Test]
+    #[RequiresPhpExtension('gd')]
+    public function an_uploaded_file_is_not_changed_in_place(): void
+    {
+        $upload = $this->uploadWithContents(GpsImages::jpeg(), 'photo.jpg');
+
+        Mediatheque::ingest($upload);
+
+        $this->assertStringContainsString(GpsImages::DATUM, (string) file_get_contents((string) $upload->getRealPath()));
+    }
+
+    #[Test]
+    #[RequiresPhpExtension('gd')]
+    public function the_location_is_kept_when_strip_location_is_off(): void
+    {
+        config(['mediatheque.ingest.images.strip_location' => false]);
+        $image = GpsImages::jpeg();
+
+        $media = Mediatheque::ingest($this->uploadWithContents($image, 'photo.jpg'));
+
+        $this->assertSame($image, Storage::disk('public')->get((string) $media->original()?->path()));
+    }
+
+    #[Test]
+    #[RequiresPhpExtension('gd')]
+    public function a_replaced_original_is_stored_without_its_location(): void
+    {
+        $media = Mediatheque::ingest($this->upload('media/image.jpg', 'photo.jpg'));
+
+        $replaced = Mediatheque::replaceOriginal($media, $this->uploadWithContents(GpsImages::jpeg(), 'new.jpg'));
+
+        $stored = (string) Storage::disk('public')->get((string) $replaced->original()?->path());
+        $this->assertStringContainsString(GpsImages::MAKE, $stored);
+        $this->assertStringNotContainsString(GpsImages::DATUM, $stored);
     }
 
     #[Test]
