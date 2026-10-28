@@ -6,9 +6,16 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Breaking changes
+
+- A skipped main rendition makes the media `ready`, played from its original, instead of `failed`. A media whose main rendition's condition (`when`) doesn't match its probe is `ready` once probed, and a pipeline none of whose kept renditions match the probe doesn't run. A main rendition that failed or was canceled still fails the media ([decisions/0014](docs/decisions/0014-run-outcomes-and-model-contracts.md), #132).
+- The `image` type runs the new `image` pipeline. An application whose published config sets `types.image.pipeline` to `null`, as the previous default did, keeps no pipeline for images: remove that line to get the `web` version of HEIC images (#132).
+
 ### Added
 
 - Images get a ThumbHash placeholder, in the `thumbhash` metadata key, which the `media` resolver passes to `laravel-image`. The local prober computes it for every image but SVG, and the `ffmpeg` driver for the image files it writes, such as a video's poster: the first frame, upright, downsized to fit 100×100, with Imagick, or GD without it. It doesn't need `laravel-image`. An image it can't compute one for has no `thumbhash`, and is probed all the same. Images probed before keep none until they are probed again ([decisions/0013](docs/decisions/0013-media-resolver-for-laravel-image.md), #131).
+- HEIC, HEIF and AVIF images get a web version at ingest: the default `image` pipeline's `web` rendition, a JPEG of the same size, upright, with the color profile and no other metadata. The media plays it: `url()`, and `med_…` in the `media` resolver, which gives it the media's `transform` and placeholder. The original is kept, available by handle (`file('original')`, `med_…/original`). The media is `ready` once its JPEG is written. Other images run nothing and are `ready` once probed, as before ([decisions/0009](docs/decisions/0009-package-boundaries.md), #132).
+- The `ffmpeg` driver's `image.convert` operation, with Imagick: `format` (`jpeg`, `webp` or `png`) and `quality` (85). A JPEG of a transparent image is flattened over white (#132).
 
 ## [2.0.0-alpha.9] - 2026-10-28
 

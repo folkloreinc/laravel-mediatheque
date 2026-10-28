@@ -262,6 +262,13 @@ Renditions are declared in the config, or in PHP for applications that prefer cl
             'waveform' => ['op' => 'audio.waveform', 'role' => 'thumbnail'],
         ],
     ],
+    'image' => [
+        'transcoder' => 'ffmpeg',
+        'renditions' => [
+            // A JPEG of the images not every browser shows; others run nothing
+            'web' => ['op' => 'image.convert', 'format' => 'jpeg', 'when' => ['mime' => ['image/heic', 'image/heif', 'image/heic-sequence', 'image/heif-sequence', 'image/avif']]],
+        ],
+    ],
 ],
 ```
 
@@ -340,7 +347,7 @@ The rules below are in [decisions/0012](decisions/0012-pipeline-runs-recorder-an
 
 - **Idempotent and forward only.** A duplicated webhook or a retried queue job changes nothing the second time. Statuses only move forward (`queued` → `running` → `completed`, `failed`, `skipped` or `canceled`): a call that would move a rendition back, or change a final status, is ignored, and progress never goes down. A driver that receives the whole job on every webhook reports every rendition each time, in whatever order deliveries arrive.
 - **Dependencies.** A failed rendition fails the renditions that read from it (`dependency_failed`), a skipped one skips them, a canceled one cancels them; independent renditions continue.
-- **End of a run.** A run ends when every rendition has a final status: `failed` if one failed, else `canceled` if one was canceled, else `completed` (skipped renditions are a normal outcome). After a run that includes its main rendition, the media is `ready` if the main rendition completed, `failed` otherwise; a `ready` media that still has a file for it stays `ready` when a rerun fails. The main rendition is the first one with the `main` role (the default role) that keeps its output ([decisions/0014](decisions/0014-run-outcomes-and-model-contracts.md)).
+- **End of a run.** A run ends when every rendition has a final status: `failed` if one failed, else `canceled` if one was canceled, else `completed` (skipped renditions are a normal outcome). After a run that includes its main rendition, the media is `ready` if the main rendition completed or was skipped (it plays its original), `failed` otherwise; a `ready` media that still has a file for it stays `ready` when a rerun fails. The main rendition is the first one with the `main` role (the default role) that keeps its output. A media whose main rendition's condition doesn't match its probe is `ready` once probed, and a pipeline none of whose kept renditions match the probe doesn't run ([decisions/0014](decisions/0014-run-outcomes-and-model-contracts.md)).
 - **Progress** is a number from 0 to 1, or null while nothing measured it. Reporting progress moves a queued rendition to `running`, and completing it sets it to 1. Each time a rendition's progress passes a multiple of `events.progress_step`, the recorder dispatches `RenditionProgressed` ([Progress](#progress)).
 - **Errors.** `TranscoderError` has a `code` from the `TranscoderErrorCode` enum (`input_unreadable`, `unsupported_input`, `timeout`, `limit_exceeded`, `operation_failed`, `storage_failed`, `provider_failed`, `dependency_failed`, the same as Eclair's) and a message for humans. An unknown code is read as `operation_failed`.
 - **Refresh.** `mediatheque:refresh`, scheduled by the application, calls `refresh()` for runs that have been running too long (a lost webhook) and for every running run of a driver that reports progress only by polling. The MediaConvert poller is this command.
@@ -364,7 +371,7 @@ With a 98-second video, `h264` at 50 % and the poster done, a run of `h264`, `po
 
 | Driver | Runs | Completion | Package |
 |---|---|---|---|
-| `ffmpeg` | ffmpeg, ffprobe, Imagick and fonttools in the application's queue. Since 2.0.0-alpha.1: `video.transcode` (`h264`, `vp9`), `video.poster`, `video.thumbnails`, `audio.transcode` (`mp3`, `aac`), `audio.waveform` | Each rendition is a queued job; dependent renditions are dispatched when their input completes | This package |
+| `ffmpeg` | ffmpeg, ffprobe, Imagick and fonttools in the application's queue. Since 2.0.0-alpha.1: `video.transcode` (`h264`, `vp9`), `video.poster`, `video.thumbnails`, `audio.transcode` (`mp3`, `aac`), `audio.waveform`; `image.convert` (`jpeg`, `webp`, `png`, with Imagick) since #132 | Each rendition is a queued job; dependent renditions are dispatched when their input completes | This package |
 | `eclair` | The whole run as one Eclair job (task graph, `when` conditions, outputs written to the application's storage) | Signed webhooks, deduplicated | [`laravel-eclair`](https://github.com/urbania-media/eclair/issues/13) |
 | `mediaconvert` | AWS Elemental MediaConvert jobs for video renditions | EventBridge notifications through a webhook, or a scheduled poller. Never `sleep()` in a worker | This package, with `aws/aws-sdk-php` (suggested) |
 | `cloudflare-stream` (2.x) | Upload to Cloudflare Stream; remote renditions | Webhook | Later, if a project needs it |
@@ -402,18 +409,18 @@ $media->file('h264')->url();
 
 ### Images and `laravel-image`
 
-Image renditions (sizes, crops, formats) are not stored by the mediatheque: `laravel-image` 2 renders them on the fly from the original. The mediatheque provides the `media` resolver of `laravel-image` (its `SourceResolver` contract), registered when `laravel-image` is installed, so image URLs never expose storage paths. Video posters and thumbnails, which come out of a pipeline, are files of the media and go through `laravel-image` the same way.
+Image renditions (sizes, crops, formats) are not stored by the mediatheque: `laravel-image` 2 renders them on the fly from the media's image, its original, or the `web` JPEG of a HEIC, HEIF or AVIF, which the `image` pipeline produces at ingest so every browser shows it ([decisions/0009](decisions/0009-package-boundaries.md)). The mediatheque provides the `media` resolver of `laravel-image` (its `SourceResolver` contract), registered when `laravel-image` is installed, so image URLs never expose storage paths. Video posters and thumbnails, which come out of a pipeline, are files of the media and go through `laravel-image` the same way.
 
 The resolver turns a media (its contract), a `MediaReference`, `media://med_…`, a uid or a key with a handle (`med_…/poster`) into an `ImageSource`: the key, a version, the disk and path of the file, its metadata (`width`, `height`, `mime`, `orientation`, `thumbhash`), the media's `transform` and focal point for its image, and whether it is private. [decisions/0013](decisions/0013-media-resolver-for-laravel-image.md) has the rules, agreed with `laravel-image` ([its decision 0010](https://github.com/folkloreinc/laravel-image/blob/v2.x/docs/decisions/0010-media-resolver.md)):
 
 - the version is the first 8 hex characters of the resolved file's `checksum`;
-- `med_…` resolves to the original of an image and the `thumbnail()` of other types; `med_…/{handle}` and `med_…/{handle}/{index}` to a file of the media (`med_…/thumbnails/2`); only image files resolve;
+- `med_…` resolves to the image an `image` media plays (its `web` version, or its original) and the `thumbnail()` of other types; `med_…/{handle}` and `med_…/{handle}/{index}` to a file of the media (`med_…/thumbnails/2`); only image files resolve;
 - a source is a Laravel disk name;
 - deleted media don't resolve; pending and failed media resolve to the image files they have.
 
 The edits of an image were settled with `laravel-image` 2 and Panneau 5 in [laravel-image#88](https://github.com/folkloreinc/laravel-image/issues/88) ([decisions/0022](decisions/0022-image-transform-and-orientation.md)):
 
-- the media's `transform` (crop, rotation, flips, focal point, in pixels of and relative to the upright original) applies to the original of an `image` media, not to a video's poster or thumbnails; `laravel-image` hashes it into the version of URLs, so editing a media gives new URLs;
+- the media's `transform` (crop, rotation, flips, focal point, in pixels of and relative to the upright original) applies to the image of an `image` media, its original or its `web` version, which has the same upright size, not to a video's poster or thumbnails; `laravel-image` hashes it into the version of URLs, so editing a media gives new URLs;
 - `orientation` is the image's EXIF orientation; originals are stored as they were uploaded, and `laravel-image` turns renderings upright;
 - the dominant color is `palette[0]`;
 - `laravel-image` clears a media's derivatives on `MediaVisibilityChanged` and `OriginalReplaced`.

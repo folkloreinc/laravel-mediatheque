@@ -446,8 +446,9 @@ class EloquentRecorder implements Recorder
 
     /**
      * After a run that includes the media's main rendition: `ready` if it
-     * completed, `failed` otherwise, unless the media is ready and still has
-     * a file for it (docs/decisions/0014). A probe's outcome is stored by
+     * completed, or was skipped (the media plays its original), `failed`
+     * otherwise, unless the media is ready and still has a file for it
+     * (docs/decisions/0014). A probe's outcome is stored by
      * ProbeResults instead, which starts the pipeline.
      */
     private function updateMedia(PipelineRun $run): void
@@ -465,7 +466,7 @@ class EloquentRecorder implements Recorder
 
         $media = $this->media($run);
         $media->unsetRelation('mediaFiles');
-        $status = $job->status() === JobStatus::Completed ? MediaStatus::Ready : MediaStatus::Failed;
+        $status = $job->status() === JobStatus::Completed || $job->status() === JobStatus::Skipped ? MediaStatus::Ready : MediaStatus::Failed;
         $keepsPlaying = $status === MediaStatus::Failed && $media->status() === MediaStatus::Ready && $media->file($main) !== null;
 
         if ($media->status() === $status || $keepsPlaying) {

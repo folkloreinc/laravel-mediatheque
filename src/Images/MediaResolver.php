@@ -23,8 +23,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * The `media` resolver of `laravel-image` 2 (docs/decisions/0013): image
  * URLs name media, never storage paths.
  *
- * - `med_…` resolves to the media's image: the original of an `image`, the
- *   thumbnail of other types (the poster first). `med_…/{handle}` and
+ * - `med_…` resolves to the media's image: for an `image`, the file it plays
+ *   (its main rendition, the `web` JPEG of a HEIC, or else its original);
+ *   for other types, its thumbnail (the poster first). `med_…/{handle}` and
  *   `med_…/{handle}/{index}` resolve to one of its files.
  * - Only stored image files resolve, once their checksum is known: the
  *   version is its first 8 hex characters, so new content gets new URLs.
@@ -34,8 +35,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *   application's global scopes: the URL's signature authorizes it.
  * - `isPrivate()` follows the media's visibility.
  * - The source has the file's EXIF `orientation`. The media's `transform`
- *   and focal point apply to its image only, the original of an `image`
- *   media, not to a video's poster or thumbnails (docs/decisions/0022).
+ *   and focal point apply to the image of an `image` media only, its
+ *   original or its main rendition, which has the same upright size, not to
+ *   a video's poster or thumbnails (docs/decisions/0022).
  *   `laravel-image` adds them to the version of URLs: the version stays the
  *   file's.
  */
@@ -131,9 +133,10 @@ class MediaResolver implements SourceResolver
 
     private function source(Media $media, ?string $handle, ?int $index): ImageSource
     {
+        $main = $media->type() === 'image' ? $this->config->mainRenditionOfType('image') : null;
         $file = match (true) {
             $handle !== null => $media->file($handle, $index),
-            $media->type() === 'image' => $media->original(),
+            $media->type() === 'image' => ($main !== null ? $media->file($main) : null) ?? $media->original(),
             default => $media->thumbnail(),
         };
 
@@ -149,9 +152,10 @@ class MediaResolver implements SourceResolver
         $height = $file->height();
         $sized = $width !== null && $height !== null && $width > 0 && $height > 0;
         $isOriginal = $file->handle() === File::ORIGINAL;
-        $placeholder = $file->metadata('thumbhash') ?? ($isOriginal ? $media->metadata('thumbhash') : null);
+        $isImage = $media->type() === 'image' && ($isOriginal || $file->handle() === $main);
+        $placeholder = $file->metadata('thumbhash') ?? ($isImage ? $media->metadata('thumbhash') : null);
         $orientation = $file->metadata(MetadataKey::Orientation->value) ?? ($isOriginal ? $media->metadata(MetadataKey::Orientation->value) : null);
-        $transform = $isOriginal && $media->type() === 'image' ? $media->transform() : null;
+        $transform = $isImage ? $media->transform() : null;
         $focalPoint = $transform['focalPoint'] ?? null;
 
         return new ImageSource(
