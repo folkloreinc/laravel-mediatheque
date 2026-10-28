@@ -118,7 +118,7 @@ Metadata keys are snake_case and come from one list, so every prober and transco
 | `animated` | Animated GIF and WebP |
 | `exif` | A summary, never GPS data |
 | `palette`, `scenes` | Metadata outputs of renditions |
-| `thumbhash` | An image placeholder, a [ThumbHash](https://evanw.github.io/thumbhash/) in base64, from `laravel-image`'s `Image::analyze()` when it is installed ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)) |
+| `thumbhash` | An image placeholder, a [ThumbHash](https://evanw.github.io/thumbhash/) in base64, of its first frame, upright: the local prober's for an image other than SVG, the `ffmpeg` driver's for the image files it writes ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)) |
 | `locale` | Caption tracks |
 
 `mediatheque:upgrade` maps the 1.x names to these keys (`font_family_name` → `font_names`, `colors` → `palette`).
