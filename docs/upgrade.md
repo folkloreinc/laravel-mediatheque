@@ -21,7 +21,7 @@
    - files attached to models other than media through `files_pivot`.
 3. **Publish and run the migration:** `php artisan mediatheque:install --upgrade`, then `php artisan migrate`. The migration adds columns; it renames no table.
 4. **Convert the data:** `php artisan mediatheque:upgrade`. It backfills `uid`, copies metadata into JSON, converts pipelines to the new statuses and JSON definitions, splits grouped handles into handle and index, and adds the foreign keys. It can run in batches and be resumed.
-5. **Update the config.** The 1.x file keeps working, with deprecation notices. `php artisan mediatheque:upgrade --config` rewrites it with only the project's overrides, in the 2.0 shape.
+5. **Update the config.** The 1.x file keeps working, with deprecation notices. `php artisan mediatheque:upgrade --config` rewrites it with only the project's overrides, in the 2.0 shape. A source is a Laravel disk in 2.0: the URL prefix of a 1.x source (`sources.*.url`), a CDN for instance, becomes its disk's `url`.
 6. **Run the Rector rules:** `vendor/bin/rector process --config vendor/folklore/laravel-mediatheque/rector.php`.
 7. **Routes.** 2.0 has no upload routes ([decisions/0018](decisions/0018-ingest-only.md)). If the project used the package's upload routes, take files in its own routes, or Panneau 5's, and call `Mediatheque::ingest()`.
 8. **Run the project's tests**, upload a file of each type, and check pages that show media.

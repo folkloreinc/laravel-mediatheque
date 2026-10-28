@@ -66,7 +66,8 @@ Released with [#85](https://github.com/folkloreinc/laravel-mediatheque/issues/85
 What the pilot needs for its reserved videos. URL import ([#91](https://github.com/folkloreinc/laravel-mediatheque/issues/91)) comes in the alpha that follows, if the pilot needs it.
 
 - [x] Visibility changes, which update the files and dispatch `MediaVisibilityChanged` ([#119](https://github.com/folkloreinc/laravel-mediatheque/issues/119)), in 2.0.0-alpha.9
-- [ ] CDN prefixes for public files
+- [x] CDN prefixes for public files: the disk's `url` ([#128](https://github.com/folkloreinc/laravel-mediatheque/issues/128))
+- [ ] A `UrlSigner` for CDNs that sign their own URLs ([#129](https://github.com/folkloreinc/laravel-mediatheque/issues/129)), when a project needs one
 - [x] Temporary URLs that download the file, with its name ([#102](https://github.com/folkloreinc/laravel-mediatheque/issues/102)), in 2.0.0-alpha.8
 - [x] The progress of runs: null until measured, weighted by the input's duration, `Media::processing()` for Panneau 5's media field, and `RenditionProgressed` ([decisions/0023](decisions/0023-progress-of-runs.md), [#117](https://github.com/folkloreinc/laravel-mediatheque/issues/117)), in 2.0.0-alpha.9
 - [ ] `MediaResource` and `FileResource`, in sync with Panneau 5's protocol, and with the `legacy` shape that `laravel-folklore` 2's `MediaResource` uses

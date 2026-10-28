@@ -37,6 +37,16 @@ class S3DiskUrlGeneratorTest extends DatabaseTestCase
             'bucket' => 'media',
             'endpoint' => 'https://nyc3.digitaloceanspaces.com',
         ]);
+        // The same bucket through its CDN endpoint, set as the disk's `url`
+        $app['config']->set('filesystems.disks.spaces-cdn', [
+            'driver' => 's3',
+            'key' => 'key',
+            'secret' => 'secret',
+            'region' => 'nyc3',
+            'bucket' => 'media',
+            'endpoint' => 'https://nyc3.digitaloceanspaces.com',
+            'url' => 'https://media.nyc3.cdn.digitaloceanspaces.com',
+        ]);
         $app['config']->set('mediatheque.urls.temporary_ttl', 900);
     }
 
@@ -88,6 +98,21 @@ class S3DiskUrlGeneratorTest extends DatabaseTestCase
         $disposition = $query['response-content-disposition'] ?? null;
 
         return is_string($disposition) ? $disposition : null;
+    }
+
+    #[Test]
+    public function a_public_file_is_served_by_the_cdn_and_a_private_one_signed_by_the_bucket(): void
+    {
+        $public = $this->createMedia(['visibility' => Visibility::Public]);
+        $publicFile = $this->createFile($public, 'original', ['source' => 'spaces-cdn', 'path' => 'video/public.mp4']);
+        $private = $this->createMedia(['visibility' => Visibility::Private]);
+        $privateFile = $this->createFile($private, 'original', ['source' => 'spaces-cdn', 'path' => 'video/private.mp4']);
+
+        $this->assertSame('https://media.nyc3.cdn.digitaloceanspaces.com/video/public.mp4', $publicFile->url());
+
+        $url = (string) $privateFile->url();
+        $this->assertStringStartsWith('https://media.nyc3.digitaloceanspaces.com/video/private.mp4?', $url, 'The CDN would cache a signed URL: the bucket signs it.');
+        $this->assertStringContainsString('X-Amz-Signature=', $url);
     }
 
     #[Test]
