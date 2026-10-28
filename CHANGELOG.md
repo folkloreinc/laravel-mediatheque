@@ -19,6 +19,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 - The `RenditionProgressed` event: the job, the rendition's progress and the run's. The recorder dispatches it each time a rendition's progress passes a multiple of the new `events.progress_step` setting (0.05 by default), never for a call that changes nothing or for a status change. The package doesn't broadcast it: `docs/architecture.md` shows how an application does, on its own channels (#117).
 - `Mediatheque::fake()->progressRendition($media, 'h264', 0.42)`: reports a rendition's progress through the fake's recorder, as a driver would (#117).
 
+### Fixed
+
+- Ingest removes the location from images, as the `Ingestor` contract says: the EXIF GPS entries and the XMP `GPS…` properties of JPEG, PNG, WebP, TIFF, HEIF and AVIF images are blanked before the original is stored, also when an original is replaced. The image is not re-encoded: it keeps its length, its pixels, its orientation and its other metadata, and its checksum is the stripped file's. An image on a disk is downloaded to be read whole. The new `ingest.images.strip_location` setting, true by default, keeps the location when it is false ([decisions/0006](docs/decisions/0006-ingest-and-uploads.md), #120).
+
 ### Changed
 
 - The recorder stores the run's progress in `pipelines.progress` with each call, for queries; it was 0 until the run ended (#117).

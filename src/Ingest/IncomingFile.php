@@ -10,7 +10,8 @@ use Folklore\Mediatheque\Support\TypeDefinition;
  *
  * A file on a disk is not read: `$local` holds its first bytes only, it is
  * copied from its disk, and its checksum is computed by its probe
- * (docs/decisions/0015). A sanitized SVG is stored from `$local`.
+ * (docs/decisions/0015). A sanitized file, an SVG or an image whose
+ * location was removed, is stored from `$local`.
  */
 final readonly class IncomingFile
 {
