@@ -94,6 +94,19 @@ final class Converter
     }
 
     /**
+     * Files without a source: 1.x stored them on the default source, and
+     * left the column empty (#144). They get it, so they resolve to the
+     * disk of that name. Rows that 2.0 wrote always have one: running it
+     * again changes nothing.
+     */
+    public function fillSources(): int
+    {
+        $source = $this->tables->defaultSource();
+
+        return $source !== '' ? $this->tables->query('files')->whereNull('source')->update(['source' => $source]) : 0;
+    }
+
+    /**
      * Files: their media from `files_pivot`, their handle split into handle
      * and index, their role, and their metadata as JSON. A file that no media
      * attaches is left: it is removed with the orphans, or kept for the other
@@ -286,7 +299,7 @@ final class Converter
                 'renditions' => $renditions,
                 'main' => null,
             ]),
-            'output_source' => ($original !== null ? Row::string($original, 'source') : null) ?? $this->defaultSource(),
+            'output_source' => ($original !== null ? Row::string($original, 'source') : null) ?? $this->tables->defaultSource(),
             'path_prefix' => $path !== null && dirname($path) !== '.' ? dirname($path) : '',
             'visibility' => Visibility::Public->value,
             'status' => $status->value,
@@ -473,13 +486,6 @@ final class Converter
             ->selectRaw('1')
             ->from($this->tables->table($table).' as missing_'.$table)
             ->whereColumn('missing_'.$table.'.id', $column));
-    }
-
-    private function defaultSource(): string
-    {
-        $source = config('mediatheque.source');
-
-        return is_string($source) ? $source : '';
     }
 
     /**

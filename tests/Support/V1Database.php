@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\DB;
  * metadata and pipeline runs, and the leftovers a project accumulates. The
  * data is generic: no project's.
  *
- * - 1: an image, attached to a page under `cover`
+ * - 1: an image, attached to a page under `cover`, whose file has no
+ *   `source`: 1.x left it empty for the default source
  * - 2: a video whose run completed: h264, webm and five thumbnails
  * - 3: a video whose last run failed (hevc), after one that completed
  * - 4: an audio file with its waveform (`thumbnails`, a single file)
@@ -43,7 +44,7 @@ final class V1Database
     {
         $this->media(1, 'image', '2017-09-01 10:00:00', ['width' => 1200, 'height' => 800], [
             'original' => ['image/jpeg', 'jpg', ['width' => 1200, 'height' => 800]],
-        ]);
+        ], source: null);
         $this->insert('medias_pivot', ['media_id' => 1, 'morphable_type' => Page::class, 'morphable_id' => 1, 'handle' => 'cover', 'order' => 0]);
 
         $thumbnails = [];
@@ -100,7 +101,7 @@ final class V1Database
      * @param  array<string, mixed>  $metadata
      * @param  array<string, array{0: string, 1: string, 2: array<string, mixed>}>  $files  By 1.x handle: mime, extension, metadata
      */
-    private function media(int $id, string $type, string $createdAt, array $metadata, array $files): void
+    private function media(int $id, string $type, string $createdAt, array $metadata, array $files, ?string $source = 'public'): void
     {
         $this->insert('medias', ['id' => $id, 'type' => $type, 'name' => ucfirst($type).' '.$id, 'created_at' => $createdAt, 'updated_at' => $createdAt]);
 
@@ -112,7 +113,7 @@ final class V1Database
         foreach ($files as $handle => [$mime, $extension, $fileMetadata]) {
             // 1.x wrote the handle on the original's row, and on the pivot
             // for the files of renditions
-            $file = $this->file($handle === 'original' ? 'original' : null, $type.'/'.$id.'-'.str_replace('.', '-', $handle), $mime, $extension);
+            $file = $this->file($handle === 'original' ? 'original' : null, $type.'/'.$id.'-'.str_replace('.', '-', $handle), $mime, $extension, $source);
             $this->insert('files_pivot', ['file_id' => $file, 'morphable_type' => $this->mediaType, 'morphable_id' => $id, 'handle' => $handle, 'order' => $order++]);
 
             foreach ($fileMetadata as $name => $value) {
@@ -121,13 +122,13 @@ final class V1Database
         }
     }
 
-    private function file(?string $handle, string $name, string $mime, string $extension): int
+    private function file(?string $handle, string $name, string $mime, string $extension, ?string $source = 'public'): int
     {
         $this->files++;
         $this->insert('files', [
             'id' => $this->files,
             'handle' => $handle,
-            'source' => 'public',
+            'source' => $source,
             'name' => basename($name).'.'.$extension,
             'path' => 'media/'.$name.'.'.$extension,
             'mime' => $mime,
