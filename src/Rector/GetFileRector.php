@@ -18,8 +18,10 @@ use Rector\Rector\AbstractRector;
 
 /**
  * `$media->getFile('thumbnails.0')` becomes `$media->file('thumbnails', 0)`,
- * and `$media->hasFile($handle)` becomes `$media->file($handle) !== null`
- * (docs/upgrade.md).
+ * and `$media->hasFile('h264')` becomes `$media->file('h264') !== null`
+ * (docs/upgrade.md). Only a handle written in the code is rewritten: one
+ * known at runtime may be a 1.x handle, which the compatibility layer reads
+ * and file() doesn't.
  */
 final class GetFileRector extends AbstractRector
 {
@@ -42,14 +44,17 @@ final class GetFileRector extends AbstractRector
             return null;
         }
 
+        // A handle known only at runtime may be a 1.x one (`thumbnails.0`),
+        // which file() doesn't read: the compatibility layer still does
         $handle = $args[0]->value;
-        $newArgs = [new Arg($handle)];
-        if ($handle instanceof String_) {
-            $legacy = LegacyHandle::parse($handle->value);
-            $newArgs = [new Arg(new String_($legacy->handle))];
-            if ($legacy->index !== null) {
-                $newArgs[] = new Arg(new Int_($legacy->index));
-            }
+        if (! $handle instanceof String_) {
+            return null;
+        }
+
+        $legacy = LegacyHandle::parse($handle->value);
+        $newArgs = [new Arg(new String_($legacy->handle))];
+        if ($legacy->index !== null) {
+            $newArgs[] = new Arg(new Int_($legacy->index));
         }
 
         $file = new MethodCall($node->var, new Identifier('file'), $newArgs);

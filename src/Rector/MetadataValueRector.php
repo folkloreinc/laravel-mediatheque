@@ -18,7 +18,7 @@ use Rector\Rector\AbstractRector;
  * `$media->getMetadata('width')->getValue()` become
  * `$media->metadata('width')` (docs/upgrade.md). `colors` is `palette` in
  * 2.0. `font_family_name` is left: `font_names` is a list, and the
- * compatibility layer still reads it.
+ * compatibility layer still reads it. So is a key known only at runtime.
  */
 final class MetadataValueRector extends AbstractRector
 {
@@ -43,12 +43,12 @@ final class MetadataValueRector extends AbstractRector
             return null;
         }
 
-        if ($key instanceof String_) {
-            if ($key->value === 'font_family_name') {
-                return null;
-            }
-            $key = new String_(self::KEYS[$key->value] ?? $key->value);
+        // A key known only at runtime may be a 1.x name (`colors`), which
+        // metadata() doesn't read: the compatibility layer still does
+        if (! $key instanceof String_ || $key->value === 'font_family_name') {
+            return null;
         }
+        $key = new String_(self::KEYS[$key->value] ?? $key->value);
 
         return new MethodCall($media, new Identifier('metadata'), [new Arg($key)]);
     }

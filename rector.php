@@ -7,9 +7,11 @@
  *     vendor/bin/rector process app --config vendor/folklore/laravel-mediatheque/rector.php
  *
  * What they don't change keeps working through the compatibility layer,
- * with a deprecation: `getFiles()` (keyed by 1.x handle, which files() is
- * not), `setOriginalFile()` (an ingest or a replacement, depending on the
- * media), `getMetadata('font_family_name')` (`font_names` is a list).
+ * with a deprecation: handles and metadata names known only at runtime
+ * (they may be 1.x ones, which the 2.0 methods don't read), `getFiles()`
+ * (keyed by 1.x handle, which files() is not), `setOriginalFile()` (an
+ * ingest or a replacement, depending on the media),
+ * `getMetadata('font_family_name')` (`font_names` is a list).
  */
 
 use Folklore\Mediatheque\Rector\GetFileRector;

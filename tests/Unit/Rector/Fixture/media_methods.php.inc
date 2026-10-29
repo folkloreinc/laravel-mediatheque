@@ -19,6 +19,8 @@ class MediaMethods
             $media->getMetadatas()->get('width')->getValue(),
             $media->getMetadata('colors')->getValue(),
             $media->getMetadata('font_family_name')->getValue(),
+            $media->getMetadata($handle)->getValue(),
+            $media->hasFile($handle),
             $media->getFiles(),
             $media->runPipeline('video'),
         ];
@@ -40,14 +42,16 @@ class MediaMethods
         return [
             $media->file('thumbnails', 0),
             $media->file('h264'),
-            $media->file($handle),
+            $media->getFile($handle),
             $media->file('thumbnails', 2) !== null,
             $media->original(),
-            $media->url(),
+            $media->original()?->url(),
             $media->original()->url(),
             $media->metadata('width'),
             $media->metadata('palette'),
             $media->getMetadata('font_family_name')->getValue(),
+            $media->getMetadata($handle)->getValue(),
+            $media->hasFile($handle),
             $media->getFiles(),
             \Folklore\Mediatheque\Facades\Mediatheque::runPipeline($media, 'video'),
         ];

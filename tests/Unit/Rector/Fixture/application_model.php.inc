@@ -24,7 +24,7 @@ class ApplicationModel
 {
     public function url(TenantMedia $media): ?string
     {
-        return $media->url() ?? $media->file('poster')?->url();
+        return $media->original()?->url() ?? $media->file('poster')?->url();
     }
 }
 
