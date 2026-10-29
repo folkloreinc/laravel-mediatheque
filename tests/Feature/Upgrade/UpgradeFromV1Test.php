@@ -252,6 +252,12 @@ class UpgradeFromV1Test extends TestCase
         $this->assertContains('pipeline_id', $keys('pipelines_jobs'));
         $this->assertContains('media_id', $keys('medias_pivot'));
 
+        $types = array_column(Schema::getColumns($this->table('pipelines')), 'type_name', 'name');
+        $expected = ['pgsql' => 'jsonb', 'mysql' => 'json'][DB::getDriverName()] ?? null;
+        if ($expected !== null) {
+            $this->assertSame($expected, $types['definition'], 'The 1.x definitions column is a JSON column once converted.');
+        }
+
         // A media's force deletion removes its files and attachments
         Media::query()->findOrFail(1)->forceDelete();
         $this->assertSame(0, DB::table($this->table('medias_pivot'))->where('media_id', 1)->count());
