@@ -6,6 +6,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Added
+
+- Document thumbnails, as 1.x made them: the `ffmpeg` driver runs `document.thumbnails` (Eclair's operation), an image of every page of a PDF, or the first `count`, at `resolution` dpi (150), in `jpeg` or `png`, rendered by Poppler's `pdftoppm` (`binaries.pdftoppm`, `MEDIATHEQUE_PDFTOPPM`), and a default `document` pipeline runs it. Poppler is optional: without it the rendition fails with a message and the document is ready. `mediatheque:upgrade --config` keeps a 1.x document pipeline, and `--check` no longer lists documents as having no renditions ([decisions/0025](docs/decisions/0025-document-thumbnails-with-poppler.md), #147).
+
 ### Fixed
 
 - `mediatheque:upgrade --config` reads the 1.x file as it is written, not as this machine's environment makes it: a key whose 1.x value is an `env()` call keeps that call, with the default the 1.x file gave it (`env('FFMPEG_BIN', '/usr/local/bin/ffmpeg')`), instead of the value of the local `.env`. The binaries and job settings that 1.x read from the environment keep reading it, and the output lists the variables the rewritten file no longer reads, and the lines whose other code reads this machine (#147).

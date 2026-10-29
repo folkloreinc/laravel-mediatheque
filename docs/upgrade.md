@@ -10,6 +10,7 @@
 - The project requires a tagged 1.x release (`^1.1`), not `v1.1.x-dev`, and is on the latest one.
 - Back up the database and know where the media files are stored.
 - If the project uses `laravel-folklore`, check which of its versions supports mediatheque 2.0.
+- The servers that run the queue have ffmpeg, and Poppler (`poppler-utils`) for the thumbnails of documents, which 1.x made with ImageMagick ([decisions/0025](decisions/0025-document-thumbnails-with-poppler.md)). Without Poppler, documents are ready without thumbnails, and their run fails with a message.
 
 ## Steps
 

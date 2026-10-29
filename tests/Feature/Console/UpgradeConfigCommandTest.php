@@ -95,6 +95,22 @@ class UpgradeConfigCommandTest extends TestCase
     }
 
     #[Test]
+    public function the_thumbnails_of_documents_are_kept(): void
+    {
+        $this->write1xConfig(['pipelines' => ['document' => ['jobs' => ['thumbnails' => ['count' => 1, 'resolution' => 72]]]]]);
+
+        $this->assertSame(0, Artisan::call('mediatheque:upgrade', ['--config' => true]));
+
+        $config = require $this->path;
+        $this->assertIsArray($config);
+        $this->assertSame(
+            ['document' => ['renditions' => ['thumbnails' => ['op' => 'document.thumbnails', 'count' => 1, 'resolution' => 72, 'role' => 'thumbnail']]]],
+            $config['pipelines'] ?? null,
+        );
+        $this->assertStringNotContainsString('document.thumbnails', Artisan::output());
+    }
+
+    #[Test]
     public function a_config_in_the_2_0_shape_is_left_as_it_is(): void
     {
         file_put_contents($this->path, "<?php\n\nreturn ['source' => 'local'];\n");
