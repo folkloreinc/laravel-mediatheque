@@ -156,19 +156,23 @@ trait HasV1MediaMethods
     }
 
     /**
-     * @deprecated Use url().
+     * The URL of the original, as in 1.x: url() is the main rendition's.
+     *
+     * @deprecated Use original()?->url(), or url() for the file the media plays.
      */
     public function getUrl(): ?string
     {
-        Deprecation::trigger('Media::getUrl() is deprecated: use url().');
+        Deprecation::trigger('Media::getUrl() is deprecated: use original()?->url(), or url() for the file the media plays.');
 
-        return $this->url();
+        return $this->original()?->url();
     }
 
     /**
      * Ingest a file as this media's original: a new media when this one
-     * isn't saved, its original replaced otherwise. Only the `name` of
-     * `$extraData` is read; the type comes from the content.
+     * isn't saved, its original replaced otherwise. The type comes from the
+     * content. Of `$extraData`, `name` and `data` are read, as 1.x filled
+     * them; on a new media, the attributes set before the call (a tenant
+     * id) and its `data` are kept.
      *
      * @deprecated Use Mediatheque::ingest($file), or $media->replaceOriginal($file).
      *
@@ -191,7 +195,13 @@ trait HasV1MediaMethods
             return;
         }
 
-        $media = $mediatheque->ingest($source, name: $name);
+        $current = $this->getAttribute('name');
+        $data = [];
+        foreach ((array) ($extraData['data'] ?? $this->getAttribute('data') ?? []) as $key => $value) {
+            $data[(string) $key] = $value;
+        }
+        $attributes = array_diff_key($this->getAttributes(), array_flip(['uid', 'type', 'name', 'status', 'visibility', 'metadata', 'data', 'transform']));
+        $media = $mediatheque->ingest($source, name: $name ?? (is_string($current) ? $current : null), data: $data, attributes: $attributes);
         if ($media instanceof Model) {
             $this->setRawAttributes($media->getAttributes(), true);
             $this->setRelations($media->getRelations());

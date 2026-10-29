@@ -59,12 +59,12 @@ Existing media become `public` and `ready` (or `failed` if their last pipeline f
 | `$model->medias()->sync($ids)`, `attach($id, ['handle' => …])` | `$model->syncMedias([$handle => $ids])`, `attachMedia($media, $handle)`: by handle ([decisions/0020](decisions/0020-attachments-by-handle-and-usages.md)) | The relation keeps working |
 | `$media->getFile('h264')`, `hasFile()`, `getFiles()`, `getOriginalFile()`, `getThumbnails()` | `$media->file('h264')`, `files()`, `original()`, `thumbnail()` | Deprecated proxies; `getFiles()` is keyed by 1.x handle |
 | `$media->getFile('thumbnails.0')` | `$media->file('thumbnails', 0)` | 1.x handles still resolve |
-| `$media->files` (the relation) | `$media->files()`, a method of the contract | Deprecated accessor: the media's files |
+| `$media->files`, `with('files')`, `load('files')` (the relation) | `$media->files()`, a method of the contract; the relation is `mediaFiles` | Deprecated: the property reads the media's files, and eager loading `files` loads `mediaFiles`. `$media->files()` is no longer a relation: `$media->files()->where(…)` breaks |
 | `$file->getHandle()`, `$file->getUrl()` | `$file->handle()` and `index()`, `$file->url()` | Deprecated proxies |
-| `$media->setOriginalFile($path)` | `Mediatheque::ingest($path)`, `$media->replaceOriginal($source)` | Deprecated proxy: ingests on an unsaved media, replaces the original of a saved one |
+| `$media->setOriginalFile($path, $extraData)` | `Mediatheque::ingest($path)`, `$media->replaceOriginal($source)` | Deprecated proxy: ingests on an unsaved media, with the attributes set before and `$extraData`'s `name` and `data`; replaces the original of a saved one |
 | `$media->getMetadatas()->get('width')->getValue()`, `getMetadata('width')` | `$media->metadata('width')` | Deprecated proxies; `font_family_name` and `colors` read `font_names` and `palette` |
 | `$media->runPipeline($name)` | `Mediatheque::runPipeline($media, $name)` | Deprecated proxy |
-| `$media->getUrl()` | `$media->url()` (the main rendition, else the original) | Deprecated proxy |
+| `$media->getUrl()` (the original's URL) | `$media->original()?->url()`; `$media->url()` is the main rendition's, else the original's | Deprecated proxy: the original's URL, as in 1.x |
 | `app(TypeFactory::class)->typeFromPath($path)->newModel()` | `Mediatheque::ingest($path)` | Deprecated proxy: `Contracts\Type\Factory`, over the 2.0 types |
 | `medias://{id}` references | `media://med_…` | `medias://` still resolves |
 | Contracts bound with `app()->bind()` | Models set in `config('mediatheque.models')` | A binding of the media or file contract is honored while the config names the package's model |

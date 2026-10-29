@@ -94,13 +94,39 @@ class V1ApiTest extends DatabaseTestCase
     }
 
     #[Test]
-    public function get_url_is_url(): void
+    public function get_url_is_the_original_s_url_as_in_1x(): void
     {
         $media = $this->video();
 
         $this->assertNotNull($media->getUrl());
-        $this->assertSame($media->url(), $media->getUrl());
+        $this->assertSame($media->original()?->url(), $media->getUrl());
+        $this->assertNotSame($media->url(), $media->getUrl(), 'url() is the main rendition\'s.');
         $this->assertDeprecated('Media::getUrl()');
+    }
+
+    #[Test]
+    public function the_1x_files_relation_is_eager_loaded(): void
+    {
+        $this->video();
+
+        $media = Media::query()->with('files')->firstOrFail();
+        $this->assertTrue($media->relationLoaded('mediaFiles'));
+        $this->assertCount(5, $media->files);
+
+        $media = Media::query()->firstOrFail();
+        $media->load('files');
+        $this->assertTrue($media->relationLoaded('mediaFiles'));
+        $media->unsetRelation('mediaFiles');
+        $media->loadMissing('files');
+        $this->assertTrue($media->relationLoaded('mediaFiles'));
+
+        $page = LegacyPage::query()->create(['title' => 'Page']);
+        $page->attachMedia($media, 'cover');
+        $loaded = LegacyPage::query()->with('medias.files')->findOrFail($page->id)->media('cover');
+        $this->assertNotNull($loaded);
+        $this->assertTrue($loaded->relationLoaded('mediaFiles'));
+
+        $this->assertDeprecated('Eager loading the media relation "files"');
     }
 
     #[Test]
@@ -110,16 +136,21 @@ class V1ApiTest extends DatabaseTestCase
         $this->assertNotNull($type);
         $this->assertSame('image', $type->name());
 
+        $source = $this->video();
         $media = $type->newModel();
         $this->assertInstanceOf(Media::class, $media);
-        $media->setOriginalFile(self::fixturePath('media/image.jpg'), ['name' => 'Photo']);
+        // Attributes set before the call are kept, as 1.x saved them
+        $media->derived_from_id = $source->id;
+        $media->setOriginalFile(self::fixturePath('media/image.jpg'), ['name' => 'Photo', 'data' => ['credit' => 'Someone']]);
+        $this->assertSame($source->id, $media->derived_from_id);
+        $this->assertSame(['credit' => 'Someone'], $media->data);
 
         $this->assertTrue($media->exists);
         $this->assertSame('image', $media->type());
         $this->assertSame('Photo', $media->name());
         $this->assertNotNull($media->original());
         Storage::disk('public')->assertExists((string) $media->original()->path());
-        $this->assertSame(1, Media::query()->count());
+        $this->assertSame(2, Media::query()->count());
         $this->assertDeprecated('Media::setOriginalFile()');
         $this->assertDeprecated('The 1.x type factory');
 
