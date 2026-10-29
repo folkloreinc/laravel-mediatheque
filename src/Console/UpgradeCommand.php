@@ -6,10 +6,12 @@ use Folklore\Mediatheque\Compat\LegacyConfig;
 use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Upgrade\Converter;
 use Folklore\Mediatheque\Upgrade\Inspector;
+use Folklore\Mediatheque\Upgrade\LegacyConfigFile;
 use Folklore\Mediatheque\Upgrade\LegacyTables;
 use Illuminate\Console\Command;
 use Illuminate\Console\ConfirmableTrait;
 use Illuminate\Filesystem\Filesystem;
+use RuntimeException;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 /**
@@ -213,7 +215,9 @@ class UpgradeCommand extends Command
     /**
      * Rewrite `config/mediatheque.php` in the 2.0 shape, with only the
      * application's overrides. The 1.x file is kept next to it, with a name
-     * Laravel doesn't load.
+     * Laravel doesn't load. The file is read with the defaults of its
+     * `env()` calls, and the keys it converts keep reading their variable:
+     * the rewritten file is loaded by every environment, not only this one.
      */
     private function rewriteConfig(Filesystem $files): int
     {
@@ -225,20 +229,22 @@ class UpgradeCommand extends Command
             return self::FAILURE;
         }
 
-        $current = require $path;
-        if (! is_array($current)) {
+        try {
+            // As written, not as this machine's environment makes it
+            $file = LegacyConfigFile::read($path);
+        } catch (RuntimeException) {
             $this->components->error('config/mediatheque.php doesn\'t return an array.');
 
             return self::FAILURE;
         }
 
-        if (! LegacyConfig::isLegacy($current)) {
+        if (! LegacyConfig::isLegacy($file->config)) {
             $this->components->info('config/mediatheque.php has the 2.0 shape already.');
 
             return self::SUCCESS;
         }
 
-        $conversion = LegacyConfig::convert($current);
+        $conversion = LegacyConfig::convert($file->config, null, $file->env);
         $backup = $path.'.1x.bak';
         $files->copy($path, $backup);
         $files->put($path, $conversion->toPhp());
@@ -247,6 +253,11 @@ class UpgradeCommand extends Command
 
         foreach ($conversion->notices as $notice) {
             $this->components->warn($notice);
+        }
+
+        $unread = array_values(array_diff($file->variables, $conversion->env));
+        if ($unread !== []) {
+            $this->components->warn(sprintf('The 1.x file read these environment variables, which the rewritten one doesn\'t: %s. Their keys are dropped, or written with the default of their env() call.', implode(', ', $unread)));
         }
 
         if ($conversion->disks !== []) {

@@ -26,6 +26,10 @@ use Illuminate\Support\Arr;
  * What 2.0 doesn't have (routes, metadata readers, services, a 1.x
  * `file_path_format`) is dropped, with a notice. Keys of the 2.0 shape, and
  * keys the package doesn't know, are kept as they are.
+ *
+ * Given the keys whose 1.x value is an `env()` call (LegacyConfigFile), the
+ * 2.0 keys they become keep reading their variable, even with the value of
+ * a 1.x default: another environment may set it.
  */
 final class LegacyConfig
 {
@@ -39,17 +43,6 @@ final class LegacyConfig
      * the content and refuses what matches no type.
      */
     private const array GENERIC_MIMES = ['application/octet-stream', 'inode/x-empty'];
-
-    /**
-     * Environment variables that 1.x defaults read, by the 2.0 key that
-     * takes their value: the rewritten config keeps reading them.
-     */
-    private const array ENV = [
-        'jobs.timeout' => 'MEDIATHEQUE_JOB_TIMEOUT',
-        'jobs.tries' => 'MEDIATHEQUE_JOB_TRIES',
-        'binaries.ffmpeg' => 'FFMPEG_BIN',
-        'binaries.ffprobe' => 'FFPROBE_BIN',
-    ];
 
     /**
      * Whether a config has the 1.x shape.
@@ -80,8 +73,9 @@ final class LegacyConfig
     /**
      * @param  array<array-key, mixed>  $config
      * @param  array<array-key, mixed>|null  $disks  The disks of config/filesystems.php
+     * @param  array<string, string>  $env  The environment variable of each 1.x key whose value is an env() call, by dot path (LegacyConfigFile): the 2.0 key it becomes keeps reading it
      */
-    public static function convert(array $config, ?array $disks = null): ConfigConversion
+    public static function convert(array $config, ?array $disks = null, array $env = []): ConfigConversion
     {
         $disks ??= self::configuredDisks();
         $defaults = V1Defaults::config();
@@ -93,7 +87,7 @@ final class LegacyConfig
         $newDisks = [];
         $notices = [];
         $conflicts = [];
-        $env = [];
+        $variables = [];
 
         foreach ($config as $key => $value) {
             if (! is_string($key)) {
@@ -177,8 +171,11 @@ final class LegacyConfig
                     break;
 
                 case 'process_timeout':
-                    if (is_numeric($value) && (int) $value > 0 && (int) $value !== $defaults[$key]) {
+                    if (is_numeric($value) && (int) $value > 0 && ((int) $value !== $defaults[$key] || isset($env[$key]))) {
                         $jobs['timeout'] ??= (int) $value;
+                        if (isset($env[$key])) {
+                            $variables['jobs.timeout'] ??= $env[$key];
+                        }
                     }
                     break;
 
@@ -189,7 +186,16 @@ final class LegacyConfig
                             $jobs[$option] = $setting;
                         } elseif (is_numeric($setting) && (int) $setting > 0) {
                             $jobs[$option] = (int) $setting;
-                            $env += self::env('jobs.'.$option);
+                            if (isset($env['jobs.'.$option])) {
+                                $variables['jobs.'.$option] = $env['jobs.'.$option];
+                            } else {
+                                unset($variables['jobs.'.$option]);
+                            }
+                        } elseif (isset($env['jobs.'.$option])) {
+                            // Read without a default, as the 1.x defaults do: the
+                            // 2.0 default applies when the variable is not set
+                            $jobs[$option] ??= self::jobsDefault($option);
+                            $variables['jobs.'.$option] = $env['jobs.'.$option];
                         }
                     }
                     break;
@@ -199,9 +205,12 @@ final class LegacyConfig
                     $ffmpeg = is_array($value) && is_array($value['ffmpeg'] ?? null) ? $value['ffmpeg'] : [];
                     foreach (['ffmpeg', 'ffprobe'] as $binary) {
                         $path = $ffmpeg[$binary.'.binaries'] ?? null;
-                        if (is_string($path) && $path !== '' && $path !== '/usr/local/bin/'.$binary) {
+                        $variable = $env['services.ffmpeg.'.$binary.'.binaries'] ?? null;
+                        if (is_string($path) && $path !== '' && ($path !== '/usr/local/bin/'.$binary || $variable !== null)) {
                             $binaries[$binary] = $path;
-                            $env += self::env('binaries.'.$binary);
+                            if ($variable !== null) {
+                                $variables['binaries.'.$binary] = $variable;
+                            }
                         }
                     }
                     if (Arr::get(is_array($value) ? $value : [], 'mediaConvert.role') !== null) {
@@ -221,6 +230,11 @@ final class LegacyConfig
 
                 default:
                     $converted[$key] = $value;
+                    foreach ($env as $path => $variable) {
+                        if ($path === $key || str_starts_with($path, $key.'.')) {
+                            $variables[$path] = $variable;
+                        }
+                    }
             }
         }
 
@@ -241,20 +255,18 @@ final class LegacyConfig
             $converted['jobs'] = $jobs;
         }
 
-        return new ConfigConversion($converted, $newDisks, array_values(array_unique([...$conflicts, ...$notices])), $env, $conflicts);
+        return new ConfigConversion($converted, $newDisks, array_values(array_unique([...$conflicts, ...$notices])), $variables, $conflicts);
     }
 
     /**
-     * The environment variable that a 1.x default read for a 2.0 key, when
-     * it is set: the rewritten config reads it too.
-     *
-     * @return array<string, string>
+     * The 2.0 default of `jobs.tries` or `jobs.timeout`.
      */
-    private static function env(string $key): array
+    private static function jobsDefault(string $option): int
     {
-        $variable = self::ENV[$key] ?? null;
+        $defaults = require dirname(__DIR__, 2).'/config/mediatheque.php';
+        $default = is_array($defaults) && is_array($defaults['jobs'] ?? null) ? ($defaults['jobs'][$option] ?? null) : null;
 
-        return $variable !== null && env($variable) !== null ? [$key => $variable] : [];
+        return is_int($default) ? $default : ($option === 'tries' ? 3 : 3600);
     }
 
     /**
