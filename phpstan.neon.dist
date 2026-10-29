@@ -18,3 +18,12 @@ parameters:
         -
             identifier: larastan.noEnvCallsOutsideOfConfig
             path: config/mediatheque.php
+        # The 1.x defaults read the environment as the 1.x config file did, to
+        # compare a 1.x config with them; LegacyConfig checks which of the
+        # variables they read are set. Both only run on a config that isn't
+        # cached: the provider reads a cached config as it is.
+        -
+            identifier: larastan.noEnvCallsOutsideOfConfig
+            paths:
+                - src/Compat/V1Defaults.php
+                - src/Compat/LegacyConfig.php
