@@ -5,6 +5,8 @@ namespace Folklore\Mediatheque\Models;
 use DateTimeInterface;
 use Folklore\Mediatheque\Casts\Json;
 use Folklore\Mediatheque\Casts\MediaTransform;
+use Folklore\Mediatheque\Compat\Concerns\HasV1MediaMethods;
+use Folklore\Mediatheque\Compat\MediaBuilder;
 use Folklore\Mediatheque\Contracts\Mediatheque;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
@@ -64,9 +66,12 @@ use Illuminate\Support\Collection;
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  * @property-read EloquentCollection<int, Model&FileContract> $mediaFiles
+ * @property-read EloquentCollection<int, Model&FileContract> $files The 1.x relation, deprecated: use files()
  */
 class Media extends Model implements MediaContract
 {
+    // The 1.x methods, deprecated until 3.0
+    use HasV1MediaMethods;
     use SoftDeletes {
         performDeleteOnModel as performSoftDeletableDeleteOnModel;
     }
@@ -132,6 +137,21 @@ class Media extends Model implements MediaContract
     public function getTable(): string
     {
         return $this->table ?? Models::table('medias');
+    }
+
+    /**
+     * A builder that eager loads the 1.x relation `files` as `mediaFiles`,
+     * deprecated until 3.0.
+     *
+     * @param  Builder  $query
+     * @return MediaBuilder<static>
+     */
+    public function newEloquentBuilder($query): MediaBuilder
+    {
+        /** @var MediaBuilder<static> $builder The builder of this model, as Eloquent's */
+        $builder = new MediaBuilder($query);
+
+        return $builder;
     }
 
     public function getRouteKeyName(): string

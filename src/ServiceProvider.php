@@ -4,7 +4,9 @@ namespace Folklore\Mediatheque;
 
 use Folklore\Image\Contracts\SourceResolver;
 use Folklore\Mediatheque\Compat\Deprecation;
+use Folklore\Mediatheque\Compat\LegacyBindings;
 use Folklore\Mediatheque\Compat\LegacyConfig;
+use Folklore\Mediatheque\Compat\LegacyTypes;
 use Folklore\Mediatheque\Console\InstallCommand;
 use Folklore\Mediatheque\Console\PruneCommand;
 use Folklore\Mediatheque\Console\StatusCommand;
@@ -13,6 +15,7 @@ use Folklore\Mediatheque\Contracts\Ingestor;
 use Folklore\Mediatheque\Contracts\Mediatheque;
 use Folklore\Mediatheque\Contracts\Prober;
 use Folklore\Mediatheque\Contracts\Recorder;
+use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 use Folklore\Mediatheque\Contracts\UrlGenerator;
 use Folklore\Mediatheque\Dashboard\Routes as DashboardRoutes;
 use Folklore\Mediatheque\Images\MediaResolver;
@@ -45,6 +48,10 @@ class ServiceProvider extends BaseServiceProvider
         $this->app->singleton(Recorder::class, EloquentRecorder::class);
         $this->app->singleton(TranscoderManager::class);
         $this->app->singleton(Monitoring::class);
+
+        // The 1.x API, deprecated until 3.0
+        $this->app->singleton(TypeFactory::class, LegacyTypes::class);
+        $this->app->booted(fn () => LegacyBindings::apply($this->app, $this->app->make(Repository::class)));
     }
 
     public function boot(): void

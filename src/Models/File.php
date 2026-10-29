@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque\Models;
 
 use DateTimeInterface;
 use Folklore\Mediatheque\Casts\Json;
+use Folklore\Mediatheque\Compat\Concerns\HasV1FileMethods;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob as PipelineJobContract;
@@ -47,6 +48,9 @@ use LogicException;
  */
 class File extends Model implements FileContract
 {
+    // The 1.x methods, deprecated until 3.0
+    use HasV1FileMethods;
+
     /**
      * Every column read by a contract method of the same name has a cast, so
      * Eloquent reads it as an attribute, never as a relation.
