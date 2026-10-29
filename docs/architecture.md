@@ -671,7 +671,7 @@ src/                                  PSR-4: Folklore\Mediatheque\
   Support/                            Uid, MediaUsage
   Http/                               JSON resources
   Concerns/                           HasMedias
-  Compat/                             1.x compatibility layer (deprecated): the 1.x config
+  Compat/                             1.x compatibility layer (deprecated): model methods, type factory, bindings, config
   Upgrade/                            The conversion of a 1.x database: mediatheque:upgrade
   Testing/                            MediathequeFake, and the in-memory models, recorder, prober and URLs it uses
   Monitoring/                         The read model: overview, runs, failures, durations, throughput

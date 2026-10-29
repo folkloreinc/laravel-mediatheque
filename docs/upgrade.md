@@ -1,6 +1,6 @@
 # Upgrading from 1.x
 
-> **Draft.** This guide is filled as 2.0 lands. The migration, `mediatheque:upgrade` and the reading of a 1.x config exist ([decisions/0024](decisions/0024-upgrade-conversion-rules.md)); the compatibility layer of the 1.x API and the Rector rules are to come ([#139](https://github.com/folkloreinc/laravel-mediatheque/issues/139)).
+> **Draft.** This guide is filled as 2.0 lands. The migration, `mediatheque:upgrade`, the reading of a 1.x config ([decisions/0024](decisions/0024-upgrade-conversion-rules.md)) and the compatibility layer of the 1.x API exist; the Rector rules are to come ([#139](https://github.com/folkloreinc/laravel-mediatheque/issues/139)).
 
 2.0 keeps the 1.x tables and converts them in place. A compatibility layer keeps the 1.x API working with deprecation notices until 3.0, so a project can upgrade first and clean up its code afterwards.
 
@@ -54,20 +54,24 @@ Existing media become `public` and `ready` (or `failed` if their last pipeline f
 
 | 1.x | 2.0 | Compatibility layer |
 |---|---|---|
-| `Folklore\Mediatheque\Support\Traits\HasMedias` | `Folklore\Mediatheque\Concerns\HasMedias` | Alias |
+| `Folklore\Mediatheque\Support\Traits\HasMedias` | `Folklore\Mediatheque\Concerns\HasMedias` | Alias, with the 2.0 methods |
 | `$model->medias()->sync($ids)`, `attach($id, ['handle' => …])` | `$model->syncMedias([$handle => $ids])`, `attachMedia($media, $handle)`: by handle ([decisions/0020](decisions/0020-attachments-by-handle-and-usages.md)) | The relation keeps working |
-| `$media->getFile('h264')`, `hasFile()`, `getFiles()` | `$media->file('h264')`, `files()` | Deprecated proxies |
+| `$media->getFile('h264')`, `hasFile()`, `getFiles()`, `getOriginalFile()`, `getThumbnails()` | `$media->file('h264')`, `files()`, `original()`, `thumbnail()` | Deprecated proxies; `getFiles()` is keyed by 1.x handle |
 | `$media->getFile('thumbnails.0')` | `$media->file('thumbnails', 0)` | 1.x handles still resolve |
-| `$media->setOriginalFile($path)` | `Mediatheque::ingest($path)`, `$media->replaceOriginal($source)` | Deprecated proxy |
-| `$media->getMetadatas()->get('width')->getValue()` | `$media->metadata('width')` | Deprecated proxy |
+| `$media->files` (the relation) | `$media->files()`, a method of the contract | Deprecated accessor: the media's files |
+| `$file->getHandle()`, `$file->getUrl()` | `$file->handle()` and `index()`, `$file->url()` | Deprecated proxies |
+| `$media->setOriginalFile($path)` | `Mediatheque::ingest($path)`, `$media->replaceOriginal($source)` | Deprecated proxy: ingests on an unsaved media, replaces the original of a saved one |
+| `$media->getMetadatas()->get('width')->getValue()`, `getMetadata('width')` | `$media->metadata('width')` | Deprecated proxies; `font_family_name` and `colors` read `font_names` and `palette` |
 | `$media->runPipeline($name)` | `Mediatheque::runPipeline($media, $name)` | Deprecated proxy |
-| `$media->getUrl()` | `$media->url()` | Deprecated proxy |
-| `app(TypeFactory::class)->typeFromPath($path)->newModel()` | `Mediatheque::ingest($path)` | Deprecated proxy |
+| `$media->getUrl()` | `$media->url()` (the main rendition, else the original) | Deprecated proxy |
+| `app(TypeFactory::class)->typeFromPath($path)->newModel()` | `Mediatheque::ingest($path)` | Deprecated proxy: `Contracts\Type\Factory`, over the 2.0 types |
 | `medias://{id}` references | `media://med_…` | `medias://` still resolves |
-| Contracts bound with `app()->bind()` | Models set in `config('mediatheque.models')` | 1.x bindings still honored |
+| Contracts bound with `app()->bind()` | Models set in `config('mediatheque.models')` | A binding of the media or file contract is honored while the config names the package's model |
 | `Support\PipelineJob` subclasses | Custom operations of the `ffmpeg` transcoder | Manual (see below) |
 | `Route::mediatheque()` loaded by default | No upload routes: the application takes files and calls `ingest()` | — |
 | `media()` helper | `Mediatheque::ingest()` | Removed |
+
+Each deprecated use is reported once per process, as an `E_USER_DEPRECATED` error that Laravel logs on the `deprecations` channel (`LOG_DEPRECATIONS_CHANNEL`).
 
 ### Custom pipeline jobs
 
