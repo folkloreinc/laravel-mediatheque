@@ -385,11 +385,14 @@ final class Converter
             return false;
         }
 
-        $schema->table($table, function (Blueprint $table) use ($driver) {
-            $driver === 'pgsql'
-                ? $table->jsonb('definition')->nullable()->using('"definition"::jsonb')->change()
-                : $table->json('definition')->nullable()->change();
-        });
+        if ($driver === 'pgsql') {
+            // Text doesn't cast to jsonb implicitly, and Laravel 12's change()
+            // has no USING clause
+            $grammar = $this->tables->db->getQueryGrammar();
+            $this->tables->db->statement(sprintf('alter table %s alter column "definition" type jsonb using "definition"::jsonb', $grammar->wrapTable($table)));
+        } else {
+            $schema->table($table, fn (Blueprint $table) => $table->json('definition')->nullable()->change());
+        }
 
         return true;
     }
