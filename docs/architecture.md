@@ -673,6 +673,7 @@ src/                                  PSR-4: Folklore\Mediatheque\
   Concerns/                           HasMedias
   Compat/                             1.x compatibility layer (deprecated): model methods, type factory, bindings, config
   Upgrade/                            The conversion of a 1.x database: mediatheque:upgrade
+  Rector/                             The Rector rules of rector.php, for 1.x code
   Testing/                            MediathequeFake, and the in-memory models, recorder, prober and URLs it uses
   Monitoring/                         The read model: overview, runs, failures, durations, throughput
   Dashboard/                          Route::mediathequeDashboard(), its gates, page and JSON endpoints

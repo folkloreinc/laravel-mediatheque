@@ -50,14 +50,16 @@
         "league/flysystem-aws-s3-v3": "^3.25",
         "league/flysystem-memory": "^3.25",
         "orchestra/testbench": "^10.0|^11.0",
-        "phpunit/phpunit": "^11.5|^12.0"
+        "phpunit/phpunit": "^11.5|^12.0",
+        "rector/rector": "^2.2"
     },
     "suggest": {
         "ext-imagick": "Probes and renders images, documents and fonts",
         "aws/aws-sdk-php": "Required by the mediaconvert transcoder",
         "league/flysystem-aws-s3-v3": "S3-compatible disks",
         "folklore/laravel-eclair": "The eclair transcoder",
-        "folklore/laravel-image": "Image renditions on the fly, from media ids"
+        "folklore/laravel-image": "Image renditions on the fly, from media ids",
+        "rector/rector": "Runs the rules of rector.php that upgrade 1.x code"
     },
     "conflict": {
         "folklore/laravel-image": "2.0.0-alpha.1"

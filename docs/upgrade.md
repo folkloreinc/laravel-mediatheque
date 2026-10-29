@@ -1,6 +1,6 @@
 # Upgrading from 1.x
 
-> **Draft.** This guide is filled as 2.0 lands. The migration, `mediatheque:upgrade`, the reading of a 1.x config ([decisions/0024](decisions/0024-upgrade-conversion-rules.md)) and the compatibility layer of the 1.x API exist; the Rector rules are to come ([#139](https://github.com/folkloreinc/laravel-mediatheque/issues/139)).
+> **Draft.** This guide is filled as 2.0 lands. The migration, `mediatheque:upgrade`, the reading of a 1.x config ([decisions/0024](decisions/0024-upgrade-conversion-rules.md)), the compatibility layer of the 1.x API and the Rector rules exist since [#139](https://github.com/folkloreinc/laravel-mediatheque/issues/139); the guide is completed as projects upgrade.
 
 2.0 keeps the 1.x tables and converts them in place. A compatibility layer keeps the 1.x API working with deprecation notices until 3.0, so a project can upgrade first and clean up its code afterwards.
 
@@ -24,7 +24,7 @@
 3. **Publish and run the migration:** `php artisan mediatheque:install --upgrade`, then `php artisan migrate`. The migration adds columns; it renames no table and converts no data.
 4. **Drain the queue**, then **convert the data:** `php artisan mediatheque:upgrade`. It gives files their media and splits grouped handles into handle and index, backfills `uid`, copies metadata into JSON, converts runs to the new statuses and JSON definitions, removes orphan rows and adds the foreign keys. It converts in batches (`--batch=500`), one transaction each: run it again to resume, or to check that nothing is left. A run that hadn't ended is `canceled`.
 5. **Update the config:** `php artisan mediatheque:upgrade --config` rewrites `config/mediatheque.php` with only the project's overrides, in the 2.0 shape, and keeps the 1.x file in `config/mediatheque.php.1x.bak`. It prints the disks to add to `config/filesystems.php` for the 1.x sources, and what it dropped. A source is a Laravel disk in 2.0: the URL prefix of a 1.x source (`sources.*.url`), a CDN for instance, becomes its disk's `url`.
-6. **Run the Rector rules:** `vendor/bin/rector process --config vendor/folklore/laravel-mediatheque/rector.php`.
+6. **Run the Rector rules:** `composer require --dev rector/rector`, then `vendor/bin/rector process app --config vendor/folklore/laravel-mediatheque/rector.php` (add `--dry-run` to see the changes first). They rename the 1.x trait, and rewrite `getFile('thumbnails.0')` to `file('thumbnails', 0)`, `hasFile()` to `file() !== null`, `getMetadatas()->get('width')->getValue()` and `getMetadata('width')->getValue()` to `metadata('width')`, `runPipeline($name)` to `Mediatheque::runPipeline($media, $name)`, `getOriginalFile()` to `original()` and `getUrl()` to `url()`, on expressions typed as media and files. They leave `getFiles()`, whose keys are 1.x handles, `setOriginalFile()`, an ingest or a replacement, and `font_family_name`, which `font_names` lists: the compatibility layer keeps them working.
 7. **Routes.** 2.0 has no upload routes ([decisions/0018](decisions/0018-ingest-only.md)). If the project used the package's upload routes, take files in its own routes, or Panneau 5's, and call `Mediatheque::ingest()`.
 8. **Run the project's tests**, upload a file of each type, and check pages that show media.
 9. **Fix the deprecations** at your own pace. They are logged on the `deprecations` channel.
