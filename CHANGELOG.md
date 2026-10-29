@@ -6,6 +6,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Fixed
+
+- `mediatheque:upgrade` gives the files of a 1.x database without a `source` the default source (`config('mediatheque.source')`), where 1.x stored them: they had no URL after the upgrade. A database upgraded with 2.0.0-alpha.11 gets it by running `php artisan mediatheque:upgrade` again, and `--check` counts those files (#144).
+
 ## [2.0.0-alpha.11] - 2026-10-29
 
 The upgrade from 1.x, in place (#139): `mediatheque:install --upgrade` adds the 2.0 columns to the 1.x tables, `mediatheque:upgrade` converts the data (with `--check`, `--config` and `--cleanup`), a compatibility layer keeps the 1.x API working with deprecation notices, and Rector rules move code to the 2.0 API. Back up the database first: the conversion rewrites some 1.x columns, so going back means restoring the backup ([docs/upgrade.md](docs/upgrade.md)).

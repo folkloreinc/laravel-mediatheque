@@ -90,7 +90,7 @@ class UpgradeCommand extends Command
             return self::FAILURE;
         }
 
-        return $this->convert($converter);
+        return $this->convert($converter, $tables);
     }
 
     private function check(LegacyTables $tables, MediathequeConfig $config, Filesystem $files): int
@@ -125,6 +125,12 @@ class UpgradeCommand extends Command
         $this->section('Handles that break the 2.0 rule (a letter, then letters, digits, "_" and "-"): rename those renditions', self::labels($report->invalidHandles, '(none)'), 'files');
         $this->section('Files attached to models other than media, left as they are: 2.0 attaches files to media only', $report->filesOnOtherModels, 'rows');
 
+        if ($report->filesWithoutSource > 0) {
+            $this->section($report->defaultSource !== ''
+                ? sprintf('Files without a source, which 1.x stored on its default source: they get "%s", the disk of that name', $report->defaultSource)
+                : 'Files without a source, which 1.x stored on its default source: set `source` in config/mediatheque.php, or they keep none and get no URL', ['files' => $report->filesWithoutSource]);
+        }
+
         if ($report->filesOfSeveralMedia > 0) {
             $this->section('Files attached to several media: each goes to the first', ['files' => $report->filesOfSeveralMedia]);
         }
@@ -140,8 +146,9 @@ class UpgradeCommand extends Command
         return self::SUCCESS;
     }
 
-    private function convert(Converter $converter): int
+    private function convert(Converter $converter, LegacyTables $tables): int
     {
+        $this->components->twoColumnDetail('Files without a source: the default source', $converter->fillSources().' given "'.$tables->defaultSource().'"');
         $this->components->twoColumnDetail('Files: media, handles and metadata', $converter->convertFiles().' converted');
         $this->components->twoColumnDetail('Media: uid, status and metadata', $converter->convertMedia().' converted');
         $this->components->twoColumnDetail('Runs: statuses and JSON definitions', $converter->convertRuns().' converted');

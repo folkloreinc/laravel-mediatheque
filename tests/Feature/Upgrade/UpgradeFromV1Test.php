@@ -118,6 +118,7 @@ class UpgradeFromV1Test extends TestCase
         $this->assertStringContainsString('font (1 media)', $output);
         $this->assertStringContainsString('WebFonts', $output);
         $this->assertStringContainsString('document (1 media)', $output);
+        $this->assertStringContainsString('Files without a source, which 1.x stored on its default source: they get "public"', $output);
 
         // Read-only
         $this->assertSame(1, DB::table($this->table('medias_pivot'))->where('media_id', 99)->count());
@@ -149,6 +150,7 @@ class UpgradeFromV1Test extends TestCase
         $this->assertSame('image', $image->metadata('kind'));
         $this->assertSame('image/jpeg', $image->metadata('mime'));
         $this->assertSame('media/image/1-original.jpg', $image->original()?->path());
+        $this->assertSame('public', $image->original()->source(), '1.x stored a file without a source on its default source (#144).');
         $this->assertSame(File::ORIGINAL, $image->original()->role());
         $this->assertSame(1200, $image->original()->width());
         $this->assertSame([], $image->original()->metadata());
@@ -439,5 +441,37 @@ class UpgradeFromV1Test extends TestCase
 
         $uid = DB::table($this->table('medias'))->where('id', 1)->value('uid');
         $this->assertTrue(is_string($uid) && Uid::isValid($uid, 'med'));
+    }
+
+    #[Test]
+    public function a_database_upgraded_before_gets_its_files_a_source_when_the_upgrade_runs_again(): void
+    {
+        $this->create1xDatabase();
+        $this->migrate();
+        $this->upgrade();
+        // As 2.0.0-alpha.11 left them (#144)
+        DB::table($this->table('files'))->where('path', 'like', 'media/image/%')->update(['source' => null]);
+        $this->assertNull(Media::query()->findOrFail(1)->url());
+
+        $output = $this->upgrade();
+
+        $this->assertMatchesRegularExpression('/Files without a source: the default source \.+ 1 given "public"/', $output);
+        $this->assertSame('/storage/media/image/1-original.jpg', parse_url((string) Media::query()->findOrFail(1)->url(), PHP_URL_PATH));
+        $this->assertSame(0, DB::table($this->table('files'))->whereNull('source')->count());
+        $this->assertMatchesRegularExpression('/Files without a source: the default source \.+ 0 given/', $this->upgrade());
+    }
+
+    #[Test]
+    public function files_without_a_source_get_the_1x_default_source(): void
+    {
+        config(['mediatheque.source' => 'cloud', 'filesystems.disks.cloud' => ['driver' => 'local', 'root' => storage_path('app/cloud'), 'url' => '/cloud']]);
+        $this->create1xDatabase();
+        $this->migrate();
+
+        $this->upgrade();
+
+        $this->assertSame('cloud', Media::query()->findOrFail(1)->original()?->source());
+        $this->assertSame('public', Media::query()->findOrFail(2)->original()?->source(), 'A file with a source keeps it.');
+        $this->assertSame('/cloud/media/image/1-original.jpg', parse_url((string) Media::query()->findOrFail(1)->url(), PHP_URL_PATH));
     }
 }

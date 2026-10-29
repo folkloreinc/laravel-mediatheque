@@ -33,6 +33,8 @@ final readonly class Inspector
             filesOnOtherModels: $this->filesOnOtherModels(),
             filesOfSeveralMedia: $this->filesOfSeveralMedia(),
             typesWithoutRenditions: $this->typesWithoutRenditions(),
+            filesWithoutSource: $this->tables->query('files')->whereNull('source')->count(),
+            defaultSource: $this->tables->defaultSource(),
         );
     }
 

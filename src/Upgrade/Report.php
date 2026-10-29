@@ -16,6 +16,8 @@ final readonly class Report
      * @param  array<string, int>  $filesOnOtherModels  Files attached to models other than media, by morph type: left as they are
      * @param  int  $filesOfSeveralMedia  Files attached to more than one media: each goes to the first
      * @param  array<string, array{count: int, reason: string}>  $typesWithoutRenditions  Types of media with no 2.0 renditions
+     * @param  int  $filesWithoutSource  Files whose 1.x row has no source: they get the default source
+     * @param  string  $defaultSource  The default source, which 1.x stored those files on
      */
     public function __construct(
         public array $orphans,
@@ -26,6 +28,8 @@ final readonly class Report
         public array $filesOnOtherModels,
         public int $filesOfSeveralMedia,
         public array $typesWithoutRenditions,
+        public int $filesWithoutSource = 0,
+        public string $defaultSource = '',
     ) {}
 
     /**
@@ -41,6 +45,7 @@ final readonly class Report
             && $this->invalidHandles === []
             && $this->filesOnOtherModels === []
             && $this->filesOfSeveralMedia === 0
-            && $this->typesWithoutRenditions === [];
+            && $this->typesWithoutRenditions === []
+            && $this->filesWithoutSource === 0;
     }
 }

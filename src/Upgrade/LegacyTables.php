@@ -56,6 +56,18 @@ final readonly class LegacyTables
         );
     }
 
+    /**
+     * The default source: the disk that 1.x stored a file on when its row
+     * has no `source`. It is `config('mediatheque.source')`, which the 1.x
+     * config keeps, and the 2.0 config after `--config`.
+     */
+    public function defaultSource(): string
+    {
+        $source = config('mediatheque.source');
+
+        return is_string($source) ? $source : '';
+    }
+
     public function table(string $name): string
     {
         return $this->prefix.$name;
