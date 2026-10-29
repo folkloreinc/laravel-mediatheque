@@ -567,13 +567,14 @@ The fake stores files on fake disks, returns probe fixtures, and completes rendi
 
 ## Commands
 
-`mediatheque:install`, `mediatheque:status` and `mediatheque:prune` exist today; the other commands are planned ([roadmap](roadmap.md)).
+`mediatheque:install`, `mediatheque:status`, `mediatheque:prune` and `mediatheque:upgrade` exist today; the other commands are planned ([roadmap](roadmap.md)).
 
 | Command | Purpose |
 |---|---|
 | `mediatheque:install` | Publish the config and migrations, check the environment |
 | `mediatheque:doctor` (to come) | Binaries and versions, disks and visibility, queue `retry_after` against job timeouts, transcoders against pipelines (operations, `when.kind`, `queue` on remote drivers), `mediatheque:refresh` scheduled when a driver needs it |
-| `mediatheque:upgrade` (to come) | Convert a 1.x database (see [upgrade.md](upgrade.md)); `--check` lists what would change |
+| `mediatheque:install --upgrade` | Publish the migration that adds the 2.0 columns to the 1.x tables instead of the one that creates them |
+| `mediatheque:upgrade` | Convert a 1.x database, in resumable batches (see [upgrade.md](upgrade.md), [decisions/0024](decisions/0024-upgrade-conversion-rules.md)); `--check` lists what it would remove or can't convert, `--config` rewrites a 1.x config, `--cleanup` drops the EAV table |
 | `mediatheque:run-pipeline` (to come) | Run a pipeline on media, by type or uid |
 | `mediatheque:refresh` (to come) | Scheduled: fetch the state of runs that have been running too long, and the progress of drivers that only report it by polling |
 | `mediatheque:prune` | Scheduled daily: force-delete media soft-deleted more than `prune.after_days` ago (30), and delete runs that ended more than `prune.runs_after_days` ago (7), keeping each media's last run of each pipeline. `--dry-run` lists what it would delete |
@@ -641,7 +642,7 @@ $media->replaceOriginal($file, allowTypeChange: true);     // an image replaced 
 
 ## Configuration
 
-The 1.x keys keep their meaning where the concept is unchanged (`table_prefix`, `source`, `file_path_format`, `types`, `pipelines`, `jobs`). `routes` is gone: the package has no routes but the dashboard's, which the application registers. A source is a Laravel disk name, so 2.0 has no `sources` key: `mediatheque:upgrade --config` turns 1.x sources into disks ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)). New keys: `models`, `ingest`, `urls`, `transcoders`, `probe`, `prune`, `events`, `monitoring`, `run_path_format`.
+The 1.x keys keep their meaning where the concept is unchanged (`table_prefix`, `source`, `file_path_format`, `types`, `pipelines`, `jobs`). `routes` is gone: the package has no routes but the dashboard's, which the application registers. A source is a Laravel disk name, so 2.0 has no `sources` key: a 1.x config is read with each source as a disk of the same name, and `mediatheque:upgrade --config` prints the disks to add ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md), [0024](decisions/0024-upgrade-conversion-rules.md)). New keys: `models`, `ingest`, `urls`, `transcoders`, `probe`, `prune`, `events`, `monitoring`, `run_path_format`.
 
 The package merges its defaults deeply with the application's file, so a published config only needs its overrides. Lists (`mimes`) and a pipeline's `renditions` replace the defaults as a whole, and `false` removes a default type or pipeline. Every value is validated when it is read, with the key that is wrong. The 1.x shapes of `types` and `pipelines` are read with deprecation warnings (see [upgrade.md](upgrade.md)).
 
@@ -670,7 +671,8 @@ src/                                  PSR-4: Folklore\Mediatheque\
   Support/                            Uid, MediaUsage
   Http/                               JSON resources
   Concerns/                           HasMedias
-  Compat/                             1.x compatibility layer (deprecated)
+  Compat/                             1.x compatibility layer (deprecated): the 1.x config
+  Upgrade/                            The conversion of a 1.x database: mediatheque:upgrade
   Testing/                            MediathequeFake, and the in-memory models, recorder, prober and URLs it uses
   Monitoring/                         The read model: overview, runs, failures, durations, throughput
   Dashboard/                          Route::mediathequeDashboard(), its gates, page and JSON endpoints

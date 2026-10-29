@@ -92,6 +92,71 @@ class InstallCommandTest extends TestCase
     }
 
     #[Test]
+    public function with_upgrade_it_publishes_the_migration_that_converts_the_1x_tables_and_keeps_the_config(): void
+    {
+        file_put_contents(config_path('mediatheque.php'), "<?php\n\nreturn ['table_prefix' => 'mediatheque_', 'sources' => []];\n");
+
+        $this->assertSame(0, Artisan::call('mediatheque:install', ['--upgrade' => true]));
+
+        $published = $this->published();
+        sort($published);
+        $this->assertCount(7, $published);
+        $this->assertMatchesRegularExpression('/^\d{4}_\d{2}_\d{2}_\d{6}_upgrade_mediatheque_tables_from_1x\.php$/', $published[0]);
+        $this->assertSame([], preg_grep('/create_mediatheque_tables/', $published));
+        $this->assertStringContainsString("'sources'", (string) file_get_contents(config_path('mediatheque.php')), 'The 1.x config is kept: --config rewrites it.');
+        $this->assertStringContainsString('mediatheque:upgrade', Artisan::output());
+    }
+
+    #[Test]
+    public function an_upgraded_application_never_gets_the_migration_that_creates_the_tables(): void
+    {
+        $this->assertSame(0, Artisan::call('mediatheque:install', ['--upgrade' => true]));
+        foreach (glob($this->migrations.'/*_make_mediatheque_progress_nullable.php') ?: [] as $later) {
+            unlink($later);
+        }
+
+        $this->install();
+
+        $published = $this->published();
+        $this->assertCount(7, $published);
+        $this->assertSame([], preg_grep('/create_mediatheque_tables/', $published));
+    }
+
+    #[Test]
+    public function without_upgrade_it_refuses_a_database_that_has_the_1x_tables(): void
+    {
+        $this->startFromAnEmptyDatabase();
+        Artisan::call('migrate', ['--path' => self::fixturePath('v1/migrations'), '--realpath' => true]);
+
+        $this->assertSame(1, Artisan::call('mediatheque:install'));
+
+        $this->assertStringContainsString('mediatheque:install --upgrade', Artisan::output());
+        $this->assertSame([], $this->published());
+        Artisan::call('db:wipe');
+    }
+
+    #[Test]
+    public function the_published_upgrade_migration_converts_the_1x_tables_and_rolls_back(): void
+    {
+        $this->startFromAnEmptyDatabase();
+        Artisan::call('migrate', ['--path' => self::fixturePath('v1/migrations'), '--realpath' => true]);
+        $this->assertSame(0, Artisan::call('mediatheque:install', ['--upgrade' => true]));
+
+        Artisan::call('migrate', ['--path' => $this->migrations, '--realpath' => true]);
+
+        $this->assertTrue(Schema::hasColumns('mediatheque_medias', ['uid', 'status', 'visibility', 'metadata', 'transform', 'deleted_at']));
+        $this->assertTrue(Schema::hasColumns('mediatheque_files', ['media_id', 'index', 'role']));
+        $this->assertTrue(Schema::hasColumns('mediatheque_pipelines_jobs', ['status', 'queued_at']));
+
+        Artisan::call('migrate:rollback', ['--path' => $this->migrations, '--realpath' => true]);
+
+        $this->assertTrue(Schema::hasTable('mediatheque_medias'), 'The 1.x tables stay.');
+        $this->assertFalse(Schema::hasColumn('mediatheque_medias', 'uid'));
+        $this->assertFalse(Schema::hasColumn('mediatheque_files', 'media_id'));
+        Artisan::call('db:wipe');
+    }
+
+    #[Test]
     public function the_published_migration_creates_and_drops_the_tables(): void
     {
         $this->install();

@@ -6,6 +6,15 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Added
+
+- The upgrade from 1.x, in place ([decisions/0002](docs/decisions/0002-evolve-the-schema-in-place.md), [0024](docs/decisions/0024-upgrade-conversion-rules.md), #139):
+  - `mediatheque:install --upgrade` publishes the `upgrade_mediatheque_tables_from_1x` migration instead of `create_mediatheque_tables`: it adds the 2.0 columns to the 1.x tables, with any `table_prefix`, and renames nothing. `mediatheque:install` without `--upgrade` refuses a database that has the 1.x tables.
+  - `mediatheque:upgrade --check` lists, without changing anything, the orphan rows the upgrade removes, the morph types it doesn't recognize, the runs and 1.x jobs it can't convert, the handles that break the 2.0 rule, the files attached to other models or to several media, and the media whose type has no 2.0 renditions (1.x fonts).
+  - `mediatheque:upgrade` converts the data in resumable batches: files get their media and their handle split into handle and index, media a `uid`, a status and their metadata as JSON with the canonical keys, runs the 2.0 statuses and a JSON definition, read from the 1.x serialized ones without creating objects. It then removes orphan rows and adds the foreign keys. `--media-morph` and `--file-morph` name other morph types 1.x rows use.
+  - `mediatheque:upgrade --config` rewrites a 1.x `config/mediatheque.php` in the 2.0 shape, with only the application's overrides, and prints the disks that stand for its sources. `--cleanup` drops the 1.x `metadatas` table.
+  - A 1.x `config/mediatheque.php` is read in the 2.0 shape, with a deprecation notice on the `deprecations` channel: values equal to the 1.x defaults give way to the 2.0 defaults, and each 1.x source is a Laravel disk of the same name unless the application defines one.
+
 ## [2.0.0-alpha.10] - 2026-10-28
 
 Images get a ThumbHash placeholder at probe, and so do video posters (#131). HEIC, HEIF and AVIF images get a JPEG web version at ingest, which the media plays instead of its original (#132). `MediaResource` and `FileResource` give the canonical JSON shape of a media, with `Media::failure()` (#133). A CDN in front of public files is the disk's `url` (#128). There is no new migration. If your published config sets `types.image.pipeline` to `null`, remove that line to get the web version of HEIC images. Images probed before keep no placeholder until they are probed again.

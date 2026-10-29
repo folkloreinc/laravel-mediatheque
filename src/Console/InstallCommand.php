@@ -7,28 +7,48 @@ use Folklore\Mediatheque\Support\MediathequeConfig;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Symfony\Component\Console\Attribute\AsCommand;
+use Throwable;
 
 /**
  * Publishes the config and the migrations (docs/decisions/0015). The package
  * never loads its migrations: the application owns its schema. Running the
  * command again publishes only the migrations the application doesn't have.
+ *
+ * With `--upgrade`, for an application that has the 1.x tables, it publishes
+ * the migration that adds the 2.0 columns to them instead of the one that
+ * creates the tables (docs/decisions/0002, docs/upgrade.md).
  */
 #[AsCommand(name: 'mediatheque:install')]
 class InstallCommand extends Command
 {
+    private const string UPGRADE_MIGRATION = '2026_10_16_000001_upgrade_mediatheque_tables_from_1x.php';
+
     protected $signature = 'mediatheque:install
                             {--force : Overwrite the published config}
+                            {--upgrade : Convert the tables of mediatheque 1.x instead of creating them}
                             {--dashboard : Publish a provider that defines who can use the monitoring dashboard}';
 
     protected $description = 'Publish the mediatheque config and migrations';
 
     public function handle(Filesystem $files, MediathequeConfig $config): int
     {
-        $this->publishConfig($files);
-        $published = $this->publishMigrations($files);
+        $upgrade = (bool) $this->option('upgrade');
+
+        if (! $upgrade && $this->hasTablesOf1x($config)) {
+            $this->components->error('The mediatheque 1.x tables exist: run `php artisan mediatheque:install --upgrade` to convert them (docs/upgrade.md).');
+
+            return self::FAILURE;
+        }
+
+        if (! $upgrade) {
+            $this->publishConfig($files);
+        }
+
+        $published = $this->publishMigrations($files, $upgrade);
 
         if ($this->option('dashboard')) {
             $this->publishDashboardProvider($files);
@@ -42,9 +62,11 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
-        $this->components->info($published > 0
-            ? 'Run `php artisan migrate` to create the mediatheque tables.'
-            : 'The migrations are already published.');
+        $this->components->info(match (true) {
+            $published === 0 => 'The migrations are already published.',
+            $upgrade => 'Run `php artisan migrate`, then `php artisan mediatheque:upgrade` to convert the 1.x data.',
+            default => 'Run `php artisan migrate` to create the mediatheque tables.',
+        });
         $this->components->info('Schedule `mediatheque:prune` daily, in routes/console.php: Schedule::command(\'mediatheque:prune\')->daily();');
 
         return self::SUCCESS;
@@ -87,20 +109,38 @@ class InstallCommand extends Command
     }
 
     /**
-     * Copy each package migration that the application doesn't have yet,
-     * whatever its timestamp, with a fresh timestamp.
+     * Whether the database has the `medias` table of 1.x, which has no
+     * `uid`. A database that can't be reached is not checked.
      */
-    private function publishMigrations(Filesystem $files): int
+    private function hasTablesOf1x(MediathequeConfig $config): bool
+    {
+        try {
+            $medias = $config->tablePrefix().'medias';
+
+            return Schema::hasTable($medias) && ! Schema::hasColumn($medias, 'uid');
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * Copy each package migration that the application doesn't have yet,
+     * whatever its timestamp, with a fresh timestamp. The migration that
+     * creates the tables and the one that upgrades the 1.x tables stand for
+     * each other: an application has one of them.
+     */
+    private function publishMigrations(Filesystem $files, bool $upgrade): int
     {
         $directory = $this->laravel->databasePath('migrations');
         $files->ensureDirectoryExists($directory);
 
         $existing = array_map(fn (string $path) => self::withoutTimestamp($path), glob($directory.'/*.php') ?: []);
+        $upgraded = in_array(self::withoutTimestamp(self::UPGRADE_MIGRATION), $existing, true);
 
         $time = Date::now();
         $published = 0;
 
-        foreach (self::migrations() as $migration) {
+        foreach ($upgrade || $upgraded ? self::upgradeMigrations() : self::migrations() as $migration) {
             $name = self::withoutTimestamp($migration);
 
             if (in_array($name, $existing, true)) {
@@ -141,6 +181,21 @@ class InstallCommand extends Command
             '2026_10_26_000000_use_jsonb_in_mediatheque_tables_on_postgresql.php',
             '2026_10_28_000000_make_mediatheque_progress_nullable.php',
         ]);
+    }
+
+    /**
+     * The migrations of an application upgraded from 1.x: the one that adds
+     * the 2.0 columns to the 1.x tables, in place of the one that creates
+     * them, then the others.
+     *
+     * @return list<string>
+     */
+    public static function upgradeMigrations(): array
+    {
+        $migrations = self::migrations();
+        $migrations[0] = self::packagePath('database/migrations/'.self::UPGRADE_MIGRATION);
+
+        return $migrations;
     }
 
     /**

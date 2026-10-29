@@ -1,6 +1,6 @@
 # Upgrading from 1.x
 
-> **Draft.** This guide is filled as 2.0 lands. The steps and the mapping below are the plan ([decisions/0002](decisions/0002-evolve-the-schema-in-place.md)); the commands they mention don't exist yet.
+> **Draft.** This guide is filled as 2.0 lands. The migration, `mediatheque:upgrade` and the reading of a 1.x config exist ([decisions/0024](decisions/0024-upgrade-conversion-rules.md)); the compatibility layer of the 1.x API and the Rector rules are to come ([#139](https://github.com/folkloreinc/laravel-mediatheque/issues/139)).
 
 2.0 keeps the 1.x tables and converts them in place. A compatibility layer keeps the 1.x API working with deprecation notices until 3.0, so a project can upgrade first and clean up its code afterwards.
 
@@ -13,15 +13,17 @@
 
 ## Steps
 
-1. **Require the new version:** `composer require folklore/laravel-mediatheque:^2.0`.
-2. **Check the database:** `php artisan mediatheque:upgrade --check`. It lists:
-   - orphan rows (pipelines, metadata, pivots of deleted media) that block the foreign keys;
-   - serialized pipeline definitions it can't convert (custom classes);
+1. **Require the new version:** `composer require folklore/laravel-mediatheque:^2.0`. The 1.x `config/mediatheque.php` keeps working: the package reads it in the 2.0 shape, with a deprecation notice, and makes each 1.x source a Laravel disk of the same name, unless you define one.
+2. **Check the database:** `php artisan mediatheque:upgrade --check`. It changes nothing, and runs before the migration as well as after it. It lists:
+   - orphan rows (runs, metadata, attachments of deleted media, jobs of deleted runs, files that nothing attaches) that block the foreign keys: the upgrade removes them, and never deletes a stored file;
+   - the morph types of metadata and runs that are neither media nor files: if 1.x wrote your media as `App\Models\Media`, pass `--media-morph="App\Models\Media"` to every `mediatheque:upgrade` command (and `--file-morph` for files);
+   - runs whose serialized definition can't be read, and 1.x jobs with no 2.0 operation (custom classes, `WebFonts`, `MediaConvert`): their runs keep them in their history;
    - handles that don't follow the 2.0 rule;
-   - files attached to models other than media through `files_pivot`.
-3. **Publish and run the migration:** `php artisan mediatheque:install --upgrade`, then `php artisan migrate`. The migration adds columns; it renames no table.
-4. **Convert the data:** `php artisan mediatheque:upgrade`. It backfills `uid`, copies metadata into JSON, converts pipelines to the new statuses and JSON definitions, splits grouped handles into handle and index, and adds the foreign keys. It can run in batches and be resumed.
-5. **Update the config.** The 1.x file keeps working, with deprecation notices. `php artisan mediatheque:upgrade --config` rewrites it with only the project's overrides, in the 2.0 shape. A source is a Laravel disk in 2.0: the URL prefix of a 1.x source (`sources.*.url`), a CDN for instance, becomes its disk's `url`.
+   - files attached to models other than media through `files_pivot`, and files attached to several media;
+   - media whose type has no 2.0 renditions: 1.x made web fonts of `font` media, and 2.0 has no rendition for fonts. Their files are kept.
+3. **Publish and run the migration:** `php artisan mediatheque:install --upgrade`, then `php artisan migrate`. The migration adds columns; it renames no table and converts no data.
+4. **Drain the queue**, then **convert the data:** `php artisan mediatheque:upgrade`. It gives files their media and splits grouped handles into handle and index, backfills `uid`, copies metadata into JSON, converts runs to the new statuses and JSON definitions, removes orphan rows and adds the foreign keys. It converts in batches (`--batch=500`), one transaction each: run it again to resume, or to check that nothing is left. A run that hadn't ended is `canceled`.
+5. **Update the config:** `php artisan mediatheque:upgrade --config` rewrites `config/mediatheque.php` with only the project's overrides, in the 2.0 shape, and keeps the 1.x file in `config/mediatheque.php.1x.bak`. It prints the disks to add to `config/filesystems.php` for the 1.x sources, and what it dropped. A source is a Laravel disk in 2.0: the URL prefix of a 1.x source (`sources.*.url`), a CDN for instance, becomes its disk's `url`.
 6. **Run the Rector rules:** `vendor/bin/rector process --config vendor/folklore/laravel-mediatheque/rector.php`.
 7. **Routes.** 2.0 has no upload routes ([decisions/0018](decisions/0018-ingest-only.md)). If the project used the package's upload routes, take files in its own routes, or Panneau 5's, and call `Mediatheque::ingest()`.
 8. **Run the project's tests**, upload a file of each type, and check pages that show media.
@@ -35,18 +37,18 @@
 | 1.x | 2.0 |
 |---|---|
 | `medias.id` exposed | `medias.uid` (`med_…`) exposed; `id` stays internal |
-| — | `medias.status`, `visibility`, `metadata`, `derived_from_id`, `deleted_at` |
-| `files_pivot` links files to media | `files.media_id`; `files_pivot` is no longer used |
+| — | `medias.status`, `visibility`, `metadata`, `transform`, `derived_from_id`, `deleted_at` |
+| `files_pivot` links files to media | `files.media_id`, from the first media `files_pivot` attaches the file to; `files_pivot` is no longer used |
 | `files.mime` 50 characters, `size` 32-bit | 255 characters, 64-bit |
-| `files.handle` `thumbnails.0` | `handle` `thumbnails`, `index` 0, `role` |
-| `metadatas` EAV table | `metadata` JSON on media and files |
+| `files.handle` `thumbnails.0`, or only the pivot's handle | `handle` `thumbnails`, `index` 0, `role` (`original`, `thumbnail` for handles starting with `thumbnail`, `poster`, else `main`) |
+| `metadatas` EAV table | `metadata` JSON on media and files; a file's `width`, `height` and `duration` in its columns |
 | Metadata names `font_family_name`, `colors` | [Canonical keys](architecture.md#metadata-keys) `font_names`, `palette` |
 | Any handle | A letter first, 64 characters at most ([decisions/0011](decisions/0011-renditions-on-remote-transcoders.md)): `--check` lists the handles that break the rule; rename those renditions |
-| `pipelines.definition` serialized | JSON snapshot; `status`, `attempts`, `error` |
-| `started`, `ended`, `failed` booleans | `status` enum |
+| `pipelines.definition` serialized | JSON snapshot of the renditions the run ran (a custom job is the operation `v1.job`, with its class); `status`, `attempts`, `error` |
+| `started`, `ended`, `failed` booleans | `status` enum: `completed`, `failed`, or `canceled` for what hadn't ended |
 | No foreign keys | Foreign keys on files, pipeline jobs and pivots |
 
-Existing media become `public` and `ready` (or `failed` if their last pipeline failed). Their files and URLs don't move.
+Existing media become `public` and `ready` (or `failed` if their last pipeline failed). Their files and URLs don't move. The 1.x columns stay until 3.0, and the columns that every row of a new install has (`uid`, a run's `transcoder`) are nullable on upgraded tables.
 
 ### API
 

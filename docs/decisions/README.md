@@ -5,7 +5,7 @@ One file per decision. A decision is not edited once accepted: a later one repla
 | # | Decision | Status |
 |---|---|---|
 | [0001](0001-supported-versions.md) | PHP 8.3+ and Laravel 12+ | Accepted |
-| [0002](0002-evolve-the-schema-in-place.md) | Evolve the schema in place, with a compatibility layer | Accepted |
+| [0002](0002-evolve-the-schema-in-place.md) | Evolve the schema in place, with a compatibility layer | Accepted, amended by 0024 |
 | [0003](0003-identifiers-and-references.md) | Prefixed ULIDs and `media://` references | Amended by 0018 |
 | [0004](0004-renditions.md) | Renditions: groups, metadata outputs, remote renditions | Amended by 0011 |
 | [0005](0005-asynchronous-transcoders.md) | An asynchronous `Transcoder` contract and declarative renditions | Amended by 0012 |
@@ -27,6 +27,7 @@ One file per decision. A decision is not edited once accepted: a later one repla
 | [0021](0021-json-references-handle.md) | JSON references sync under one handle, `json` | Accepted |
 | [0022](0022-image-transform-and-orientation.md) | The transform, focal point and orientation of an image | Accepted |
 | [0023](0023-progress-of-runs.md) | The progress of runs, on the media, and an event | Accepted |
+| [0024](0024-upgrade-conversion-rules.md) | How the upgrade from 1.x converts the data | Proposed |
 
 Template:
 

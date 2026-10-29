@@ -3,9 +3,12 @@
 namespace Folklore\Mediatheque;
 
 use Folklore\Image\Contracts\SourceResolver;
+use Folklore\Mediatheque\Compat\Deprecation;
+use Folklore\Mediatheque\Compat\LegacyConfig;
 use Folklore\Mediatheque\Console\InstallCommand;
 use Folklore\Mediatheque\Console\PruneCommand;
 use Folklore\Mediatheque\Console\StatusCommand;
+use Folklore\Mediatheque\Console\UpgradeCommand;
 use Folklore\Mediatheque\Contracts\Ingestor;
 use Folklore\Mediatheque\Contracts\Mediatheque;
 use Folklore\Mediatheque\Contracts\Prober;
@@ -58,6 +61,7 @@ class ServiceProvider extends BaseServiceProvider
                 InstallCommand::class,
                 PruneCommand::class,
                 StatusCommand::class,
+                UpgradeCommand::class,
             ]);
 
             $this->publishes([
@@ -70,6 +74,9 @@ class ServiceProvider extends BaseServiceProvider
      * Merge the defaults deeply with the application's config, so a
      * published config only needs its overrides (ConfigMerger). A cached
      * config is already merged.
+     *
+     * A config of the 1.x shape is read in the 2.0 shape first, and its
+     * sources become disks (LegacyConfig), with a deprecation notice.
      */
     private function mergeConfig(): void
     {
@@ -80,11 +87,21 @@ class ServiceProvider extends BaseServiceProvider
         $config = $this->app->make(Repository::class);
         $defaults = require __DIR__.'/../config/mediatheque.php';
         $overrides = $config->get('mediatheque', []);
+        $overrides = is_array($overrides) ? $overrides : [];
 
-        $config->set('mediatheque', ConfigMerger::merge(
-            is_array($defaults) ? $defaults : [],
-            is_array($overrides) ? $overrides : [],
-        ));
+        if (LegacyConfig::isLegacy($overrides)) {
+            $disks = $config->get('filesystems.disks', []);
+            $conversion = LegacyConfig::convert($overrides, is_array($disks) ? $disks : []);
+            $overrides = $conversion->config;
+
+            foreach ($conversion->disks as $name => $disk) {
+                $config->set('filesystems.disks.'.$name, $disk);
+            }
+
+            Deprecation::trigger('config/mediatheque.php has the 1.x shape: rewrite it with `php artisan mediatheque:upgrade --config`.');
+        }
+
+        $config->set('mediatheque', ConfigMerger::merge(is_array($defaults) ? $defaults : [], $overrides));
     }
 
     /**

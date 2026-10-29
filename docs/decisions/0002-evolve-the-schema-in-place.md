@@ -1,6 +1,6 @@
 # 0002: Evolve the schema in place, with a compatibility layer
 
-- Status: accepted
+- Status: accepted, amended by [0024](0024-upgrade-conversion-rules.md)
 - Date: 2026-10-15
 
 ## Context
