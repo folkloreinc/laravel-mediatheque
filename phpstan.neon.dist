@@ -27,3 +27,8 @@ parameters:
             paths:
                 - src/Compat/V1Defaults.php
                 - src/Compat/LegacyConfig.php
+        # The compatibility test eager loads the 1.x relation name `files` on
+        # purpose: MediaBuilder loads it as `mediaFiles`.
+        -
+            identifier: larastan.relationExistence
+            path: tests/Feature/Compat/V1ApiTest.php

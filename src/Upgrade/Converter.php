@@ -18,6 +18,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use stdClass;
+use Throwable;
 
 /**
  * Converts the rows of a 1.x database to 2.0, once the migration published
@@ -25,8 +26,15 @@ use stdClass;
  *
  * Each step converts the rows it hasn't converted yet, in batches, one
  * transaction per batch: an interrupted upgrade resumes where it stopped,
- * and running it again changes nothing. The 1.x columns are read, never
- * changed, and rows that 2.0 wrote since the migration are left as they are.
+ * and running it again changes nothing. Rows that 2.0 wrote since the
+ * migration are left as they are.
+ *
+ * Most 1.x columns are only read, and stay until 3.0. Some are 2.0 columns
+ * too, and are overwritten: `files.handle` (split into handle and index),
+ * and a run's `definition` (the serialized value is replaced by its JSON
+ * snapshot), `name`, `pipelinable_type` and `progress`. Going back to 1.x
+ * means restoring the backup: the migration's down() doesn't undo the
+ * conversion.
  */
 final class Converter
 {
@@ -182,7 +190,7 @@ final class Converter
 
                     $created = Row::string($media, 'created_at');
                     $t->query('medias')->where('id', $id)->whereNull('uid')->update([
-                        'uid' => Uid::generate($prefix, $created !== null ? Carbon::parse($created) : null),
+                        'uid' => Uid::generate($prefix, self::time($created)),
                         'status' => ($failed[$id] ?? false) ? MediaStatus::Failed->value : MediaStatus::Ready->value,
                         'visibility' => Visibility::Public->value,
                         'metadata' => self::json($values),
@@ -227,7 +235,9 @@ final class Converter
 
             $t->db->transaction(function () use ($runs, $jobs, $originals, &$converted) {
                 foreach ($runs as $run) {
-                    $this->convertRun($run, $jobs->get((int) Row::int($run, 'id'), new Collection), $originals->get((int) Row::int($run, 'pipelinable_id')));
+                    // Only a run on a media has an original: another model's id is not a media's
+                    $original = in_array(Row::string($run, 'pipelinable_type'), $this->tables->mediaTypes, true) ? $originals->get((int) Row::int($run, 'pipelinable_id')) : null;
+                    $this->convertRun($run, $jobs->get((int) Row::int($run, 'id'), new Collection), $original);
                     $converted++;
                 }
             });
@@ -266,7 +276,7 @@ final class Converter
         $path = $original !== null ? Row::string($original, 'path') : null;
 
         $t->query('pipelines')->where('id', Row::int($run, 'id'))->whereNull('uid')->update([
-            'uid' => Uid::generate(PipelineRun::UID_PREFIX, $created !== null ? Carbon::parse($created) : null),
+            'uid' => Uid::generate(PipelineRun::UID_PREFIX, self::time($created)),
             'name' => Row::string($run, 'name') ?? $definition->name ?? 'v1',
             'pipelinable_type' => in_array($type, $t->mediaTypes, true) ? $t->mediaMorphClass : $type,
             'transcoder' => 'ffmpeg',
@@ -470,6 +480,25 @@ final class Converter
         $source = config('mediatheque.source');
 
         return is_string($source) ? $source : '';
+    }
+
+    /**
+     * The time of a 1.x date, for a uid that sorts with it. Null, now, for a
+     * date that can't be read, before 1970, such as MySQL's zero date.
+     */
+    private static function time(?string $date): ?Carbon
+    {
+        if ($date === null || trim($date) === '' || str_starts_with($date, '0000')) {
+            return null;
+        }
+
+        try {
+            $time = Carbon::parse($date);
+        } catch (Throwable) {
+            return null;
+        }
+
+        return $time->getTimestamp() >= 0 ? $time : null;
     }
 
     /**

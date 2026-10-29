@@ -38,6 +38,7 @@
         "illuminate/routing": "^12.0|^13.0",
         "illuminate/support": "^12.0|^13.0",
         "illuminate/validation": "^12.0|^13.0",
+        "psr/log": "^2.0|^3.0",
         "rhukster/dom-sanitizer": "^1.0.7",
         "symfony/mime": "^7.2|^8.0",
         "symfony/process": "^7.2|^8.0",
