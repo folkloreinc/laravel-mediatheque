@@ -89,9 +89,9 @@ What the pilot needs for its reserved videos. URL import ([#91](https://github.c
 
 ## Beta: upgrade path and Eclair
 
-- [ ] Migration from 1.x and `mediatheque:upgrade` (`uid` backfill, metadata from the EAV table, serialized definitions, grouped handles, foreign keys after orphan cleanup), with `--check`
-- [ ] Compatibility layer: 1.x model methods, handles, `medias://` references, 1.x config shapes, `legacy` JSON resource, tested on 1.x fixtures
-- [ ] Rector rules
+- [x] Migration from 1.x and `mediatheque:upgrade` (`uid` backfill, metadata from the EAV table, serialized definitions, grouped handles, foreign keys after orphan cleanup), with `--check`, `--config` and `--cleanup` ([#139](https://github.com/folkloreinc/laravel-mediatheque/issues/139), [decisions/0024](decisions/0024-upgrade-conversion-rules.md))
+- [x] Compatibility layer: 1.x model methods, handles, `medias://` references, 1.x config shapes, the 1.x type factory and container bindings, tested on 1.x fixtures ([#139](https://github.com/folkloreinc/laravel-mediatheque/issues/139)). There is no `legacy` JSON resource: `laravel-folklore` keeps its own ([decisions/0010](decisions/0010-json-resource.md))
+- [x] Rector rules ([#139](https://github.com/folkloreinc/laravel-mediatheque/issues/139))
 - [ ] Upgrade validated on a copy of an existing project's database. Sites on 1.x upgrade through `laravel-folklore` 2: `laravel-folklore` 1.1 stays on this package's 1.x
 - [ ] `eclair` transcoder in `laravel-eclair`, with its webhook and probe. It works with Eclair's current protocol; these additions to Eclair's `/v1` remove workarounds ([decisions/0011](decisions/0011-renditions-on-remote-transcoders.md), [0012](decisions/0012-pipeline-runs-recorder-and-probe.md)):
   - `width`, `height`, `duration` and `bitrate` on output files (until then, each rendition is probed again);
