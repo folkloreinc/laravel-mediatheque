@@ -13,22 +13,23 @@
 
 ## Steps
 
-1. **Require the new version:** `composer require folklore/laravel-mediatheque:^2.0`. The 1.x `config/mediatheque.php` keeps working: the package reads it in the 2.0 shape, with a deprecation notice, and makes each 1.x source a Laravel disk of the same name, unless you define one.
+1. **Require the new version:** `composer require folklore/laravel-mediatheque:^2.0`. The 1.x `config/mediatheque.php` keeps working: the package reads it in the 2.0 shape, with a deprecation notice, and makes each 1.x source a Laravel disk of the same name, unless you define one. If a disk you define, or Laravel's own `public`, doesn't store files where the source of the same name did, it logs a warning: define that disk as the source was (the default `public` source of 1.x in 2017 and 2018 was `public/files`, served at `/files`).
 2. **Check the database:** `php artisan mediatheque:upgrade --check`. It changes nothing, and runs before the migration as well as after it. It lists:
    - orphan rows (runs, metadata, attachments of deleted media, jobs of deleted runs, files that nothing attaches) that block the foreign keys: the upgrade removes them, and never deletes a stored file;
-   - the morph types of metadata and runs that are neither media nor files: if 1.x wrote your media as `App\Models\Media`, pass `--media-morph="App\Models\Media"` to every `mediatheque:upgrade` command (and `--file-morph` for files);
+   - 1.x sources that the disk of the same name doesn't store as they did;
+   - the morph types of metadata and runs that are neither media nor files: if 1.x wrote your media as `App\Models\Media`, pass `--media-morph="App\Models\Media"` to every `mediatheque:upgrade` command (and `--file-morph` for files). The conversion refuses to start while metadata has such a type, unless you pass `--accept-unknown-morphs`;
    - runs whose serialized definition can't be read, and 1.x jobs with no 2.0 operation (custom classes, `WebFonts`, `MediaConvert`): their runs keep them in their history;
    - handles that don't follow the 2.0 rule;
    - files attached to models other than media through `files_pivot`, and files attached to several media;
    - media whose type has no 2.0 renditions: 1.x made web fonts of `font` media, and 2.0 has no rendition for fonts. Their files are kept.
 3. **Publish and run the migration:** `php artisan mediatheque:install --upgrade`, then `php artisan migrate`. The migration adds columns; it renames no table and converts no data.
-4. **Drain the queue**, then **convert the data:** `php artisan mediatheque:upgrade`. It gives files their media and splits grouped handles into handle and index, backfills `uid`, copies metadata into JSON, converts runs to the new statuses and JSON definitions, removes orphan rows and adds the foreign keys. It converts in batches (`--batch=500`), one transaction each: run it again to resume, or to check that nothing is left. A run that hadn't ended is `canceled`.
+4. **Drain the queue**, then **convert the data:** `php artisan mediatheque:upgrade`. It gives files their media and splits grouped handles into handle and index, backfills `uid`, copies metadata into JSON, converts runs to the new statuses and JSON definitions, removes orphan rows and adds the foreign keys. It converts in batches (`--batch=500`), one transaction each: run it again to resume, or to check that nothing is left. A run that hadn't ended is `canceled`. The conversion overwrites a few 1.x columns that 2.0 reuses (`files.handle`, and a run's `definition`, `name`, `pipelinable_type` and `progress`): to go back to 1.x, restore your backup.
 5. **Update the config:** `php artisan mediatheque:upgrade --config` rewrites `config/mediatheque.php` with only the project's overrides, in the 2.0 shape, and keeps the 1.x file in `config/mediatheque.php.1x.bak`. It prints the disks to add to `config/filesystems.php` for the 1.x sources, and what it dropped. A source is a Laravel disk in 2.0: the URL prefix of a 1.x source (`sources.*.url`), a CDN for instance, becomes its disk's `url`.
 6. **Run the Rector rules:** `vendor/bin/rector process --config vendor/folklore/laravel-mediatheque/rector.php`.
 7. **Routes.** 2.0 has no upload routes ([decisions/0018](decisions/0018-ingest-only.md)). If the project used the package's upload routes, take files in its own routes, or Panneau 5's, and call `Mediatheque::ingest()`.
 8. **Run the project's tests**, upload a file of each type, and check pages that show media.
 9. **Fix the deprecations** at your own pace. They are logged on the `deprecations` channel.
-10. **Later:** `php artisan mediatheque:upgrade --cleanup` drops the unused EAV `metadatas` table once you have checked the converted data.
+10. **Later:** `php artisan mediatheque:upgrade --cleanup` drops the unused EAV `metadatas` table once you have checked the converted data. It refuses while the table holds metadata that no converted media or file has, and lists it.
 
 ## What changes
 
@@ -81,4 +82,4 @@ Custom operations run only on the `ffmpeg` driver.
 
 ### JSON
 
-The package's `MediaResource` uses `uid` as `id` and returns `files` as an object keyed by handle ([decisions/0010](decisions/0010-json-resource.md)). Front ends that expect the 1.x `laravel-folklore` shape use the `legacy` option until they move.
+The package's `MediaResource` uses `uid` as `id` and returns `files` as an object keyed by handle ([decisions/0010](decisions/0010-json-resource.md)). It has no 1.x shape: front ends that expect the 1.x `laravel-folklore` shape get it from `laravel-folklore`'s own resource.

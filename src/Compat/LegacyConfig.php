@@ -92,6 +92,7 @@ final class LegacyConfig
         $binaries = [];
         $newDisks = [];
         $notices = [];
+        $conflicts = [];
         $env = [];
 
         foreach ($config as $key => $value) {
@@ -102,11 +103,26 @@ final class LegacyConfig
             switch ($key) {
                 case 'sources':
                     foreach (is_array($value) ? $value : [] as $name => $source) {
-                        if (! is_string($name) || ! is_array($source) || isset($disks[$name])) {
+                        if (! is_string($name) || ! is_array($source)) {
                             continue;
                         }
 
                         $disk = self::disk($source, $disks);
+
+                        if (isset($disks[$name])) {
+                            // Laravel always defines `public`, which a 1.x source of the
+                            // same name may not be: its files would resolve elsewhere
+                            $existing = is_array($disks[$name]) ? $disks[$name] : [];
+                            if ($disk !== null && ! self::sameDisk($disk, $existing)) {
+                                $conflicts[] = sprintf(
+                                    'The 1.x source "%s" (%s) is not the disk "%s" of config/filesystems.php (%s): the files stored on the source would resolve to the disk, elsewhere. Define the disk "%s" as the source was.',
+                                    $name, self::describe($disk), $name, self::describe($existing), $name,
+                                );
+                            }
+
+                            continue;
+                        }
+
                         if ($disk === null) {
                             $notices[] = sprintf('The 1.x source "%s" can\'t be made a disk: define a disk "%s" in config/filesystems.php for the files stored on it.', $name, $name);
                         } else {
@@ -225,7 +241,7 @@ final class LegacyConfig
             $converted['jobs'] = $jobs;
         }
 
-        return new ConfigConversion($converted, $newDisks, array_values(array_unique($notices)), $env);
+        return new ConfigConversion($converted, $newDisks, array_values(array_unique([...$conflicts, ...$notices])), $env, $conflicts);
     }
 
     /**
@@ -397,6 +413,47 @@ final class LegacyConfig
         $disk['visibility'] = $visibility;
 
         return $disk;
+    }
+
+    /**
+     * Whether a disk made from a 1.x source stores and serves files where
+     * an existing disk does: the same driver, root and URL.
+     *
+     * @param  array<array-key, mixed>  $source
+     * @param  array<array-key, mixed>  $disk
+     */
+    private static function sameDisk(array $source, array $disk): bool
+    {
+        $string = fn (array $values, string $key): ?string => is_string($values[$key] ?? null) && $values[$key] !== '' ? rtrim($values[$key], '/') : null;
+
+        if ($string($source, 'driver') !== $string($disk, 'driver') || $string($source, 'root') !== $string($disk, 'root')) {
+            return false;
+        }
+
+        $url = $string($source, 'url');
+        $diskUrl = $string($disk, 'url');
+        if ($url === null || $url === $diskUrl) {
+            return true;
+        }
+
+        // A relative URL is the path of the disk's
+        return $diskUrl !== null && (str_starts_with($url, '/') || str_starts_with($diskUrl, '/'))
+            && rtrim((string) parse_url($url, PHP_URL_PATH), '/') === rtrim((string) parse_url($diskUrl, PHP_URL_PATH), '/');
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $disk
+     */
+    private static function describe(array $disk): string
+    {
+        $parts = [];
+        foreach (['driver', 'root', 'url'] as $key) {
+            if (is_string($disk[$key] ?? null) && $disk[$key] !== '') {
+                $parts[] = $key.' '.$disk[$key];
+            }
+        }
+
+        return $parts !== [] ? implode(', ', $parts) : 'no root';
     }
 
     private static function hasDefaultPipeline(string $name): bool

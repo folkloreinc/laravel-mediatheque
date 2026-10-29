@@ -115,16 +115,59 @@ final readonly class Inspector
         $t = $this->tables;
         $unknown = [];
 
-        if ($t->hasTable('metadatas')) {
-            $unknown['metadatas'] = $this->countBy(
-                $t->query('metadatas')->whereNotIn('morphable_type', [...$t->mediaTypes, ...$t->fileTypes]),
-                'morphable_type',
-            );
-        }
-
+        $unknown['metadatas'] = $this->unknownMetadataTypes();
         $unknown['pipelines'] = $this->countBy($t->query('pipelines')->whereNotIn('pipelinable_type', $t->mediaTypes), 'pipelinable_type');
 
         return array_filter($unknown);
+    }
+
+    /**
+     * The morph types of metadata that are neither the media's nor the
+     * files', with their number of rows: the upgrade can't copy that
+     * metadata, and gives media their uid without it.
+     *
+     * @return array<string, int>
+     */
+    public function unknownMetadataTypes(): array
+    {
+        $t = $this->tables;
+
+        if (! $t->hasTable('metadatas')) {
+            return [];
+        }
+
+        return $this->countBy($t->query('metadatas')->whereNotIn('morphable_type', [...$t->mediaTypes, ...$t->fileTypes]), 'morphable_type');
+    }
+
+    /**
+     * The rows of `metadatas` whose data is not copied to a converted media
+     * or file, by reason: dropping the table would lose them. Rows of
+     * deleted media and files are not counted: they belong to nothing.
+     *
+     * @return array<string, int>
+     */
+    public function uncopiedMetadata(): array
+    {
+        $t = $this->tables;
+
+        if (! $t->hasTable('metadatas')) {
+            return [];
+        }
+
+        $owned = fn (array $types, string $table, string $converted) => $t->query('metadatas', 'm')
+            ->whereIn('m.morphable_type', $types)
+            ->whereExists(fn (Builder $query) => $query
+                ->selectRaw('1')
+                ->from($t->table($table).' as owner')
+                ->whereColumn('owner.id', 'm.morphable_id')
+                ->whereNull('owner.'.$converted))
+            ->count();
+
+        return array_filter([
+            'of morph types that are neither media nor files' => array_sum($this->unknownMetadataTypes()),
+            'of media not converted yet' => $owned($t->mediaTypes, 'medias', 'uid'),
+            'of files without a media (attached to other models, or not converted yet)' => $t->hasColumn('files', 'media_id') ? $owned($t->fileTypes, 'files', 'media_id') : 0,
+        ]);
     }
 
     /**

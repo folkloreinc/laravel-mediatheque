@@ -28,6 +28,7 @@ use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\CachesConfiguration;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
+use Psr\Log\LoggerInterface;
 
 class ServiceProvider extends BaseServiceProvider
 {
@@ -99,6 +100,10 @@ class ServiceProvider extends BaseServiceProvider
             }
 
             Deprecation::trigger('config/mediatheque.php has the 1.x shape: rewrite it with `php artisan mediatheque:upgrade --config`.');
+
+            foreach ($conversion->conflicts as $conflict) {
+                $this->app->make(LoggerInterface::class)->warning('folklore/laravel-mediatheque: '.$conflict);
+            }
         }
 
         $config->set('mediatheque', ConfigMerger::merge(is_array($defaults) ? $defaults : [], $overrides));

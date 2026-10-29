@@ -106,4 +106,14 @@ class UpgradeConfigCommandTest extends TestCase
 
         $this->assertSame([], require $this->path);
     }
+
+    #[Test]
+    public function it_reports_a_1x_source_that_the_disk_of_the_same_name_doesnt_store(): void
+    {
+        $this->write1xConfig(['sources' => ['public' => ['driver' => 'local', 'path' => '/var/www/public/files', 'url' => '/files']]]);
+
+        $this->assertSame(0, Artisan::call('mediatheque:upgrade', ['--config' => true]));
+
+        $this->assertStringContainsString('The 1.x source "public"', Artisan::output());
+    }
 }
