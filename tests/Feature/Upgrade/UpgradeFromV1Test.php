@@ -342,4 +342,102 @@ class UpgradeFromV1Test extends TestCase
         $this->assertFalse(Schema::hasTable($this->table('metadatas')));
         $this->assertSame(1200, Media::query()->findOrFail(1)->metadata('width'));
     }
+
+    #[Test]
+    public function the_cleanup_refuses_while_the_metadatas_table_holds_metadata_that_was_not_copied(): void
+    {
+        $this->create1xDatabase();
+        $this->migrate();
+        // The file a page attaches has metadata, and no media to copy it to
+        $attachment = DB::table($this->table('files'))->where('path', 'media/attachment.pdf')->value('id');
+        DB::table($this->table('metadatas'))->insert(['morphable_type' => V1Database::FILE, 'morphable_id' => $attachment, 'name' => 'pages_count', 'type' => 'integer', 'value_integer' => 3]);
+        $this->upgrade();
+
+        $this->assertSame(1, Artisan::call('mediatheque:upgrade', ['--cleanup' => true, '--force' => true]));
+
+        $this->assertMatchesRegularExpression('/of files without a media.*[ .]1\s/', Artisan::output());
+        $this->assertTrue(Schema::hasTable($this->table('metadatas')));
+    }
+
+    #[Test]
+    public function the_upgrade_refuses_metadata_of_unknown_morph_types_unless_accepted(): void
+    {
+        $this->create1xDatabase();
+        $this->migrate();
+        DB::table($this->table('metadatas'))->insert(['morphable_type' => 'App\\Legacy\\Media', 'morphable_id' => 1, 'name' => 'width', 'type' => 'integer', 'value_integer' => 10]);
+
+        $this->assertSame(1, Artisan::call('mediatheque:upgrade', ['--force' => true]));
+        $this->assertStringContainsString('App\\Legacy\\Media (1 rows)', Artisan::output());
+        $this->assertSame(6, DB::table($this->table('medias'))->whereNull('uid')->count(), 'Nothing is converted.');
+
+        $this->assertSame(0, Artisan::call('mediatheque:upgrade', ['--force' => true, '--accept-unknown-morphs' => true]));
+        $this->assertSame(0, DB::table($this->table('medias'))->whereNull('uid')->count());
+
+        // Its metadata was not copied: the cleanup keeps it
+        $this->assertSame(1, Artisan::call('mediatheque:upgrade', ['--cleanup' => true, '--force' => true]));
+        $this->assertMatchesRegularExpression('/of morph types that are neither media nor files[ .]+1\s/', Artisan::output());
+    }
+
+    #[Test]
+    public function the_modes_run_one_at_a_time(): void
+    {
+        $this->create1xDatabase();
+        file_put_contents(config_path('mediatheque.php'), "<?php\n\nreturn ['sources' => []];\n");
+
+        try {
+            $this->assertSame(1, Artisan::call('mediatheque:upgrade', ['--check' => true, '--config' => true]));
+            $this->assertStringContainsString("--check and --config can't be combined", Artisan::output());
+            $this->assertFileDoesNotExist(config_path('mediatheque.php.1x.bak'));
+        } finally {
+            @unlink(config_path('mediatheque.php'));
+        }
+    }
+
+    #[Test]
+    public function the_check_reports_a_1x_source_that_the_disk_of_the_same_name_doesnt_store(): void
+    {
+        $this->create1xDatabase();
+        file_put_contents(config_path('mediatheque.php'), "<?php\n\nreturn ['sources' => ['public' => ['driver' => 'local', 'path' => '/var/www/public/files', 'url' => '/files']]];\n");
+
+        try {
+            $this->assertSame(0, Artisan::call('mediatheque:upgrade', ['--check' => true]));
+            $this->assertStringContainsString('The 1.x source "public"', Artisan::output());
+        } finally {
+            @unlink(config_path('mediatheque.php'));
+        }
+    }
+
+    #[Test]
+    public function a_run_on_another_model_takes_no_media_original(): void
+    {
+        $this->create1xDatabase();
+        // A run on a page whose id is a media's
+        DB::table($this->table('pipelines'))->insert(['id' => 50, 'name' => 'page', 'pipelinable_type' => Page::class, 'pipelinable_id' => 2, 'definition' => null, 'ended' => true, 'created_at' => '2018-08-01 10:00:00']);
+        $this->migrate();
+
+        $this->upgrade();
+
+        $run = DB::table($this->table('pipelines'))->where('id', 50)->first();
+        $this->assertNotNull($run);
+        $this->assertSame(Page::class, $run->pipelinable_type);
+        $this->assertSame('', $run->path_prefix);
+        $this->assertSame('public', $run->output_source, 'The default source, not the media\'s.');
+    }
+
+    #[Test]
+    public function a_zero_date_gets_a_uid_of_now(): void
+    {
+        if (DB::getDriverName() !== 'sqlite') {
+            $this->markTestSkipped('MySQL in strict mode and PostgreSQL refuse a zero date.');
+        }
+
+        $this->create1xDatabase();
+        DB::table($this->table('medias'))->where('id', 1)->update(['created_at' => '0000-00-00 00:00:00']);
+        $this->migrate();
+
+        $this->upgrade();
+
+        $uid = DB::table($this->table('medias'))->where('id', 1)->value('uid');
+        $this->assertTrue(is_string($uid) && Uid::isValid($uid, 'med'));
+    }
 }

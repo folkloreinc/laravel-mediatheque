@@ -14,12 +14,14 @@ final readonly class ConfigConversion
      * @param  array<string, array<array-key, mixed>>  $disks  Disks to define, by 1.x source name
      * @param  list<string>  $notices  What was dropped, and why
      * @param  array<string, string>  $env  The environment variables that keys of the config read, by key
+     * @param  list<string>  $conflicts  1.x sources that an existing disk of the same name doesn't store like they did: their files resolve elsewhere
      */
     public function __construct(
         public array $config,
         public array $disks,
         public array $notices,
         public array $env = [],
+        public array $conflicts = [],
     ) {}
 
     /**

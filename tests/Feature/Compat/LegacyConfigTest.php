@@ -62,7 +62,7 @@ class LegacyConfigTest extends TestCase
     #[Test]
     public function the_1x_defaults_are_no_overrides(): void
     {
-        $conversion = LegacyConfig::convert(self::v1Config(), ['public' => ['driver' => 'local', 'root' => storage_path('app/public')]]);
+        $conversion = LegacyConfig::convert(self::v1Config(), ['public' => ['driver' => 'local', 'root' => storage_path('app/public'), 'url' => 'http://localhost/storage']]);
 
         $this->assertSame(['table_prefix' => 'mediatheque_', 'source' => 'public'], $conversion->config);
         // The `cloud` source of the defaults becomes a disk; `public` is one already
@@ -142,5 +142,32 @@ class LegacyConfigTest extends TestCase
         $this->assertArrayNotHasKey('pipelines', $conversion->config);
         $this->assertStringContainsString('Font\\WebFonts', implode("\n", $conversion->notices));
         $this->assertNull($this->read($conversion->config)->type('font')->pipeline);
+    }
+
+    #[Test]
+    public function a_1x_source_that_the_disk_of_the_same_name_doesnt_store_is_a_conflict(): void
+    {
+        // The default `public` source of 1.x in 2017 and 2018
+        $config = self::v1Config();
+        Arr::set($config, 'sources.public', ['driver' => 'local', 'path' => public_path('files'), 'url' => '/files']);
+        $laravel = ['public' => ['driver' => 'local', 'root' => storage_path('app/public'), 'url' => 'http://localhost/storage', 'visibility' => 'public']];
+
+        $conversion = LegacyConfig::convert($config, $laravel);
+
+        $this->assertCount(1, $conversion->conflicts);
+        $this->assertStringContainsString('"public"', $conversion->conflicts[0]);
+        $this->assertStringContainsString(public_path('files'), $conversion->conflicts[0]);
+        $this->assertContains($conversion->conflicts[0], $conversion->notices);
+        $this->assertArrayNotHasKey('public', $conversion->disks, 'The application\'s disk is left as it is.');
+    }
+
+    #[Test]
+    public function a_1x_source_that_the_disk_of_the_same_name_stores_is_no_conflict(): void
+    {
+        $config = self::v1Config();
+        Arr::set($config, 'sources.public', ['driver' => 'local', 'path' => storage_path('app/public'), 'url' => '/storage']);
+        $laravel = ['public' => ['driver' => 'local', 'root' => storage_path('app/public').'/', 'url' => 'http://localhost/storage', 'visibility' => 'public']];
+
+        $this->assertSame([], LegacyConfig::convert($config, $laravel)->conflicts);
     }
 }

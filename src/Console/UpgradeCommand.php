@@ -35,12 +35,20 @@ class UpgradeCommand extends Command
                             {--batch=500 : The number of rows converted in each transaction}
                             {--media-morph=* : Another morph type that 1.x rows use for media}
                             {--file-morph=* : Another morph type that 1.x rows use for files}
+                            {--accept-unknown-morphs : Convert although metadata of morph types neither media nor files would not be copied}
                             {--force : Run without asking for confirmation}';
 
     protected $description = 'Convert the mediatheque 1.x data to 2.0';
 
     public function handle(MediathequeConfig $config, Filesystem $files): int
     {
+        $modes = array_keys(array_filter(['check' => $this->option('check'), 'config' => $this->option('config'), 'cleanup' => $this->option('cleanup')]));
+        if (count($modes) > 1) {
+            $this->components->error(sprintf('--%s can\'t be combined: run one at a time.', implode(' and --', $modes)));
+
+            return self::FAILURE;
+        }
+
         if ($this->option('config')) {
             return $this->rewriteConfig($files);
         }
@@ -48,7 +56,7 @@ class UpgradeCommand extends Command
         $tables = LegacyTables::make($this->strings('media-morph'), $this->strings('file-morph'));
 
         if ($this->option('check')) {
-            return $this->check($tables, $config);
+            return $this->check($tables, $config, $files);
         }
 
         $batch = filter_var($this->option('batch'), FILTER_VALIDATE_INT);
@@ -68,7 +76,14 @@ class UpgradeCommand extends Command
         }
 
         if ($this->option('cleanup')) {
-            return $this->cleanup($tables, $converter);
+            return $this->cleanup($tables, $converter, $config);
+        }
+
+        $unknown = (new Inspector($tables, $config))->unknownMetadataTypes();
+        if ($unknown !== [] && ! $this->option('accept-unknown-morphs')) {
+            $this->components->error('The metadata of these morph types is neither media\'s nor files\', and would not be copied: '.implode(', ', array_map(fn (string $type, int $count) => sprintf('%s (%d rows)', $type, $count), array_keys($unknown), $unknown)).'. Pass the types 1.x used for media or files with --media-morph or --file-morph, or --accept-unknown-morphs to convert without that metadata.');
+
+            return self::FAILURE;
         }
 
         if (! $this->confirmToProceed()) {
@@ -78,14 +93,20 @@ class UpgradeCommand extends Command
         return $this->convert($converter);
     }
 
-    private function check(LegacyTables $tables, MediathequeConfig $config): int
+    private function check(LegacyTables $tables, MediathequeConfig $config, Filesystem $files): int
     {
         $report = (new Inspector($tables, $config))->inspect();
 
         $this->components->info('Media are recognized by these morph types: '.implode(', ', $tables->mediaTypes).'; files by: '.implode(', ', $tables->fileTypes).'.');
 
+        $legacy = $this->legacyConfig($files);
+        $conflicts = $legacy !== null ? LegacyConfig::convert($legacy)->conflicts : [];
+        foreach ($conflicts as $conflict) {
+            $this->components->warn($conflict);
+        }
+
         if ($report->isClean()) {
-            $this->components->info('Nothing to remove, and nothing the upgrade can\'t convert.');
+            $this->components->info($conflicts === [] ? 'Nothing to remove, and nothing the upgrade can\'t convert.' : 'Nothing to remove in the database, and nothing the upgrade can\'t convert.');
 
             return self::SUCCESS;
         }
@@ -147,7 +168,7 @@ class UpgradeCommand extends Command
         return self::SUCCESS;
     }
 
-    private function cleanup(LegacyTables $tables, Converter $converter): int
+    private function cleanup(LegacyTables $tables, Converter $converter, MediathequeConfig $config): int
     {
         if (! $converter->isComplete()) {
             $this->components->error('Some rows are not converted yet: run `php artisan mediatheque:upgrade` first.');
@@ -159,6 +180,17 @@ class UpgradeCommand extends Command
             $this->components->info('The 1.x metadatas table is dropped already.');
 
             return self::SUCCESS;
+        }
+
+        $uncopied = (new Inspector($tables, $config))->uncopiedMetadata();
+        if ($uncopied !== []) {
+            $this->components->error(sprintf('%s holds metadata that no converted media or file has: dropping it would lose it.', $tables->table('metadatas')));
+            foreach ($uncopied as $reason => $count) {
+                $this->components->twoColumnDetail('Rows '.$reason, (string) $count);
+            }
+            $this->components->info('Convert their models first (--media-morph, --file-morph), or delete those rows yourself once you no longer need them.');
+
+            return self::FAILURE;
         }
 
         if (! $this->option('force') && ! $this->confirm(sprintf('Drop the table %s? Its data was copied to the metadata columns.', $tables->table('metadatas')))) {
@@ -216,6 +248,19 @@ class UpgradeCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The application's config file, when it has the 1.x shape.
+     *
+     * @return array<array-key, mixed>|null
+     */
+    private function legacyConfig(Filesystem $files): ?array
+    {
+        $path = $this->laravel->configPath('mediatheque.php');
+        $config = $files->exists($path) ? require $path : null;
+
+        return is_array($config) && LegacyConfig::isLegacy($config) ? $config : null;
     }
 
     /**
