@@ -97,17 +97,20 @@ class UpgradeConfigCommandTest extends TestCase
     #[Test]
     public function the_thumbnails_of_documents_are_kept(): void
     {
-        $this->write1xConfig(['pipelines' => ['document' => ['jobs' => ['thumbnails' => ['count' => 1, 'resolution' => 72]]]]]);
+        $this->write1xConfig(['pipelines' => ['document' => ['jobs' => ['thumbnails' => ['resolution' => 72, 'format' => 'gif']]]]]);
 
         $this->assertSame(0, Artisan::call('mediatheque:upgrade', ['--config' => true]));
 
         $config = require $this->path;
         $this->assertIsArray($config);
         $this->assertSame(
-            ['document' => ['renditions' => ['thumbnails' => ['op' => 'document.thumbnails', 'count' => 1, 'resolution' => 72, 'role' => 'thumbnail']]]],
+            ['document' => ['renditions' => ['thumbnails' => ['op' => 'document.thumbnails', 'count' => 'all', 'resolution' => 72, 'role' => 'thumbnail']]]],
             $config['pipelines'] ?? null,
+            'Every page, as 1.x.',
         );
-        $this->assertStringNotContainsString('document.thumbnails', Artisan::output());
+        $output = Artisan::output();
+        $this->assertStringNotContainsString('which the ffmpeg transcoder doesn\'t run', $output);
+        $this->assertStringContainsString('made gif images, which 2.0 doesn\'t render', $output);
     }
 
     #[Test]
@@ -132,7 +135,9 @@ class UpgradeConfigCommandTest extends TestCase
             'binaries' => ['ffmpeg' => '/usr/local/bin/ffmpeg', 'ffprobe' => '/usr/local/bin/ffprobe'],
             'jobs' => ['timeout' => 3600, 'tries' => 3],
         ], require $this->path);
-        $this->assertStringContainsString('AUDIOWAVEFORM_BIN', Artisan::output());
+        $output = Artisan::output();
+        $this->assertStringContainsString('AUDIOWAVEFORM_BIN', $output);
+        $this->assertStringContainsString('1.x rendered every page of documents; 2.0 renders the first', $output);
     }
 
     #[Test]

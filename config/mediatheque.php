@@ -189,14 +189,20 @@ return [
                 ],
             ],
         ],
-        // An image of every page, as 1.x made, rendered by Poppler's
-        // pdftoppm (`binaries.pdftoppm`). The document is ready once probed:
-        // its thumbnails follow
+        // An image of the first page of PDFs, rendered by Poppler
+        // (`binaries.pdftoppm`). 1.x rendered every page: `count` takes a
+        // number, or 'all'. The document is ready once probed: its thumbnail
+        // follows
         'document' => [
             'transcoder' => env('MEDIATHEQUE_TRANSCODER', 'ffmpeg'),
             'source' => null,
             'renditions' => [
-                'thumbnails' => ['op' => 'document.thumbnails', 'role' => 'thumbnail'],
+                'thumbnails' => [
+                    'op' => 'document.thumbnails',
+                    'count' => 1,
+                    'role' => 'thumbnail',
+                    'when' => ['mime' => ['application/pdf']],
+                ],
             ],
         ],
     ],
@@ -207,13 +213,14 @@ return [
     |--------------------------------------------------------------------------
     |
     | The tools the local prober and the ffmpeg transcoder run: a name found
-    | in the PATH, or an absolute path. `pdftoppm` (Poppler) renders the
-    | thumbnails of documents.
+    | in the PATH, or an absolute path. `pdfinfo` and `pdftoppm` (Poppler,
+    | optional) render the thumbnails of documents.
     |
     */
     'binaries' => [
         'ffmpeg' => env('MEDIATHEQUE_FFMPEG', 'ffmpeg'),
         'ffprobe' => env('MEDIATHEQUE_FFPROBE', 'ffprobe'),
+        'pdfinfo' => env('MEDIATHEQUE_PDFINFO', 'pdfinfo'),
         'pdftoppm' => env('MEDIATHEQUE_PDFTOPPM', 'pdftoppm'),
     ],
 

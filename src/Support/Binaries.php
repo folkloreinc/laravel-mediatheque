@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque\Support;
 
+use Folklore\Mediatheque\Exceptions\InvalidConfig;
 use RuntimeException;
 use Symfony\Component\Process\ExecutableFinder;
 
@@ -17,9 +18,10 @@ final class Binaries
     ) {}
 
     /**
-     * The path of a binary: `ffmpeg`, `ffprobe`.
+     * The path of a binary: `ffmpeg`, `ffprobe`, `pdfinfo`, `pdftoppm`.
      *
-     * @throws RuntimeException
+     * @throws RuntimeException when it is not installed
+     * @throws InvalidConfig when the config names none
      */
     public function path(string $name): string
     {
@@ -42,7 +44,7 @@ final class Binaries
             $this->path($name);
 
             return true;
-        } catch (RuntimeException) {
+        } catch (RuntimeException|InvalidConfig) {
             return false;
         }
     }

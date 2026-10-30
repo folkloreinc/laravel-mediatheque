@@ -15,7 +15,7 @@ final readonly class Report
      * @param  array<string, int>  $invalidHandles  Handles that break the 2.0 rule once split, with their number of files
      * @param  array<string, int>  $filesOnOtherModels  Files attached to models other than media, by morph type: left as they are
      * @param  int  $filesOfSeveralMedia  Files attached to more than one media: each goes to the first
-     * @param  array<string, array{count: int, reason: string}>  $typesWithoutRenditions  Types of media with no 2.0 renditions
+     * @param  array<string, array{count: int, reason: string}>  $typesWithoutRenditions  Types of media with no 2.0 renditions, or fewer than in 1.x
      * @param  int  $filesWithoutSource  Files whose 1.x row has no source: they get the default source
      * @param  string  $defaultSource  The default source, which 1.x stored those files on
      */

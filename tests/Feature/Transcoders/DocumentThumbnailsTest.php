@@ -101,7 +101,7 @@ class DocumentThumbnailsTest extends DatabaseTestCase
     }
 
     #[Test]
-    public function a_document_gets_an_image_of_every_page(): void
+    public function a_document_gets_an_image_of_its_first_page(): void
     {
         $this->requiresBinary('pdftoppm');
 
@@ -112,17 +112,68 @@ class DocumentThumbnailsTest extends DatabaseTestCase
         $this->assertSame(PipelineStatus::Completed, $run->status());
 
         $first = $media->file('thumbnails', 0);
+        $this->assertNotNull($first);
+        $this->assertNull($media->file('thumbnails', 1));
+        $this->assertSame(['image/jpeg', 'thumbnail'], [$first->mime(), $first->role()]);
+        $this->assertSame($first->url(), $media->thumbnail()?->url(), 'The first page is the media\'s thumbnail.');
+
+        // A letter page at 150 dpi
+        $this->assertSame([1275, 1650], self::dimensions(Storage::disk('public')->path((string) $first->path())));
+    }
+
+    #[Test]
+    public function every_page_as_1x_with_count_all(): void
+    {
+        $this->requiresBinary('pdftoppm');
+        config(['mediatheque.pipelines.document.renditions.thumbnails.count' => 'all']);
+
+        $media = $this->ingest('media/document.pdf', 'media-kit.pdf');
+
+        $first = $media->file('thumbnails', 0);
         $second = $media->file('thumbnails', 1);
         $this->assertNotNull($first);
         $this->assertNotNull($second);
         $this->assertNull($media->file('thumbnails', 2));
-        $this->assertSame(['image/jpeg', 'thumbnail'], [$first->mime(), $first->role()]);
-        $this->assertSame($first->url(), $media->thumbnail()?->url(), 'The first page is the media\'s thumbnail.');
 
-        // A letter page at 150 dpi, upright, then the landscape page
+        // Upright, then the landscape page
         $disk = Storage::disk('public');
         $this->assertSame([1275, 1650], self::dimensions($disk->path((string) $first->path())));
         $this->assertSame([1650, 1275], self::dimensions($disk->path((string) $second->path())));
+    }
+
+    #[Test]
+    public function a_document_type_that_accepts_other_files_renders_pdfs_only(): void
+    {
+        // As 1.x's document type, which accepted text/plain
+        config(['mediatheque.types.document.mimes' => ['application/pdf', 'text/plain']]);
+
+        $media = $this->ingest('media/document.pdf', 'media-kit.pdf');
+        $this->assertSame('document', $media->type());
+
+        $path = (string) tempnam(sys_get_temp_dir(), 'upload');
+        file_put_contents($path, "Notes\n");
+        $text = Mediatheque::ingest(new UploadedFile($path, 'notes.txt', null, null, true));
+        $this->assertInstanceOf(Media::class, $text);
+
+        $this->assertSame(['document', MediaStatus::Ready], [$text->type(), $text->fresh()?->status()]);
+        $this->assertSame(1, PipelineRun::query()->where('name', 'document')->count(), 'The text runs nothing.');
+    }
+
+    #[Test]
+    public function a_page_is_fitted_in_the_maximum_size(): void
+    {
+        $this->requiresBinary('pdftoppm');
+
+        [$portrait, $landscape] = $this->render(self::fixturePath('media/document.pdf'), ['count' => 'all', 'resolution' => 300]);
+        [$small] = $this->render(self::fixturePath('media/document.pdf'), ['count' => 1, 'max_width' => 300, 'max_height' => 300]);
+
+        // 2550 by 3300 at 300 dpi, within 1920 by 1920 by default
+        [$width, $height] = self::dimensions($portrait->path);
+        $this->assertTrue($height <= 1920 && $height >= 1915 && $width < $height, sprintf('%d by %d', $width, $height));
+        [$width, $height] = self::dimensions($landscape->path);
+        $this->assertTrue($width <= 1920 && $width >= 1915 && $height < $width, sprintf('%d by %d', $width, $height));
+        [$width, $height] = self::dimensions($small->path);
+        $this->assertTrue($height <= 300 && $height >= 295, sprintf('%d by %d', $width, $height));
     }
 
     #[Test]
@@ -155,6 +206,7 @@ class DocumentThumbnailsTest extends DatabaseTestCase
         $this->requiresBinary('pdftoppm');
 
         $outputs = $this->render(self::fixturePath('media/document.pdf'), ['count' => 5, 'resolution' => 36, 'quality' => 80]);
+        $this->assertSame([0, 1], array_map(fn (LocalOutput $output) => $output->index, $this->render(self::fixturePath('media/document.pdf'), ['resolution' => 36])), 'Every page by default, as Eclair.');
 
         $this->assertSame([0, 1], array_map(fn (LocalOutput $output) => $output->index, $outputs));
         $this->assertSame([[306, 396], [396, 306]], array_map(fn (LocalOutput $output) => self::dimensions($output->path), $outputs));
@@ -194,7 +246,20 @@ class DocumentThumbnailsTest extends DatabaseTestCase
         $this->assertSame(MediaStatus::Ready, $media->status());
         $run = PipelineRun::query()->where('name', 'document')->firstOrFail();
         $this->assertSame(PipelineStatus::Failed, $run->status());
-        $this->assertStringContainsString('mediatheque.binaries.pdftoppm', (string) $run->job('thumbnails')?->error()?->message);
+        $this->assertMatchesRegularExpression('/mediatheque\.binaries\.pdf(info|toppm)\) is not installed: install poppler-utils/', (string) $run->job('thumbnails')?->error()?->message);
         $this->assertNull($media->file('thumbnails', 0));
+    }
+
+    #[Test]
+    public function an_empty_binary_is_not_installed(): void
+    {
+        config(['mediatheque.binaries.pdfinfo' => '']);
+
+        try {
+            $this->render(self::fixturePath('media/document.pdf'));
+            $this->fail('The operation did not fail.');
+        } catch (OperationFailed $exception) {
+            $this->assertStringContainsString('mediatheque.binaries.pdfinfo', $exception->getMessage());
+        }
     }
 }

@@ -117,7 +117,7 @@ class UpgradeFromV1Test extends TestCase
         $this->assertMatchesRegularExpression('/'.preg_quote(Page::class, '/').' \.+ 1 rows/', $output);
         $this->assertStringContainsString('font (1 media)', $output);
         $this->assertStringContainsString('WebFonts', $output);
-        $this->assertStringNotContainsString('document (1 media)', $output, 'Documents get their thumbnails again.');
+        $this->assertMatchesRegularExpression('/document \\(1 media\\) .*1\\.x rendered every page of documents; 2\\.0 renders the first/', $output);
         $this->assertStringContainsString('Files without a source, which 1.x stored on its default source: they get "public"', $output);
 
         // Read-only

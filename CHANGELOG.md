@@ -8,7 +8,7 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ### Added
 
-- Document thumbnails, as 1.x made them: the `ffmpeg` driver runs `document.thumbnails` (Eclair's operation), an image of every page of a PDF, or the first `count`, at `resolution` dpi (150), in `jpeg` or `png`, rendered by Poppler's `pdftoppm` (`binaries.pdftoppm`, `MEDIATHEQUE_PDFTOPPM`), and a default `document` pipeline runs it. Poppler is optional: without it the rendition fails with a message and the document is ready. `mediatheque:upgrade --config` keeps a 1.x document pipeline, and `--check` no longer lists documents as having no renditions ([decisions/0025](docs/decisions/0025-document-thumbnails-with-poppler.md), #147).
+- Document thumbnails: the `ffmpeg` driver runs `document.thumbnails` (Eclair's operation), images of the pages of a PDF, every page or the first `count` (a number, or `'all'`), at `resolution` dpi (150) within `max_width` and `max_height` (1920), in `jpeg` or `png`, rendered by Poppler (`binaries.pdfinfo` and `binaries.pdftoppm`, `MEDIATHEQUE_PDFINFO` and `MEDIATHEQUE_PDFTOPPM`). A default `document` pipeline renders the **first page** of PDFs; 1.x rendered every page: set `count` to `'all'` to keep that. Poppler is optional: without it the rendition fails, before its input is copied, with a message, and the document is ready. `mediatheque:upgrade --config` keeps a 1.x document pipeline that isn't the 1.x default, with every page, and `--config` and `--check` say that the default now renders the first page ([decisions/0025](docs/decisions/0025-document-thumbnails-with-poppler.md), #147).
 
 ### Fixed
 

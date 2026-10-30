@@ -45,6 +45,11 @@ final class LegacyConfig
     private const array GENERIC_MIMES = ['application/octet-stream', 'inode/x-empty'];
 
     /**
+     * What a 1.x document pipeline left to the 2.0 default changes.
+     */
+    public const string DOCUMENT_PAGES = '1.x rendered every page of documents; 2.0 renders the first. To keep 1.x\'s behaviour, set `pipelines.document.renditions.thumbnails.count` to \'all\', or a number of pages.';
+
+    /**
      * Whether a config has the 1.x shape.
      *
      * @param  array<array-key, mixed>  $config
@@ -152,6 +157,9 @@ final class LegacyConfig
 
                 case 'pipelines':
                     foreach (is_array($value) ? $value : [] as $name => $pipeline) {
+                        if ($name === 'document' && $pipeline == Arr::get($defaults, 'pipelines.document')) {
+                            $notices[] = self::DOCUMENT_PAGES;
+                        }
                         if (! is_string($name) || $pipeline == Arr::get($defaults, 'pipelines.'.$name)) {
                             continue;
                         }
@@ -361,6 +369,10 @@ final class LegacyConfig
 
             if ($rendition === null) {
                 $notices[] = sprintf('The job "%s" of the pipeline "%s" (%s) has no 2.0 operation: write a custom operation of the ffmpeg transcoder (docs/upgrade.md).', $job, $name, LegacyJobs::jobClass($options) ?? 'no class');
+            } elseif ($rendition['op'] === 'document.thumbnails' && isset($rendition['format']) && $rendition['format'] !== 'png') {
+                $notices[] = sprintf('The job "%s" of the pipeline "%s" made %s images, which 2.0 doesn\'t render: its pages are JPEG images.', $job, $name, is_string($rendition['format']) ? $rendition['format'] : '');
+                unset($rendition['format']);
+                $renditions[$job] = $rendition;
             } elseif (! LegacyJobs::runsOnFfmpeg($rendition)) {
                 $notices[] = sprintf('The job "%s" of the pipeline "%s" becomes the operation "%s", which the ffmpeg transcoder doesn\'t run: it is left out.', $job, $name, is_string($rendition['op']) ? $rendition['op'] : '');
             } else {

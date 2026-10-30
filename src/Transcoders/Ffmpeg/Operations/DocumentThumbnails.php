@@ -5,6 +5,7 @@ namespace Folklore\Mediatheque\Transcoders\Ffmpeg\Operations;
 use Folklore\Mediatheque\Enums\TranscoderErrorCode;
 use Folklore\Mediatheque\Pipelines\Rendition;
 use Folklore\Mediatheque\Support\Binaries;
+use Folklore\Mediatheque\Transcoders\Ffmpeg\ChecksRequirements;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\Ffmpeg;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\LocalOutput;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\Operation;
@@ -15,18 +16,20 @@ use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
 
 /**
- * `document.thumbnails`: one image per page of a PDF, as a group with
- * indexes from 0, rendered by Poppler's `pdftoppm` (`binaries.pdftoppm`),
- * never by ImageMagick and Ghostscript (docs/decisions/0025). As Eclair's
- * operation and 1.x's `Thumbnails` job: every page by default, or the first
- * `count`, at `resolution` dots per inch (150), in `format` `jpeg` (the
- * default) or `png`, at `quality` (100), on white. 1000 pages at most.
+ * `document.thumbnails`: images of the pages of a PDF, as a group with
+ * indexes from 0, rendered by Poppler (`binaries.pdfinfo` and
+ * `binaries.pdftoppm`), never by ImageMagick and Ghostscript
+ * (docs/decisions/0025). As Eclair's operation: every page, or the first
+ * `count` (a number, or `all`), at `resolution` dots per inch (150), lowered
+ * so a page fits in `max_width` and `max_height` (1920 by default), in
+ * `format` `jpeg` (the default) or `png`, at `quality` (100), on white.
+ * 1000 pages at most. The default `document` pipeline renders the first.
  *
  * Poppler is optional: a document is ready without its thumbnails, so a
- * server without pdftoppm fails the rendition, which a run can produce once
- * it is installed, instead of retrying it.
+ * server without it fails the rendition, before its input is copied, and a
+ * run produces it once Poppler is installed.
  */
-class DocumentThumbnails implements Operation
+class DocumentThumbnails implements ChecksRequirements, Operation
 {
     /**
      * The most pages one rendition renders, as Eclair's operation.
@@ -44,76 +47,125 @@ class DocumentThumbnails implements Operation
         return self::format($rendition->name, $rendition->options['format'] ?? null)[0];
     }
 
+    public function checkRequirements(Rendition $rendition): void
+    {
+        self::format($rendition->name, $rendition->options['format'] ?? null);
+
+        foreach (['pdfinfo', 'pdftoppm'] as $binary) {
+            if (! $this->binaries->has($binary)) {
+                throw OperationFailed::because(TranscoderErrorCode::OperationFailed, sprintf('Poppler\'s %s (mediatheque.binaries.%s) is not installed: install poppler-utils, then run the document pipeline again.', $binary, $binary));
+            }
+        }
+    }
+
     public function run(OperationContext $context): array
     {
+        $this->checkRequirements($context->rendition);
         [$extension, $mime] = self::format($context->rendition->name, $context->option('format'));
+        $resolution = min(600, (int) Ffmpeg::intOption($context, 'resolution', 150));
+        $quality = min(100, (int) Ffmpeg::intOption($context, 'quality', 100));
+        $maxWidth = Ffmpeg::intOption($context, 'max_width', 1920);
+        $maxHeight = Ffmpeg::intOption($context, 'max_height', 1920);
 
-        if (! $this->binaries->has('pdftoppm')) {
-            throw OperationFailed::because(TranscoderErrorCode::OperationFailed, 'Poppler\'s pdftoppm (mediatheque.binaries.pdftoppm) is not installed: install poppler-utils, then run the document pipeline again.');
-        }
-
-        $count = min(self::MAX_PAGES, (int) (Ffmpeg::intOption($context, 'count', null) ?? self::MAX_PAGES));
-        $resolution = (int) Ffmpeg::intOption($context, 'resolution', 150);
-        $quality = (int) Ffmpeg::intOption($context, 'quality', 100);
-        $prefix = $context->outputDirectory.'/page';
-
-        $process = new Process([
-            $this->binaries->path('pdftoppm'),
-            '-progress',
-            '-r', (string) min($resolution, 600),
-            '-f', '1',
-            '-l', (string) $count,
-            ...($extension === 'jpg' ? ['-jpeg', '-jpegopt', 'quality='.min($quality, 100)] : ['-png']),
-            $context->input,
-            $prefix,
-        ]);
-        $process->setTimeout($context->timeout);
-
-        try {
-            $process->run(function (string $type, string $output) use ($context, $count) {
-                // `-progress` writes "page last-page file" for each page
-                if ($type === Process::ERR && preg_match_all('/^(\d+) (\d+) /m', $output, $matches) > 0) {
-                    ($context->progress)(min(0.99, (int) end($matches[1]) / max(1, min($count, (int) end($matches[2])))));
-                }
-            });
-        } catch (ProcessTimedOutException) {
-            throw OperationFailed::because(TranscoderErrorCode::Timeout, sprintf('pdftoppm took longer than %d seconds.', $context->timeout));
-        }
-
-        if (! $process->isSuccessful()) {
-            throw OperationFailed::because(TranscoderErrorCode::InputUnreadable, 'pdftoppm can\'t read the file as a PDF: '.Str::limit(trim(preg_replace('/^\d+ \d+ .*$/m', '', $process->getErrorOutput()) ?? ''), 1000));
-        }
-
-        $pages = self::pages($prefix, $extension);
+        $pages = $this->pages($context, self::count($context));
         if ($pages === []) {
             throw OperationFailed::because(TranscoderErrorCode::UnsupportedInput, 'The document has no page to render.');
         }
 
         $outputs = [];
-        foreach (array_values($pages) as $index => $path) {
-            $outputs[] = new LocalOutput($path, $mime, $index);
+        foreach ($pages as $index => [$number, $width, $height]) {
+            $prefix = sprintf('%s/page-%d', $context->outputDirectory, $index);
+            $this->poppler(['pdftoppm', '-r', sprintf('%.3F', self::fit($resolution, $width, $height, $maxWidth, $maxHeight)), '-f', (string) $number, '-l', (string) $number, '-singlefile', ...($extension === 'jpg' ? ['-jpeg', '-jpegopt', 'quality='.$quality] : ['-png']), $context->input, $prefix], $context);
+
+            $output = $prefix.'.'.$extension;
+            $size = is_file($output) ? getimagesize($output) : false;
+            if ($size === false || $size[0] <= 1 || $size[1] <= 1) {
+                // pdftoppm writes a pixel for a page it can't allocate
+                throw OperationFailed::because(TranscoderErrorCode::LimitExceeded, sprintf('Page %d can\'t be rendered: it is too large.', $number));
+            }
+
+            $outputs[] = new LocalOutput($output, $mime, $index);
+            ($context->progress)(min(0.99, ($index + 1) / count($pages)));
         }
 
         return $outputs;
     }
 
     /**
-     * The pages pdftoppm wrote, by page number: `page-1.jpg`, or
-     * `page-01.jpg` when the document has ten pages or more.
+     * The pages to render, in order: their number, from 1, and their size
+     * in points as shown, the rotation applied. From pdfinfo.
      *
-     * @return array<int, string>
+     * @return list<array{int, float, float}>
      */
-    private static function pages(string $prefix, string $extension): array
+    private function pages(OperationContext $context, int $count): array
     {
+        $output = $this->poppler(['pdfinfo', '-f', '1', '-l', (string) $count, $context->input], $context);
+
+        $total = preg_match('/^Pages:\s+(\d+)/m', $output, $matches) === 1 ? (int) $matches[1] : 0;
+        $rotated = [];
+        preg_match_all('/^Page\s+(\d+) rot:\s+(\d+)/m', $output, $rotations, PREG_SET_ORDER);
+        foreach ($rotations as [, $number, $degrees]) {
+            $rotated[(int) $number] = ((int) $degrees / 90) % 2 === 1;
+        }
+
         $pages = [];
-        foreach (glob($prefix.'-*.'.$extension) ?: [] as $path) {
-            if (preg_match('/-(\d+)\.'.$extension.'$/', $path, $matches) === 1) {
-                $pages[(int) $matches[1]] = $path;
+        preg_match_all('/^Page\s+(\d+) size:\s+([0-9.]+) x ([0-9.]+) pts/m', $output, $sizes, PREG_SET_ORDER);
+        foreach ($sizes as [, $number, $width, $height]) {
+            if ((int) $number <= min($count, $total)) {
+                $pages[] = ($rotated[(int) $number] ?? false) ? [(int) $number, (float) $height, (float) $width] : [(int) $number, (float) $width, (float) $height];
             }
         }
-        ksort($pages);
 
         return $pages;
+    }
+
+    /**
+     * Run a Poppler binary, and return what it writes.
+     *
+     * @param  non-empty-list<string>  $command  The binary's name, then its arguments
+     */
+    private function poppler(array $command, OperationContext $context): string
+    {
+        $command[0] = $this->binaries->path($command[0]);
+        $process = new Process($command);
+        $process->setTimeout($context->timeout);
+
+        try {
+            $process->run();
+        } catch (ProcessTimedOutException) {
+            throw OperationFailed::because(TranscoderErrorCode::Timeout, sprintf('%s took longer than %d seconds.', basename($command[0]), $context->timeout));
+        }
+
+        if (! $process->isSuccessful()) {
+            throw OperationFailed::because(TranscoderErrorCode::InputUnreadable, 'Poppler can\'t read the file as a PDF: '.Str::limit(trim($process->getErrorOutput()), 1000));
+        }
+
+        return $process->getOutput();
+    }
+
+    /**
+     * The number of pages to render: `count`, a positive number or `all`.
+     */
+    private static function count(OperationContext $context): int
+    {
+        $count = $context->option('count', 'all');
+
+        return $count === 'all' ? self::MAX_PAGES : min(self::MAX_PAGES, (int) Ffmpeg::intOption($context, 'count', null));
+    }
+
+    /**
+     * The resolution that renders a page of this size, in points, within
+     * the maximum size, in pixels.
+     */
+    private static function fit(int $resolution, float $width, float $height, ?int $maxWidth, ?int $maxHeight): float
+    {
+        $scale = min(
+            1.0,
+            $maxWidth !== null && $width > 0 ? $maxWidth / ($width / 72 * $resolution) : 1.0,
+            $maxHeight !== null && $height > 0 ? $maxHeight / ($height / 72 * $resolution) : 1.0,
+        );
+
+        return max(1.0, floor($resolution * $scale * 1000) / 1000);
     }
 
     /**

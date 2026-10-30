@@ -11,6 +11,7 @@
 - Back up the database and know where the media files are stored.
 - If the project uses `laravel-folklore`, check which of its versions supports mediatheque 2.0.
 - The servers that run the queue have ffmpeg, and Poppler (`poppler-utils`) for the thumbnails of documents, which 1.x made with ImageMagick ([decisions/0025](decisions/0025-document-thumbnails-with-poppler.md)). Without Poppler, documents are ready without thumbnails, and their run fails with a message.
+- **Documents get a thumbnail of their first page.** 1.x rendered every page; 2.0 renders the first. To keep 1.x's behaviour, set `count` to `'all'`, or a number of pages, in the `document` pipeline's `thumbnails`: `--config` and `--check` say so, and a 1.x document pipeline that isn't the 1.x default keeps every page.
 
 ## Steps
 

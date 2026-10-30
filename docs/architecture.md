@@ -271,8 +271,8 @@ Renditions are declared in the config, or in PHP for applications that prefer cl
     ],
     'document' => [
         'renditions' => [
-            // An image of every page, with Poppler (decisions/0025)
-            'thumbnails' => ['op' => 'document.thumbnails', 'role' => 'thumbnail'],
+            // An image of the first page of PDFs, with Poppler (decisions/0025)
+            'thumbnails' => ['op' => 'document.thumbnails', 'count' => 1, 'role' => 'thumbnail', 'when' => ['mime' => ['application/pdf']]],
         ],
     ],
 ],
@@ -377,7 +377,7 @@ With a 98-second video, `h264` at 50 % and the poster done, a run of `h264`, `po
 
 | Driver | Runs | Completion | Package |
 |---|---|---|---|
-| `ffmpeg` | ffmpeg, ffprobe, Imagick, Poppler and fonttools in the application's queue. Since 2.0.0-alpha.1: `video.transcode` (`h264`, `vp9`), `video.poster`, `video.thumbnails`, `audio.transcode` (`mp3`, `aac`), `audio.waveform`; `image.convert` (`jpeg`, `webp`, `png`, with Imagick) since #132; `document.thumbnails` (`jpeg`, `png`, with Poppler's `pdftoppm`, [decisions/0025](decisions/0025-document-thumbnails-with-poppler.md)) since #147 | Each rendition is a queued job; dependent renditions are dispatched when their input completes | This package |
+| `ffmpeg` | ffmpeg, ffprobe, Imagick, Poppler and fonttools in the application's queue. Since 2.0.0-alpha.1: `video.transcode` (`h264`, `vp9`), `video.poster`, `video.thumbnails`, `audio.transcode` (`mp3`, `aac`), `audio.waveform`; `image.convert` (`jpeg`, `webp`, `png`, with Imagick) since #132; `document.thumbnails` (`jpeg`, `png`, with Poppler's `pdfinfo` and `pdftoppm`, [decisions/0025](decisions/0025-document-thumbnails-with-poppler.md)) since #147 | Each rendition is a queued job; dependent renditions are dispatched when their input completes | This package |
 | `eclair` | The whole run as one Eclair job (task graph, `when` conditions, outputs written to the application's storage) | Signed webhooks, deduplicated | [`laravel-eclair`](https://github.com/urbania-media/eclair/issues/13) |
 | `mediaconvert` | AWS Elemental MediaConvert jobs for video renditions | EventBridge notifications through a webhook, or a scheduled poller. Never `sleep()` in a worker | This package, with `aws/aws-sdk-php` (suggested) |
 | `cloudflare-stream` (2.x) | Upload to Cloudflare Stream; remote renditions | Webhook | Later, if a project needs it |
