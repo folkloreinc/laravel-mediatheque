@@ -63,6 +63,39 @@ class Ffmpeg
     }
 
     /**
+     * The JSON of `ffprobe -show_format -show_streams` on a local file.
+     *
+     * @return array<array-key, mixed>
+     *
+     * @throws OperationFailed
+     */
+    public function probe(string $path, OperationContext $context): array
+    {
+        $process = new Process([
+            $this->binaries->path('ffprobe'),
+            '-v', 'error',
+            '-print_format', 'json',
+            '-show_format',
+            '-show_streams',
+            $path,
+        ]);
+        $process->setTimeout($context->timeout);
+
+        try {
+            $process->run();
+        } catch (ProcessTimedOutException) {
+            throw OperationFailed::because(TranscoderErrorCode::Timeout, sprintf('ffprobe took longer than %d seconds.', $context->timeout));
+        }
+
+        $probe = $process->isSuccessful() ? json_decode($process->getOutput(), true) : null;
+        if (! is_array($probe)) {
+            throw OperationFailed::because(TranscoderErrorCode::InputUnreadable, 'ffprobe can\'t read the file: '.Str::limit(trim($process->getErrorOutput()), 500));
+        }
+
+        return $probe;
+    }
+
+    /**
      * A `scale` filter that fits the frame in the maximum size, keeps its
      * aspect ratio and even dimensions, and never upscales.
      */

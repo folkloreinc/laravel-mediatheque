@@ -193,8 +193,10 @@ class RunRendition implements ShouldQueue
     {
         $disk = $filesystems->disk($run->outputSource());
         $files = [];
+        $reported = [];
 
         foreach ($outputs as $output) {
+            $reported = [...$reported, ...$output->metadata];
             $index = count($outputs) > 1 || $output->index !== null ? $output->index : null;
             $path = $paths->runFile($run, $rendition->name, $index, $extension);
             $stream = fopen($output->path, 'rb') ?: throw new RuntimeException(sprintf('Can\'t read the output "%s".', $output->path));
@@ -224,6 +226,6 @@ class RunRendition implements ShouldQueue
             );
         }
 
-        return $rendition->keep ? new Outputs($files) : Outputs::none();
+        return $rendition->keep ? new Outputs($files, $reported) : Outputs::none();
     }
 }

@@ -6,6 +6,14 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Added
+
+- `video.transcode` on the `ffmpeg` driver takes Eclair's `passthrough` and `max_bitrate`. With `passthrough: true`, an H.264 video that already fits the rendition (8-bit 4:2:0, Constrained Baseline, Main or High up to level 4.2, upright, within `max_width`, `max_height` and the maximum bitrate) is copied into the MP4 instead of encoded, with its audio when it is AAC in mono or stereo; the file's metadata says whether its `video` and `audio` were `copied` or `encoded`. `max_bitrate` is in kbit/s ([decisions/0026](docs/decisions/0026-h264-for-the-web-and-passthrough.md), #152).
+
+### Changed
+
+- H.264 from the `ffmpeg` driver has a keyframe every 4 seconds at most, for seeking, and a maximum bitrate from the output's size: 3000 kbit/s for 720p, 6000 for 1080p, half again above 30 fps ([decisions/0026](docs/decisions/0026-h264-for-the-web-and-passthrough.md), #152).
+
 ## [2.0.0-alpha.13] - 2026-10-30
 
 Document thumbnails, with Poppler on the `ffmpeg` driver (#147): the default `document` pipeline renders the first page of PDFs, where 1.x rendered every page (set `count` to `'all'` to keep that). `mediatheque:upgrade --config` keeps the `env()` calls of a 1.x config instead of this machine's values.
