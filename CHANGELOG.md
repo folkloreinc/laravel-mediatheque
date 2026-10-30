@@ -8,7 +8,7 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ### Fixed
 
-- `mediatheque:upgrade --config` reads the 1.x file as it is written, not as this machine's environment makes it: a key whose 1.x value is an `env()` call keeps that call, with the default the 1.x file gave it (`env('FFMPEG_BIN', '/usr/local/bin/ffmpeg')`), instead of the value of the local `.env`. The binaries and job settings that 1.x read from the environment keep reading it, and the output lists the variables the rewritten file no longer reads (#147).
+- `mediatheque:upgrade --config` reads the 1.x file as it is written, not as this machine's environment makes it: a key whose 1.x value is an `env()` call keeps that call, with the default the 1.x file gave it (`env('FFMPEG_BIN', '/usr/local/bin/ffmpeg')`), instead of the value of the local `.env`. The binaries and job settings that 1.x read from the environment keep reading it, and the output lists the variables the rewritten file no longer reads, and the lines whose other code reads this machine (#147).
 
 ## [2.0.0-alpha.12] - 2026-10-29
 

@@ -26,14 +26,22 @@ final class LegacyConfigFile
     private static array $read = [];
 
     /**
+     * Calls whose value doesn't depend on the machine, or that the
+     * rewritten file writes as calls (ConfigConversion).
+     */
+    private const array PURE = ['env', 'storage_path', 'base_path', 'array', 'isset', 'empty', 'list'];
+
+    /**
      * @param  array<array-key, mixed>  $config  The file's array, with the default of each env() call
      * @param  array<string, string>  $env  The environment variable of each key whose value is an env() call, by dot path
      * @param  list<string>  $variables  Every environment variable the file reads
+     * @param  array<int, string>  $code  Other code whose value is this machine's, by line: `config()`, `getenv()`, a `require`…
      */
     private function __construct(
         public readonly array $config,
         public readonly array $env,
         public readonly array $variables,
+        public readonly array $code,
     ) {}
 
     /**
@@ -64,7 +72,7 @@ final class LegacyConfigFile
             throw new RuntimeException($path.' doesn\'t return an array.');
         }
 
-        return new self($config, self::envKeys($tokens), array_values(array_unique(self::$read)));
+        return new self($config, self::envKeys($tokens), array_values(array_unique(self::$read)), self::code($tokens));
     }
 
     /**
@@ -100,6 +108,43 @@ final class LegacyConfigFile
         }
 
         return $code;
+    }
+
+    /**
+     * The code that reads this machine rather than the file: calls of
+     * functions and static methods other than `env()` and the path helpers
+     * the rewritten file writes as calls, `require` and `include`, and the
+     * `$_ENV` and `$_SERVER` arrays. By line, what it is.
+     *
+     * @param  list<PhpToken>  $tokens
+     * @return array<int, string>
+     */
+    private static function code(array $tokens): array
+    {
+        $tokens = array_values(array_filter($tokens, fn (PhpToken $token) => ! $token->isIgnorable()));
+        $found = [];
+
+        foreach ($tokens as $index => $token) {
+            $previous = $tokens[$index - 1] ?? null;
+            $next = $tokens[$index + 1] ?? null;
+
+            if ($token->is([T_REQUIRE, T_REQUIRE_ONCE, T_INCLUDE, T_INCLUDE_ONCE])) {
+                $found[$token->line] ??= strtolower($token->text);
+            } elseif ($token->is(T_VARIABLE) && in_array($token->text, ['$_ENV', '$_SERVER'], true)) {
+                $found[$token->line] ??= $token->text;
+            } elseif ($token->is([T_STRING, T_NAME_FULLY_QUALIFIED, T_NAME_QUALIFIED]) && $next?->text === '(') {
+                if ($previous?->is(T_DOUBLE_COLON) === true) {
+                    $found[$token->line] ??= ($tokens[$index - 2] ?? null)?->text.'::'.$token->text.'()';
+                } elseif ($previous === null || ! $previous->is([T_OBJECT_OPERATOR, T_NULLSAFE_OBJECT_OPERATOR, T_FUNCTION, T_NEW, T_CONST, T_USE])) {
+                    $name = strtolower(ltrim($token->text, '\\'));
+                    if (! in_array($name, self::PURE, true)) {
+                        $found[$token->line] ??= $name.'()';
+                    }
+                }
+            }
+        }
+
+        return $found;
     }
 
     /**

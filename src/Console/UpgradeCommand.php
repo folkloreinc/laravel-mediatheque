@@ -245,13 +245,19 @@ class UpgradeCommand extends Command
         }
 
         $conversion = LegacyConfig::convert($file->config, null, $file->env);
+
+        // Disks are compared with config/filesystems.php as this machine
+        // reads it: the 1.x sources too, as --check and the boot do
+        $live = require $path;
+        $conflicts = is_array($live) ? LegacyConfig::convert($live)->conflicts : $conversion->conflicts;
+        $notices = array_values(array_unique([...$conflicts, ...array_diff($conversion->notices, $conversion->conflicts)]));
         $backup = $path.'.1x.bak';
         $files->copy($path, $backup);
         $files->put($path, $conversion->toPhp());
 
         $this->components->info('Rewrote config/mediatheque.php. The 1.x file is in config/mediatheque.php.1x.bak.');
 
-        foreach ($conversion->notices as $notice) {
+        foreach ($notices as $notice) {
             $this->components->warn($notice);
         }
 
@@ -260,8 +266,15 @@ class UpgradeCommand extends Command
             $this->components->warn(sprintf('The 1.x file read these environment variables, which the rewritten one doesn\'t: %s. Their keys are dropped, or written with the default of their env() call.', implode(', ', $unread)));
         }
 
+        if ($file->code !== []) {
+            $this->components->warn('These lines of the 1.x file read this machine, not the file: the values they gave are written as they are here. Check them in the rewritten file and the disks below.');
+            foreach ($file->code as $line => $code) {
+                $this->components->twoColumnDetail('config/mediatheque.php.1x.bak:'.$line, $code);
+            }
+        }
+
         if ($conversion->disks !== []) {
-            $this->components->warn('2.0 stores files on Laravel disks: add these disks to config/filesystems.php, which 1.x sources defined.');
+            $this->components->warn('2.0 stores files on Laravel disks: add these disks to config/filesystems.php, which 1.x sources defined. They are printed with values, not the env() calls of the 1.x sources: write an env() call again where environments differ.');
             $this->line($conversion->disksToPhp());
         }
 

@@ -25,7 +25,7 @@ class UpgradeConfigCommandTest extends TestCase
     protected function tearDown(): void
     {
         $this->cleanUp();
-        foreach (['MEDIATHEQUE_JOB_TIMEOUT', 'FFMPEG_BIN', 'FFPROBE_BIN', 'MEDIA_BUCKET'] as $variable) {
+        foreach (['MEDIATHEQUE_JOB_TIMEOUT', 'FFMPEG_BIN', 'FFPROBE_BIN', 'MEDIA_BUCKET', 'APP_URL'] as $variable) {
             putenv($variable);
             unset($_ENV[$variable], $_SERVER[$variable]);
         }
@@ -147,6 +147,32 @@ class UpgradeConfigCommandTest extends TestCase
         $this->assertSame(['ffmpeg' => '/opt/homebrew/bin/ffmpeg', 'ffprobe' => '/opt/homebrew/bin/ffprobe'], $config['binaries'] ?? null);
         $this->assertSame(['timeout' => 900, 'tries' => 3], $config['jobs'] ?? null);
         $this->assertSame(['bucket' => 'local-bucket'], $config['archive'] ?? null);
+    }
+
+    #[Test]
+    public function sources_are_compared_with_the_disks_as_this_machine_reads_both(): void
+    {
+        // The default of APP_URL is production's; this machine sets its own,
+        // which the disk reads too
+        $this->write1xConfig([], ["'url' => env('APP_URL').'/storage'" => "'url' => env('APP_URL', 'https://example.com').'/storage'"]);
+        putenv('APP_URL=https://local.test');
+        config(['filesystems.disks.public' => ['driver' => 'local', 'root' => storage_path('app/public'), 'url' => 'https://local.test/storage', 'visibility' => 'public']]);
+
+        $this->assertSame(0, Artisan::call('mediatheque:upgrade', ['--config' => true]));
+
+        $this->assertStringNotContainsString('The 1.x source "public"', Artisan::output());
+    }
+
+    #[Test]
+    public function it_lists_the_code_that_reads_this_machine(): void
+    {
+        $this->write1xConfig([], ['return [' => "return [\n    'archive' => ['tmp' => sys_get_temp_dir(), 'token' => \\Illuminate\\Support\\Env::get('TOKEN')],"]);
+
+        $this->assertSame(0, Artisan::call('mediatheque:upgrade', ['--config' => true]));
+
+        $output = Artisan::output();
+        $this->assertMatchesRegularExpression('/mediatheque\.php\.1x\.bak:\d+ \.+ sys_get_temp_dir\(\)/', $output);
+        $this->assertStringNotContainsString('storage_path()', $output, 'The rewritten file writes path helpers as calls.');
     }
 
     #[Test]

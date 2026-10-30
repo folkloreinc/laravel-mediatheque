@@ -90,6 +90,7 @@ class LegacyConfigFileTest extends TestCase
             'MEDIATHEQUE_TEST_ROLE',
             'MEDIATHEQUE_TEST_LAZY',
         ], $file->variables);
+        $this->assertSame([], $file->code, 'array(), closures and offsets read nothing of this machine.');
     }
 
     #[Test]
