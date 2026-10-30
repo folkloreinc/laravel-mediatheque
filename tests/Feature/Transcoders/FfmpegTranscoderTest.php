@@ -141,6 +141,93 @@ class FfmpegTranscoderTest extends DatabaseTestCase
     }
 
     #[Test]
+    public function h264_is_written_for_the_web(): void
+    {
+        $media = $this->ingest('media/test.mp4', 'clip.mp4');
+
+        $h264 = $media->file('h264');
+        $this->assertNotNull($h264);
+        $this->assertSame(['encoded', 'encoded'], [$h264->metadata('video'), $h264->metadata('audio')]);
+        $probe = $this->ffprobe($h264);
+        $this->assertSame(['High', 'yuv420p'], [data_get($probe, 'streams.0.profile'), data_get($probe, 'streams.0.pix_fmt')]);
+        $this->assertTrue($this->startsFast($h264), 'The index comes before the data (faststart).');
+        preg_match('/x264 - core .*? - options: (.*?)\x00/', (string) Storage::disk('public')->get((string) $h264->path()), $match);
+        $settings = [];
+        foreach (explode(' ', $match[1] ?? '') as $pair) {
+            [$key, $value] = explode('=', $pair, 2) + [1 => ''];
+            $settings[$key] = $value;
+        }
+        // The fixture has 30 frames per second; 320 × 180 is capped at 1000 kbit/s.
+        $this->assertEquals(
+            ['crf' => '23.0', 'keyint' => '120', 'vbv_maxrate' => '1000', 'vbv_bufsize' => '2000', 'subme' => '7'],
+            array_intersect_key($settings, array_flip(['crf', 'keyint', 'vbv_maxrate', 'vbv_bufsize', 'subme'])),
+            'The medium preset at CRF 23, a keyframe every 4 seconds and a maximum bitrate.',
+        );
+    }
+
+    #[Test]
+    public function passthrough_copies_a_video_that_already_fits(): void
+    {
+        config(['mediatheque.pipelines.video.renditions' => [
+            'h264' => ['op' => 'video.transcode', 'max_width' => 1920, 'max_height' => 1920, 'passthrough' => true],
+        ]]);
+
+        $media = $this->ingest('media/test.mp4', 'clip.mp4');
+
+        $h264 = $media->file('h264');
+        $this->assertNotNull($h264);
+        $this->assertSame(['copied', 'copied'], [$h264->metadata('video'), $h264->metadata('audio')]);
+        $this->assertSame(
+            $this->streamHashes(self::fixturePath('media/test.mp4')),
+            $this->streamHashes(Storage::disk('public')->path((string) $h264->path())),
+            'The packets of both streams are the same.',
+        );
+        $this->assertSame([320, 180], [$h264->width(), $h264->height()]);
+        $this->assertTrue($this->startsFast($h264));
+    }
+
+    #[Test]
+    public function passthrough_encodes_a_video_that_does_not_fit(): void
+    {
+        config(['mediatheque.pipelines.video.renditions' => [
+            'hevc' => ['op' => 'video.transcode', 'max_width' => 360, 'passthrough' => true, 'preset' => 'ultrafast', 'role' => 'other'],
+            'smaller' => ['op' => 'video.transcode', 'max_width' => 160, 'passthrough' => true, 'preset' => 'ultrafast', 'role' => 'other'],
+            'bitrate' => ['op' => 'video.transcode', 'max_bitrate' => 20, 'passthrough' => true, 'preset' => 'ultrafast', 'role' => 'other'],
+        ]]);
+
+        $hevc = $this->ingest('media/test_vertical_hevc.mp4', 'portrait.mp4');
+        $this->assertSame('encoded', $hevc->file('hevc')?->metadata('video'));
+        $this->assertSame('h264', data_get($this->ffprobe($hevc->file('hevc')), 'streams.0.codec_name'));
+
+        $media = $this->ingest('media/test.mp4', 'clip.mp4');
+        $this->assertSame([160, 90, 'encoded'], [$media->file('smaller')?->width(), $media->file('smaller')?->height(), $media->file('smaller')?->metadata('video')]);
+        $this->assertSame('encoded', $media->file('bitrate')?->metadata('video'), 'The video is above `max_bitrate`.');
+    }
+
+    /**
+     * The hash of each stream's packets, which a copy keeps.
+     */
+    private function streamHashes(string $path): string
+    {
+        $process = new Process(['ffmpeg', '-v', 'error', '-i', $path, '-map', '0', '-c', 'copy', '-f', 'streamhash', '-hash', 'md5', '-']);
+        $process->mustRun();
+
+        return $process->getOutput();
+    }
+
+    /**
+     * Whether a stored MP4 has its index (`moov`) before its data (`mdat`).
+     */
+    private function startsFast(File $file): bool
+    {
+        $head = substr((string) Storage::disk('public')->get((string) $file->path()), 0, 4096);
+        $moov = strpos($head, 'moov');
+        $mdat = strpos($head, 'mdat');
+
+        return $moov !== false && ($mdat === false || $moov < $mdat);
+    }
+
+    #[Test]
     public function a_private_media_has_private_renditions(): void
     {
         $media = $this->ingest('media/test.mp4', 'clip.mp4', Visibility::Private);

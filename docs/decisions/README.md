@@ -29,6 +29,7 @@ One file per decision. A decision is not edited once accepted: a later one repla
 | [0023](0023-progress-of-runs.md) | The progress of runs, on the media, and an event | Accepted |
 | [0024](0024-upgrade-conversion-rules.md) | How the upgrade from 1.x converts the data | Proposed |
 | [0025](0025-document-thumbnails-with-poppler.md) | Document thumbnails with Poppler | Proposed |
+| [0026](0026-h264-for-the-web-and-passthrough.md) | H.264 for the web, and `passthrough` of web-ready videos | Proposed |
 
 Template:
 
