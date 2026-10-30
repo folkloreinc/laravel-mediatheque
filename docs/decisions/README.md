@@ -28,6 +28,7 @@ One file per decision. A decision is not edited once accepted: a later one repla
 | [0022](0022-image-transform-and-orientation.md) | The transform, focal point and orientation of an image | Accepted |
 | [0023](0023-progress-of-runs.md) | The progress of runs, on the media, and an event | Accepted |
 | [0024](0024-upgrade-conversion-rules.md) | How the upgrade from 1.x converts the data | Proposed |
+| [0025](0025-document-thumbnails-with-poppler.md) | Document thumbnails with Poppler | Proposed |
 
 Template:
 

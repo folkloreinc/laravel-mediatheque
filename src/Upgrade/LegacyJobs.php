@@ -73,8 +73,11 @@ final class LegacyJobs
             ], fn (mixed $value) => $value !== null),
             self::NAMESPACE.'Document\\Thumbnails' => array_filter([
                 'op' => 'document.thumbnails',
-                'count' => is_int($options['count'] ?? null) ? $options['count'] : null,
-                'format' => is_string($options['format'] ?? null) ? $options['format'] : null,
+                // 1.x rendered every page by default, 2.0 the first
+                'count' => is_int($options['count'] ?? null) ? $options['count'] : 'all',
+                'resolution' => is_int($options['resolution'] ?? null) && $options['resolution'] !== 150 ? $options['resolution'] : null,
+                'format' => is_string($options['format'] ?? null) && ! in_array($options['format'], ['jpeg', 'jpg'], true) ? $options['format'] : null,
+                'quality' => is_int($options['quality'] ?? null) && $options['quality'] !== 100 ? $options['quality'] : null,
                 'role' => 'thumbnail',
             ], fn (mixed $value) => $value !== null),
             default => null,

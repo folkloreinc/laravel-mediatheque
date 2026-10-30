@@ -139,7 +139,7 @@ class UpgradeCommand extends Command
 
         if ($report->typesWithoutRenditions !== []) {
             $this->newLine();
-            $this->components->warn('Media whose type has no 2.0 renditions: their files are kept');
+            $this->components->warn('Media whose type has no 2.0 renditions, or fewer than in 1.x: their files are kept');
             foreach ($report->typesWithoutRenditions as $type => $without) {
                 $this->components->twoColumnDetail(sprintf('%s (%d media)', $type, $without['count']), $without['reason']);
             }

@@ -15,6 +15,7 @@ use Folklore\Mediatheque\Probe\LocalProber;
 use Folklore\Mediatheque\Support\LocalFiles;
 use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Support\Models;
+use Folklore\Mediatheque\Transcoders\Ffmpeg\ChecksRequirements;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\FfmpegTranscoder;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\LocalOutput;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\OperationContext;
@@ -88,6 +89,17 @@ class RunRendition implements ShouldQueue
 
         $recorder->started($job);
         $operation = $ffmpeg->operation($rendition->operation);
+
+        try {
+            if ($operation instanceof ChecksRequirements) {
+                $operation->checkRequirements($rendition);
+            }
+        } catch (OperationFailed $exception) {
+            $recorder->failed($job, $exception->error);
+
+            return;
+        }
+
         [$disk, $path] = $this->input($run, $rendition, $ffmpeg, $paths);
         $copy = $files->copy($disk, $path);
         $directory = $files->temporaryDirectory();

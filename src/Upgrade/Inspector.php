@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque\Upgrade;
 
+use Folklore\Mediatheque\Compat\LegacyConfig;
 use Folklore\Mediatheque\Exceptions\InvalidConfig;
 use Folklore\Mediatheque\Support\MediathequeConfig;
 use Illuminate\Database\Query\Builder;
@@ -309,7 +310,7 @@ final readonly class Inspector
     }
 
     /**
-     * The types of the media that get no renditions in 2.0, with their
+     * The types of the media that get no renditions in 2.0, or fewer than in 1.x, with their
      * number of media and why. Their files are kept.
      *
      * @return array<string, array{count: int, reason: string}>
@@ -332,6 +333,7 @@ final readonly class Inspector
                 ! isset($types[$type]) => 'Not a type of the 2.0 config: add it to `types`, or its media can\'t be ingested again.',
                 $type === 'font' && $types[$type]->pipeline === null => '1.x made web fonts of them (WebFonts); 2.0 has no rendition for fonts, so new fonts are only probed.',
                 $types[$type]->pipeline === null => 'Its 2.0 type has no pipeline: new media of this type are only probed.',
+                $type === 'document' && $this->rendersSomePages($types[$type]->pipeline) => LegacyConfig::DOCUMENT_PAGES,
                 default => null,
             };
 
@@ -341,6 +343,21 @@ final readonly class Inspector
         }
 
         return $without;
+    }
+
+    /**
+     * Whether a pipeline renders some pages of documents, not every page
+     * as 1.x did.
+     */
+    private function rendersSomePages(string $pipeline): bool
+    {
+        foreach ($this->config->pipeline($pipeline)->renditions as $rendition) {
+            if ($rendition->operation === 'document.thumbnails' && ($rendition->options['count'] ?? 'all') !== 'all') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

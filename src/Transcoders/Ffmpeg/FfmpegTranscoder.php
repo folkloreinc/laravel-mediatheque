@@ -12,6 +12,7 @@ use Folklore\Mediatheque\Pipelines\Rendition;
 use Folklore\Mediatheque\Transcoders\Capabilities;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\Operations\AudioTranscode;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\Operations\AudioWaveform;
+use Folklore\Mediatheque\Transcoders\Ffmpeg\Operations\DocumentThumbnails;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\Operations\ImageConvert;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\Operations\VideoPoster;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\Operations\VideoThumbnails;
@@ -37,6 +38,7 @@ class FfmpegTranscoder implements Transcoder
         'audio.transcode' => AudioTranscode::class,
         'audio.waveform' => AudioWaveform::class,
         'image.convert' => ImageConvert::class,
+        'document.thumbnails' => DocumentThumbnails::class,
     ];
 
     public function __construct(

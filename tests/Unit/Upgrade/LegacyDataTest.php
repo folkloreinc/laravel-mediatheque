@@ -101,7 +101,9 @@ class LegacyDataTest extends TestCase
 
         $this->assertTrue(LegacyJobs::runsOnFfmpeg(['op' => 'video.transcode', 'codec' => 'vp9']));
         $this->assertFalse(LegacyJobs::runsOnFfmpeg(['op' => 'video.transcode', 'codec' => 'hevc']));
-        $this->assertFalse(LegacyJobs::runsOnFfmpeg(['op' => 'document.thumbnails']));
+        $this->assertTrue(LegacyJobs::runsOnFfmpeg(['op' => 'document.thumbnails']));
+        $this->assertSame(['op' => 'document.thumbnails', 'count' => 'all', 'role' => 'thumbnail'], LegacyJobs::rendition(['job' => $jobs.'Document\\Thumbnails', 'count' => 'all', 'resolution' => 150, 'quality' => 100, 'format' => 'jpeg']));
+        $this->assertSame(['op' => 'document.thumbnails', 'count' => 1, 'resolution' => 72, 'format' => 'png', 'quality' => 80, 'role' => 'thumbnail'], LegacyJobs::rendition(['job' => $jobs.'Document\\Thumbnails', 'count' => 1, 'resolution' => 72, 'quality' => 80, 'format' => 'png']));
 
         $this->assertSame(
             ['duration' => 2, 'queue' => null, 'op' => LegacyJobs::LEGACY_OPERATION, 'job' => 'App\\Jobs\\Bumper', 'from' => null],

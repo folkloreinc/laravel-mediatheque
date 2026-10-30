@@ -17,6 +17,7 @@ The alphas are for new projects; the upgrade from 1.x comes in the beta. They in
 - PHP 8.3+ and Laravel 12+.
 - SQLite, MySQL 8.4+ or PostgreSQL 17+: CI runs the tests on each.
 - ffmpeg and ffprobe on the servers that run your queue. The Imagick extension is optional: without it, image sizes come from `getimagesize()`.
+- Poppler (`pdfinfo` and `pdftoppm`, the `poppler-utils` package), optional, for the thumbnails of documents: without it, documents are ready without one.
 - A queue worker: probes and renditions run in jobs.
 - For S3-compatible disks: `league/flysystem-aws-s3-v3`.
 - For image URLs: `folklore/laravel-image` 2.0.0-alpha.2 or later.

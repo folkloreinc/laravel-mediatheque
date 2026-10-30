@@ -95,7 +95,7 @@ jobs:
             # The Azure Ubuntu mirror sometimes throttles a runner to a few
             # dozen kB/s for the whole job, which apt's own timeouts don't catch
             # (#96). The packages are cached between runs, keyed on the runner
-            # image so they follow its updates.
+            # image so they follow its updates, and on the list of packages.
             - name: Find the runner image
               id: image
               run: echo "version=${ImageOS}-${ImageVersion}" >> "$GITHUB_OUTPUT"
@@ -108,7 +108,7 @@ jobs:
                   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
               with:
                   path: ~/apt-archives
-                  key: apt-media-tools-${{ steps.image.outputs.version }}
+                  key: apt-media-tools-${{ steps.image.outputs.version }}-poppler
                   restore-keys: apt-media-tools-
 
             # Each apt-get call that downloads is capped and retried. After a
@@ -118,7 +118,7 @@ jobs:
             - name: Install media tools
               timeout-minutes: 12
               run: |
-                  packages=(ffmpeg imagemagick)
+                  packages=(ffmpeg imagemagick poppler-utils)
                   mirrors=/etc/apt/apt-mirrors.txt
                   apt_get_with_retries() {
                       local limit=$1
@@ -143,6 +143,7 @@ jobs:
                   cp /var/cache/apt/archives/*.deb ~/apt-archives/
                   sudo apt-get install -y --no-install-recommends "${packages[@]}"
                   ffprobe -version | head -n 1
+                  pdftoppm -v 2>&1 | head -n 1
 
             - name: Save media tools packages
               if: steps.apt-cache.outputs.cache-hit != 'true'

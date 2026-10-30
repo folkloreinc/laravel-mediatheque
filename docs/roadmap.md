@@ -79,7 +79,8 @@ What the pilot needs for its reserved videos. URL import ([#91](https://github.c
 
 ## Parity with 1.x
 
-- [ ] Documents: page thumbnails, page count
+- [x] Documents: page thumbnails, with Poppler on the `ffmpeg` driver ([decisions/0025](decisions/0025-document-thumbnails-with-poppler.md), [#147](https://github.com/folkloreinc/laravel-mediatheque/issues/147)), in 2.0.0-alpha.13
+- [ ] Documents: page count
 - [ ] Fonts: web fonts, family names
 - [ ] Animated GIF and WebP as video
 - [ ] URL import behind an SSRF guard (`Source::url()`, [#91](https://github.com/folkloreinc/laravel-mediatheque/issues/91)), which `laravel-folklore` 2's media references then use
