@@ -6,6 +6,8 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+## [2.0.0-alpha.13] - 2026-10-30
+
 ### Added
 
 - Document thumbnails: the `ffmpeg` driver runs `document.thumbnails` (Eclair's operation), images of the pages of a PDF, every page or the first `count` (a number, or `'all'`), at `resolution` dpi (150) within `max_width` and `max_height` (1920), in `jpeg` or `png`, rendered by Poppler (`binaries.pdfinfo` and `binaries.pdftoppm`, `MEDIATHEQUE_PDFINFO` and `MEDIATHEQUE_PDFTOPPM`). A default `document` pipeline renders the **first page** of PDFs; 1.x rendered every page: set `count` to `'all'` to keep that. Poppler is optional: without it the rendition fails, before its input is copied, with a message, and the document is ready. `mediatheque:upgrade --config` keeps a 1.x document pipeline that isn't the 1.x default, with every page, and `--config` and `--check` say that the default now renders the first page ([decisions/0025](docs/decisions/0025-document-thumbnails-with-poppler.md), #147).
@@ -272,7 +274,8 @@ The first alpha of 2.0, for new projects: upload and play a video. The [README](
 - Presigned multipart uploads to an S3-compatible disk, for Uppy's `AwsS3` plugin: `Route::mediatheque()` registers routes to create an upload, sign its parts, list them, complete and abort it, inside the application's own middleware. A fresh install still exposes no route. Each step is authorized with the `create` ability of the media policy (denied without a policy); an upload belongs to the user who created it, and guests can't upload. Completing an upload ingests the file from the disk with the options of `Mediatheque::uploadsUsing()` (the application's attributes, such as a tenant id, chosen on the server); a rejected file is deleted. Errors are `application/problem+json`. New: the `uploads` table (published by `mediatheque:install`), the `Upload` model, and the `uploads` config (`disk`, `path`, `expires_after`, `url_ttl`) ([decisions/0015](docs/decisions/0015-new-install-schema-attributes-and-uploads.md), #54).
 - Releases are tagged by CI, from a commit of `v2.x` whose lint and test jobs passed, when `CHANGELOG.md` gets a dated section for a new version (#30).
 
-[Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.12...v2.x
+[Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.13...v2.x
+[2.0.0-alpha.13]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.12...v2.0.0-alpha.13
 [2.0.0-alpha.12]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.11...v2.0.0-alpha.12
 [2.0.0-alpha.11]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.10...v2.0.0-alpha.11
 [2.0.0-alpha.10]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.9...v2.0.0-alpha.10
