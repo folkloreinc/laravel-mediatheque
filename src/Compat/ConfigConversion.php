@@ -13,7 +13,7 @@ final readonly class ConfigConversion
      * @param  array<string, mixed>  $config  The overrides, in the 2.0 shape
      * @param  array<string, array<array-key, mixed>>  $disks  Disks to define, by 1.x source name
      * @param  list<string>  $notices  What was dropped, and why
-     * @param  array<string, string>  $env  The environment variables that keys of the config read, by key
+     * @param  array<string, string>  $env  The environment variables that keys of the config read, by dot path: their value is the variable's default
      * @param  list<string>  $conflicts  1.x sources that an existing disk of the same name doesn't store like they did: their files resolve elsewhere
      */
     public function __construct(
@@ -31,7 +31,7 @@ final readonly class ConfigConversion
     public function toPhp(): string
     {
         $defaults = require dirname(__DIR__, 2).'/config/mediatheque.php';
-        $overrides = self::withoutDefaults($this->config, is_array($defaults) ? $defaults : []);
+        $overrides = $this->withoutDefaults($this->config, is_array($defaults) ? $defaults : []);
 
         return <<<PHP
             <?php
@@ -66,15 +66,15 @@ final readonly class ConfigConversion
     }
 
     /**
-     * The values of a config that its defaults don't have. Lists, and
-     * values that replace the default as a whole (ConfigMerger), are kept
-     * whole when they differ.
+     * The values of a config that its defaults don't have, and those read
+     * from the environment. Lists, and values that replace the default as a
+     * whole (ConfigMerger), are kept whole when they differ.
      *
      * @param  array<array-key, mixed>  $config
      * @param  array<array-key, mixed>  $defaults
      * @return array<array-key, mixed>
      */
-    private static function withoutDefaults(array $config, array $defaults, string $path = ''): array
+    private function withoutDefaults(array $config, array $defaults, string $path = ''): array
     {
         $kept = [];
 
@@ -82,13 +82,13 @@ final readonly class ConfigConversion
             $keyPath = ltrim($path.'.'.$key, '.');
             $default = $defaults[$key] ?? null;
 
-            if (array_key_exists($key, $defaults) && $value == $default) {
+            if (array_key_exists($key, $defaults) && $value == $default && ! $this->readsEnv($keyPath)) {
                 continue;
             }
 
             // A pipeline's renditions replace the default ones as a whole
             if (is_array($value) && is_array($default) && self::isMap($value) && self::isMap($default) && ! str_ends_with($keyPath, '.renditions')) {
-                $value = self::withoutDefaults($value, $default, $keyPath);
+                $value = $this->withoutDefaults($value, $default, $keyPath);
                 if ($value === []) {
                     continue;
                 }
@@ -98,6 +98,20 @@ final readonly class ConfigConversion
         }
 
         return $kept;
+    }
+
+    /**
+     * Whether a key, or a key under it, reads an environment variable.
+     */
+    private function readsEnv(string $path): bool
+    {
+        foreach (array_keys($this->env) as $key) {
+            if ($key === $path || str_starts_with($key, $path.'.')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
