@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static bool setVisibility(\Folklore\Mediatheque\Contracts\Models\Media $media, \Folklore\Mediatheque\Enums\Visibility $visibility)
  * @method static \Folklore\Mediatheque\Contracts\Models\Media|null resolve(\Folklore\Mediatheque\References\MediaReference|string $reference)
  * @method static \Illuminate\Support\Collection<string, \Folklore\Mediatheque\Contracts\Models\Media> resolveMany(iterable<\Folklore\Mediatheque\References\MediaReference|string> $references)
- * @method static \Folklore\Mediatheque\Contracts\Models\PipelineRun|null runPipeline(\Folklore\Mediatheque\Contracts\Models\Media $media, string|null $pipeline = null, list<string>|null $renditions = null, bool $force = false)
+ * @method static \Folklore\Mediatheque\Contracts\Models\PipelineRun|null runPipeline(\Folklore\Mediatheque\Contracts\Models\Media $media, string|null $pipeline = null, list<string>|null $renditions = null, bool $force = false, array<string, array<string, mixed>> $options = [])
  * @method static \Folklore\Mediatheque\Contracts\Models\PipelineRun|null retry(\Folklore\Mediatheque\Contracts\Models\PipelineRun $run)
  * @method static bool cancel(\Folklore\Mediatheque\Contracts\Models\PipelineRun $run)
  * @method static bool refresh(\Folklore\Mediatheque\Contracts\Models\PipelineRun $run)

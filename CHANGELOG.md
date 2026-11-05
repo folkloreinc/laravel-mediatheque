@@ -6,6 +6,15 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Breaking changes
+
+- `Contracts\Mediatheque::runPipeline()` has a last parameter, `array $options = []`. Callers are unchanged; a class that implements the contract adds it (#157).
+
+### Added
+
+- Operations of the application's for the `ffmpeg` transcoder: classes that implement `Transcoders\Ffmpeg\Operation`, registered under a name of their own in `transcoders.ffmpeg.operations` (`'app.bumper' => Bumper::class`) and named in a rendition's `op`. The config reader refuses a name that replaces a built-in operation and a class that doesn't implement the contract. The upgrade guide described the key, which nothing read ([decisions/0027](docs/decisions/0027-custom-operations-and-run-options.md), #157).
+- `Mediatheque::runPipeline()` takes `options` for one run, keyed by rendition, which replace the rendition's options of the same name. They are part of its definition hash, recorded in the run's JSON snapshot, and reproduced by `retry()`, so a 1.x one-off pipeline built with `Pipeline::fromJobs()` and the job's options becomes a configured pipeline run with options ([decisions/0027](docs/decisions/0027-custom-operations-and-run-options.md), #157).
+
 ### Fixed
 
 - `mediatheque:upgrade --config` keeps the options of 1.x jobs that 2.0 has, which a pipeline's renditions would otherwise lose: `max_width` and `max_height` of `H264` and `WebM`, their `resize` (`['720', '-2']`) as `max_width` or `max_height`, their `quality` as `crf`, and the `width` and `height` of `Audio\Thumbnails` as the waveform's. It lists the options it can't write (`parameters`, `audio_codec`, `zoom`…). A 1.x `audio` pipeline left as the 1.x default is written as 1.x ran it, a waveform only, instead of the 2.0 default, which also transcodes audio to MP3. The compatibility layer reads a 1.x config the same way. `--config` also prints the disks of the 1.x sources that the package made disks of when it booted, a `filesystem` source on another disk for instance, instead of leaving `source` on a disk that `config/filesystems.php` doesn't have (#156).

@@ -115,4 +115,36 @@ class PipelineDefinitionTest extends TestCase
         $this->assertFalse($pipeline->appliesTo(['kind' => 'image', 'mime' => 'image/jpeg']), 'A rendition that keeps nothing doesn\'t count.');
         $this->assertTrue($this->video()->appliesTo(['kind' => 'video']), 'A rendition without a condition always applies.');
     }
+
+    #[Test]
+    public function options_of_a_run_are_merged_into_their_renditions(): void
+    {
+        $pipeline = $this->video();
+
+        $merged = $pipeline->withOptions(['thumbnails' => ['count' => 3], 'poster' => []]);
+
+        $this->assertSame(['count' => 3], $merged->renditions['thumbnails']->options);
+        $this->assertSame($pipeline->renditions['poster'], $merged->renditions['poster']);
+        $this->assertSame($pipeline->renditions['h264'], $merged->renditions['h264']);
+        $this->assertSame(['video', 'eclair', 's3'], [$merged->name, $merged->transcoder, $merged->source]);
+        $this->assertSame(array_keys($pipeline->renditions), array_keys($merged->renditions));
+        $this->assertSame($pipeline, $pipeline->withOptions([]));
+    }
+
+    #[Test]
+    public function options_of_a_run_for_a_rendition_the_pipeline_does_not_have_throw(): void
+    {
+        $this->expectException(InvalidPipeline::class);
+        $this->expectExceptionMessage('no rendition "vertical"');
+
+        $this->video()->withOptions(['vertical' => ['max_width' => 720]]);
+    }
+
+    #[Test]
+    public function options_of_a_run_that_are_not_an_array_throw(): void
+    {
+        $this->expectException(InvalidPipeline::class);
+
+        $this->video()->withOptions(['h264' => 720]);
+    }
 }

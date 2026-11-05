@@ -8,14 +8,14 @@ One file per decision. A decision is not edited once accepted: a later one repla
 | [0002](0002-evolve-the-schema-in-place.md) | Evolve the schema in place, with a compatibility layer | Accepted, amended by 0024 |
 | [0003](0003-identifiers-and-references.md) | Prefixed ULIDs and `media://` references | Amended by 0018 |
 | [0004](0004-renditions.md) | Renditions: groups, metadata outputs, remote renditions | Amended by 0011 |
-| [0005](0005-asynchronous-transcoders.md) | An asynchronous `Transcoder` contract and declarative renditions | Amended by 0012 |
+| [0005](0005-asynchronous-transcoders.md) | An asynchronous `Transcoder` contract and declarative renditions | Amended by 0012 and 0027 |
 | [0006](0006-ingest-and-uploads.md) | One ingest step, with optional upload adapters | Amended by 0018 |
 | [0007](0007-visibility-and-urls.md) | Per-media visibility and temporary URLs | Accepted |
 | [0008](0008-secure-http.md) | HTTP routes are opt-in and authorized | Accepted |
 | [0009](0009-package-boundaries.md) | Package boundaries | Accepted |
 | [0010](0010-json-resource.md) | A canonical JSON resource | Accepted |
 | [0011](0011-renditions-on-remote-transcoders.md) | Renditions on remote transcoders | Accepted |
-| [0012](0012-pipeline-runs-recorder-and-probe.md) | Pipeline runs, the recorder and an asynchronous probe | Amended by 0014, 0017 and 0023 |
+| [0012](0012-pipeline-runs-recorder-and-probe.md) | Pipeline runs, the recorder and an asynchronous probe | Amended by 0014, 0017, 0023 and 0027 |
 | [0013](0013-media-resolver-for-laravel-image.md) | The `media` resolver for `laravel-image` | Accepted |
 | [0014](0014-run-outcomes-and-model-contracts.md) | How runs end, the media's status, and model contracts | Accepted |
 | [0015](0015-new-install-schema-attributes-and-uploads.md) | The schema of a new install, application attributes, and uploads | Amended by 0016 and 0018 |
@@ -30,6 +30,7 @@ One file per decision. A decision is not edited once accepted: a later one repla
 | [0024](0024-upgrade-conversion-rules.md) | How the upgrade from 1.x converts the data | Proposed |
 | [0025](0025-document-thumbnails-with-poppler.md) | Document thumbnails with Poppler | Proposed |
 | [0026](0026-h264-for-the-web-and-passthrough.md) | H.264 for the web, and `passthrough` of web-ready videos | Proposed |
+| [0027](0027-custom-operations-and-run-options.md) | Custom operations of the `ffmpeg` driver, and the options of one run | Proposed |
 
 Template:
 

@@ -127,9 +127,9 @@ class MediathequeManager implements Mediatheque
         return self::collect($resolved);
     }
 
-    public function runPipeline(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false): ?PipelineRun
+    public function runPipeline(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false, array $options = []): ?PipelineRun
     {
-        return $this->container->make(PipelineRunner::class)->run($media, $pipeline, $renditions, $force);
+        return $this->container->make(PipelineRunner::class)->run($media, $pipeline, $renditions, $force, $options);
     }
 
     public function retry(PipelineRun $run): ?PipelineRun

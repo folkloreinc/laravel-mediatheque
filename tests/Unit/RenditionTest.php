@@ -150,4 +150,48 @@ class RenditionTest extends TestCase
         $this->assertNotSame($base->definitionHash(), Rendition::fromArray('h264', ['op' => 'video.transcode', 'codec' => 'h264', 'from' => 'normalized'])->definitionHash());
         $this->assertSame($base->definitionHash(), Rendition::fromArray('h264', ['op' => 'video.transcode', 'codec' => 'h264', 'queue' => 'media', 'role' => 'main', 'when' => ['kind' => 'video']])->definitionHash());
     }
+
+    #[Test]
+    public function options_of_a_run_replace_the_options_of_the_same_name(): void
+    {
+        $rendition = Rendition::fromArray('h264', ['op' => 'video.transcode', 'codec' => 'h264', 'max_width' => 1920, 'filters' => ['a' => 1, 'b' => 2], 'role' => 'edit']);
+
+        $merged = $rendition->withOptions(['max_width' => 1280, 'filters' => ['a' => 3], 'title' => 'Épisode 4']);
+
+        $this->assertSame(['codec' => 'h264', 'max_width' => 1280, 'filters' => ['a' => 3], 'title' => 'Épisode 4'], $merged->options, 'The merge is shallow.');
+        $this->assertSame(['video.transcode', 'edit'], [$merged->operation, $merged->role]);
+        $this->assertSame(1920, $rendition->options['max_width'], 'The rendition is not changed.');
+        $this->assertNotSame($rendition->definitionHash(), $merged->definitionHash());
+        $this->assertSame($merged->definitionHash(), Rendition::fromArray('h264', $merged->toArray())->definitionHash(), 'The snapshot reads back the merged definition.');
+        $this->assertSame($rendition, $rendition->withOptions([]));
+    }
+
+    /**
+     * @return iterable<string, array{array<array-key, mixed>}>
+     */
+    public static function invalidRunOptions(): iterable
+    {
+        yield 'a list' => [[1280]];
+        yield 'an empty name' => [['' => 1280]];
+        foreach (['op', 'from', 'when', 'keep', 'queue', 'role'] as $key) {
+            yield 'the rendition\'s own key '.$key => [[$key => 'value']];
+        }
+        yield 'an object' => [['max_width' => new \stdClass]];
+        yield 'an object in an array' => [['filters' => ['a' => new \stdClass]]];
+        yield 'infinity' => [['max_width' => INF]];
+        yield 'a closure' => [['max_width' => fn () => 1]];
+        yield 'invalid UTF-8' => [['title' => "\xC3\x28"]];
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $options
+     */
+    #[Test]
+    #[DataProvider('invalidRunOptions')]
+    public function invalid_options_of_a_run_throw(array $options): void
+    {
+        $this->expectException(InvalidPipeline::class);
+
+        Rendition::fromArray('h264', ['op' => 'video.transcode'])->withOptions($options);
+    }
 }

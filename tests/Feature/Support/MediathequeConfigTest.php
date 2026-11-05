@@ -5,6 +5,7 @@ namespace Folklore\Mediatheque\Tests\Feature\Support;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Exceptions\InvalidConfig;
 use Folklore\Mediatheque\Support\MediathequeConfig;
+use Folklore\Mediatheque\Tests\Support\TrimOperation;
 use Folklore\Mediatheque\Tests\TestCase;
 use Illuminate\Foundation\Application;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -54,6 +55,17 @@ class MediathequeConfigTest extends TestCase
         $this->assertSame('public', $this->reader()->defaultSource());
         $this->assertSame('med', $this->reader()->mediaPrefix());
         $this->assertSame(3600, $this->reader()->temporaryTtl());
+        $this->assertSame([], $this->reader()->ffmpegOperations());
+    }
+
+    #[Test]
+    public function the_application_registers_operations_of_the_ffmpeg_transcoder(): void
+    {
+        config(['mediatheque.transcoders.ffmpeg.operations' => ['app.trim' => TrimOperation::class, 'app.audio-mix_2' => TrimOperation::class]]);
+
+        $this->reader()->validate();
+
+        $this->assertSame(['app.trim' => TrimOperation::class, 'app.audio-mix_2' => TrimOperation::class], $this->reader()->ffmpegOperations());
     }
 
     #[Test]
@@ -114,6 +126,11 @@ class MediathequeConfigTest extends TestCase
         yield 'progress step of 0' => ['mediatheque.events.progress_step', 0, 'mediatheque.events.progress_step'];
         yield 'progress step over 1' => ['mediatheque.events.progress_step', 5, 'mediatheque.events.progress_step'];
         yield 'strip_location not a boolean' => ['mediatheque.ingest.images.strip_location', 'yes', 'mediatheque.ingest.images.strip_location'];
+        yield 'ffmpeg operations not an array' => ['mediatheque.transcoders.ffmpeg.operations', TrimOperation::class, 'mediatheque.transcoders.ffmpeg.operations'];
+        yield 'ffmpeg operation name' => ['mediatheque.transcoders.ffmpeg.operations', ['app trim' => TrimOperation::class], 'mediatheque.transcoders.ffmpeg.operations'];
+        yield 'ffmpeg operation that replaces a built-in one' => ['mediatheque.transcoders.ffmpeg.operations', ['video.transcode' => TrimOperation::class], 'mediatheque.transcoders.ffmpeg.operations.video.transcode'];
+        yield 'ffmpeg operation that is not a class' => ['mediatheque.transcoders.ffmpeg.operations', ['app.trim' => 'App\\Missing'], 'mediatheque.transcoders.ffmpeg.operations.app.trim'];
+        yield 'ffmpeg operation that is not an Operation' => ['mediatheque.transcoders.ffmpeg.operations', ['app.trim' => self::class], 'mediatheque.transcoders.ffmpeg.operations.app.trim'];
     }
 
     #[Test]

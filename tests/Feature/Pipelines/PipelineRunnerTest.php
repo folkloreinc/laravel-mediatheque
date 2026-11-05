@@ -63,6 +63,38 @@ class PipelineRunnerTest extends DatabaseTestCase
     }
 
     #[Test]
+    public function the_snapshot_records_the_options_of_the_renditions_of_the_run(): void
+    {
+        config(['mediatheque.pipelines.video.renditions' => [
+            'h264' => ['op' => 'video.transcode', 'max_width' => 1920],
+            'poster' => ['op' => 'video.poster', 'role' => 'poster', 'from' => 'h264'],
+            'thumbnails' => ['op' => 'video.thumbnails', 'role' => 'thumbnail'],
+        ]]);
+
+        $run = app(PipelineRunner::class)->run($this->video(), renditions: ['poster'], options: [
+            'h264' => ['max_width' => 720],
+            'poster' => [],
+            'thumbnails' => ['count' => 2],
+        ]);
+
+        $this->assertNotNull($run);
+        $run->refresh();
+        $this->assertSame(['h264' => ['max_width' => 720]], $run->runOptions(), 'Only the renditions of the run, with options.');
+        $this->assertSame(['op' => 'video.transcode', 'max_width' => 720], $run->definition['renditions']['h264'] ?? null);
+        $this->assertSame(720, $run->job('h264')?->rendition()->options['max_width']);
+    }
+
+    #[Test]
+    public function a_run_without_options_records_none(): void
+    {
+        $run = app(PipelineRunner::class)->run($this->video());
+
+        $this->assertNotNull($run);
+        $this->assertArrayNotHasKey('options', $run->refresh()->definition);
+        $this->assertSame([], $run->runOptions());
+    }
+
+    #[Test]
     public function an_operation_the_transcoder_does_not_support_throws_before_anything_is_created(): void
     {
         config(['mediatheque.pipelines.video.renditions' => ['hls' => ['op' => 'video.hls']]]);

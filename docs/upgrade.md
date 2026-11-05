@@ -74,7 +74,7 @@ Existing media become `public` and `ready` (or `failed` if their last pipeline f
 | `app(TypeFactory::class)->typeFromPath($path)->newModel()` | `Mediatheque::ingest($path)` | Deprecated proxy: `Contracts\Type\Factory`, over the 2.0 types |
 | `medias://{id}` references | `media://med_…` | `medias://` still resolves |
 | Contracts bound with `app()->bind()` | Models set in `config('mediatheque.models')` | A binding of the media or file contract is honored while the config names the package's model |
-| `Support\PipelineJob` subclasses | Custom operations of the `ffmpeg` transcoder | Manual (see below) |
+| `Support\PipelineJob` subclasses, `Pipeline::fromJobs()` | Operations of the `ffmpeg` transcoder in `transcoders.ffmpeg.operations`, run with `Mediatheque::runPipeline(…, options: […])` | Manual (see below) |
 | `Route::mediatheque()` loaded by default | No upload routes: the application takes files and calls `ingest()` | — |
 | `media()` helper | `Mediatheque::ingest()` | Removed |
 
@@ -82,13 +82,45 @@ Each deprecated use is reported once per process, as an `E_USER_DEPRECATED` erro
 
 ### Custom pipeline jobs
 
-A 1.x `PipelineJob` subclass becomes a custom operation:
+A 1.x `PipelineJob` subclass becomes an operation of the `ffmpeg` transcoder, and a one-off pipeline (`Pipeline::fromJobs([...])` with options built for the run) becomes a configured pipeline run with options ([decisions/0027](decisions/0027-custom-operations-and-run-options.md)):
 
-1. Implement the operation contract of the `ffmpeg` driver (input file, options, output files).
-2. Register it under a name (`app.bumper`) in `transcoders.ffmpeg.operations`.
-3. Reference it from a rendition: `'bumper' => ['op' => 'app.bumper', …]`.
+1. Implement `Folklore\Mediatheque\Transcoders\Ffmpeg\Operation`: `extension()` gives the extension of the files it writes, and `run()` receives an `OperationContext` (the local input, an output directory, the rendition and its options, the media's metadata, a progress callback and the timeout) and returns the `LocalOutput`s it wrote in the directory. It throws `OperationFailed` with an error code to fail. The driver copies the input to the worker, writes the outputs under the run's prefix with the media's visibility, probes them, reports to the recorder and removes the temporary files. Implement `ChecksRequirements` too to check options before the input is copied, and run ffmpeg with `Transcoders\Ffmpeg\Ffmpeg`, which finds it in `binaries.ffmpeg`.
+2. Register it under a name of yours in `transcoders.ffmpeg.operations`. The name can't be a built-in operation's:
 
-Custom operations run only on the `ffmpeg` driver.
+   ```php
+   'transcoders' => [
+       'ffmpeg' => [
+           'operations' => [
+               'app.bumper' => App\Media\Bumper::class,
+           ],
+       ],
+   ],
+   ```
+
+3. Name it in a rendition of a pipeline of its own, with a role other than `main`, so that ingest doesn't run it and its failure doesn't fail the media:
+
+   ```php
+   'pipelines' => [
+       'bumpers' => [
+           'transcoder' => 'ffmpeg',
+           'renditions' => [
+               'bumper' => ['op' => 'app.bumper', 'role' => 'bumper', 'duration' => 3],
+           ],
+       ],
+   ],
+   ```
+
+4. Run it with the options of the run, keyed by rendition. They replace the rendition's options of the same name:
+
+   ```php
+   $run = Mediatheque::runPipeline($media, 'bumpers', options: ['bumper' => ['title' => $title]]);
+   ```
+
+   The run records them in its JSON snapshot: a queue retry and `Mediatheque::retry($run)` produce the rendition with them. Running the pipeline again with the same options produces nothing; with other options, or none, it produces the rendition again and replaces its file. Its status is the run's (`$run->status()`, `progress()`), which the dashboard shows. The package checks that options are JSON, nothing more: options built from a request or by an agent are validated by the operation, as any command it runs.
+
+Custom operations run only on the `ffmpeg` driver: a pipeline on another transcoder that names one is refused when the run is created.
+
+A media keeps one file per rendition. An output that is a media of its own, which the application lists and deletes apart from the one it was made from, stays in the application: a queued job of the application produces it and calls `Mediatheque::ingest()` with it.
 
 ### JSON
 

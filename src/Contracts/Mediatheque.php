@@ -103,11 +103,20 @@ interface Mediatheque
      * renditions that are missing, failed or changed are produced, unless
      * `$force` is set. Returns null when there is nothing to produce.
      *
+     * `$options` are options of this run, keyed by rendition name: they
+     * replace the rendition's options of the same name, are part of its
+     * definition hash, and are recorded in the run, so retry() reproduces
+     * them (docs/decisions/0027). A key that is not a rendition of the
+     * pipeline, an option named like a rendition's own keys (`op`, `from`,
+     * `when`, `keep`, `queue`, `role`) or a value JSON can't hold throws
+     * InvalidPipeline.
+     *
      * @param  list<string>|null  $renditions  Only these renditions (and those they read from)
+     * @param  array<string, array<string, mixed>>  $options
      *
      * @phpstan-impure
      */
-    public function runPipeline(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false): ?PipelineRun;
+    public function runPipeline(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false, array $options = []): ?PipelineRun;
 
     /**
      * Retry a run that ended: a new run of its failed and canceled

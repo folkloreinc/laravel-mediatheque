@@ -9,6 +9,7 @@ use Folklore\Mediatheque\Enums\JobStatus;
 use Folklore\Mediatheque\Enums\ProgressReporting;
 use Folklore\Mediatheque\Jobs\RunRendition;
 use Folklore\Mediatheque\Pipelines\Rendition;
+use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Transcoders\Capabilities;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\Operations\AudioTranscode;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\Operations\AudioWaveform;
@@ -27,10 +28,17 @@ use InvalidArgumentException;
  * of the application's queue, which runs ffmpeg and reports through the
  * recorder. Renditions that read from another one are dispatched when it
  * completes. It has no driver job id.
+ *
+ * It runs the built-in operations and the application's, from
+ * `transcoders.ffmpeg.operations` (docs/decisions/0027).
  */
 class FfmpegTranscoder implements Transcoder
 {
-    /** @var array<string, class-string<Operation>> */
+    /**
+     * The built-in operations, in Eclair's vocabulary.
+     *
+     * @var array<string, class-string<Operation>>
+     */
     public const array OPERATIONS = [
         'video.transcode' => VideoTranscode::class,
         'video.poster' => VideoPoster::class,
@@ -44,11 +52,22 @@ class FfmpegTranscoder implements Transcoder
     public function __construct(
         private readonly Container $container,
         private readonly Jobs $jobs,
+        private readonly MediathequeConfig $config,
     ) {}
 
     public function supports(string $operation): bool
     {
-        return isset(self::OPERATIONS[$operation]);
+        return isset($this->operations()[$operation]);
+    }
+
+    /**
+     * The built-in operations, then the application's.
+     *
+     * @return array<string, class-string<Operation>>
+     */
+    public function operations(): array
+    {
+        return [...self::OPERATIONS, ...$this->config->ffmpegOperations()];
     }
 
     public function capabilities(): Capabilities
@@ -58,9 +77,13 @@ class FfmpegTranscoder implements Transcoder
 
     public function operation(string $name): Operation
     {
-        $class = self::OPERATIONS[$name] ?? throw new InvalidArgumentException(sprintf('The ffmpeg transcoder has no operation "%s".', $name));
+        $class = $this->operations()[$name] ?? throw new InvalidArgumentException(sprintf('The ffmpeg transcoder has no operation "%s".', $name));
 
-        return $this->container->make($class);
+        $operation = $this->container->make($class);
+
+        return $operation instanceof Operation
+            ? $operation
+            : throw new InvalidArgumentException(sprintf('The class of the ffmpeg operation "%s" must implement %s.', $name, Operation::class));
     }
 
     /**

@@ -25,6 +25,8 @@ use InvalidArgumentException;
  * - It records its output source (the pipeline's, or the original's), its
  *   path prefix (`run_path_format`) and the media's visibility.
  * - A run is never retried in place: running a pipeline again is a new run.
+ * - Options of one run are merged into its renditions' and recorded in its
+ *   snapshot, so a retry reproduces them (docs/decisions/0027).
  */
 class PipelineRunner
 {
@@ -39,10 +41,11 @@ class PipelineRunner
      * Create a run and submit it. Null when there is nothing to produce.
      *
      * @param  list<string>|null  $renditions  Only these renditions (and those they read from)
+     * @param  array<string, array<string, mixed>>  $options  Options of this run, by rendition (docs/decisions/0027)
      */
-    public function run(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false): ?PipelineRun
+    public function run(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false, array $options = []): ?PipelineRun
     {
-        $definition = $this->definition($media, $pipeline);
+        $definition = $this->definition($media, $pipeline)->withOptions($options);
         $names = $renditions ?? array_keys(array_filter($definition->renditions, fn (Rendition $rendition) => $rendition->keep));
 
         if (! $force) {
@@ -53,7 +56,7 @@ class PipelineRunner
             return null;
         }
 
-        $run = $this->create($media, $definition, $names);
+        $run = $this->create($media, $definition, $names, $options);
         $externalId = $this->transcoders->driver($run->transcoder())->submit($run);
 
         if ($externalId !== null) {
@@ -68,8 +71,9 @@ class PipelineRunner
      * another rendition gets its `queued_at` when its input completes.
      *
      * @param  list<string>  $renditions
+     * @param  array<string, array<string, mixed>>  $options  The run's options, already merged into the pipeline's renditions, recorded for retries
      */
-    public function create(Media $media, PipelineDefinition $pipeline, array $renditions): PipelineRun
+    public function create(Media $media, PipelineDefinition $pipeline, array $renditions, array $options = []): PipelineRun
     {
         if (! $media instanceof Model) {
             throw new InvalidArgumentException('Pipelines run on Eloquent media.');
@@ -98,14 +102,14 @@ class PipelineRunner
             throw new InvalidArgumentException('The pipeline run model must extend '.PipelineRun::class.'.');
         }
 
-        $this->database->connection($run->getConnectionName())->transaction(function () use ($run, $uid, $media, $pipeline, $selected, $original) {
+        $this->database->connection($run->getConnectionName())->transaction(function () use ($run, $uid, $media, $pipeline, $selected, $original, $options) {
             $run->forceFill([
                 'uid' => $uid,
                 'name' => $pipeline->name,
                 'pipelinable_type' => $media->getMorphClass(),
                 'pipelinable_id' => $media->getKey(),
                 'transcoder' => $pipeline->transcoder,
-                'definition' => PipelineRun::snapshot($pipeline, $selected),
+                'definition' => PipelineRun::snapshot($pipeline, $selected, $options),
                 'output_source' => $pipeline->source ?? $original->source() ?? $this->config->defaultSource(),
                 'path_prefix' => $this->paths->runPrefix($media, $uid),
                 'visibility' => $media->visibility(),

@@ -39,7 +39,8 @@ class FakePipelineRun implements PipelineRun
     public ?CarbonImmutable $endedAt = null;
 
     /**
-     * @param  array<string, Rendition>  $renditions  Closed under `from`
+     * @param  array<string, Rendition>  $renditions  Closed under `from`, with the run's options merged in
+     * @param  array<string, array<string, mixed>>  $options  The run's options, by rendition (docs/decisions/0027)
      */
     public function __construct(
         public string $key,
@@ -48,6 +49,7 @@ class FakePipelineRun implements PipelineRun
         public array $renditions,
         public string $outputSource,
         public string $pathPrefix,
+        public array $options = [],
     ) {
         $this->createdAt = CarbonImmutable::instance(Date::now());
 
