@@ -2,8 +2,13 @@
 
 namespace Folklore\Mediatheque\Tests\Feature\Console;
 
+use Folklore\Mediatheque\Support\ConfigMerger;
+use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Tests\TestCase;
+use Illuminate\Foundation\Application;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
+use Orchestra\Testbench\Attributes\DefineEnvironment;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
@@ -84,12 +89,14 @@ class UpgradeConfigCommandTest extends TestCase
                         'thumbnails' => ['op' => 'video.thumbnails', 'count' => 3, 'role' => 'thumbnail'],
                     ],
                 ],
+                'audio' => ['renditions' => ['thumbnails' => ['op' => 'audio.waveform', 'width' => 1200, 'height' => 400, 'color' => '#000000', 'role' => 'thumbnail']]],
             ],
             'binaries' => ['ffmpeg' => '/usr/local/bin/ffmpeg', 'ffprobe' => '/usr/local/bin/ffprobe'],
             'jobs' => ['timeout' => 900, 'tries' => 3],
         ], $config);
 
         $this->assertStringContainsString('2.0 has no upload routes', $output);
+        $this->assertStringContainsString('These options of 1.x jobs have no 2.0 option, and are dropped: pipelines.video.jobs.thumbnails.in_middle, pipelines.audio.jobs.thumbnails.zoom, pipelines.audio.jobs.thumbnails.background_color.', $output);
         $this->assertStringContainsString("'cloud' => [", $output);
         $this->assertStringContainsString("storage_path('app/public')", $output);
     }
@@ -104,8 +111,8 @@ class UpgradeConfigCommandTest extends TestCase
         $config = require $this->path;
         $this->assertIsArray($config);
         $this->assertSame(
-            ['document' => ['renditions' => ['thumbnails' => ['op' => 'document.thumbnails', 'count' => 'all', 'resolution' => 72, 'role' => 'thumbnail']]]],
-            $config['pipelines'] ?? null,
+            ['renditions' => ['thumbnails' => ['op' => 'document.thumbnails', 'count' => 'all', 'resolution' => 72, 'role' => 'thumbnail']]],
+            Arr::get($config, 'pipelines.document'),
             'Every page, as 1.x.',
         );
         $output = Artisan::output();
@@ -132,6 +139,7 @@ class UpgradeConfigCommandTest extends TestCase
         $this->assertSame(0, Artisan::call('mediatheque:upgrade', ['--config' => true]));
 
         $this->assertSame([
+            'pipelines' => ['audio' => ['renditions' => ['thumbnails' => ['op' => 'audio.waveform', 'width' => 1200, 'height' => 400, 'color' => '#000000', 'role' => 'thumbnail']]]],
             'binaries' => ['ffmpeg' => '/usr/local/bin/ffmpeg', 'ffprobe' => '/usr/local/bin/ffprobe'],
             'jobs' => ['timeout' => 3600, 'tries' => 3],
         ], require $this->path);
@@ -204,5 +212,57 @@ class UpgradeConfigCommandTest extends TestCase
         $this->assertSame(0, Artisan::call('mediatheque:upgrade', ['--config' => true]));
 
         $this->assertStringContainsString('The 1.x source "public"', Artisan::output());
+    }
+
+    /**
+     * A 1.x `cloud` source on an application's `spaces` disk, as the package
+     * boots with it.
+     */
+    private const array CLOUD_SOURCE = ['driver' => 'filesystem', 'disk' => 'spaces', 'path' => '/', 'visibility' => 'public'];
+
+    private const array SPACES_DISK = ['driver' => 's3', 'bucket' => 'media', 'endpoint' => 'https://example.com', 'root' => 'app', 'visibility' => 'private'];
+
+    /**
+     * @param  Application  $app
+     */
+    protected function bootWithCloudSource($app): void
+    {
+        $config = require self::fixturePath('v1/config.php');
+        $config = is_array($config) ? $config : [];
+        Arr::set($config, 'source', 'cloud');
+        Arr::set($config, 'sources.cloud', self::CLOUD_SOURCE);
+
+        $app['config']->set('mediatheque', $config);
+        $app['config']->set('filesystems.disks.spaces', self::SPACES_DISK);
+    }
+
+    #[Test]
+    #[DefineEnvironment('bootWithCloudSource')]
+    public function it_prints_the_disk_of_a_filesystem_source_the_package_booted_with(): void
+    {
+        // The package made the source a disk when it booted
+        $this->assertSame('s3', config('filesystems.disks.cloud.driver'));
+
+        $this->write1xConfig(['source' => 'cloud', 'sources' => ['cloud' => self::CLOUD_SOURCE]]);
+
+        $this->assertSame(0, Artisan::call('mediatheque:upgrade', ['--config' => true]));
+        $output = Artisan::output();
+
+        $config = require $this->path;
+        $this->assertIsArray($config);
+        $this->assertSame('cloud', $config['source'] ?? null);
+        $this->assertStringContainsString("'cloud' => [", $output);
+        $this->assertStringContainsString("'driver' => 's3',", $output);
+        $this->assertStringContainsString("'visibility' => 'public',", $output);
+        $this->assertStringNotContainsString("'spaces' => [", $output, 'The application defines it.');
+
+        // With the printed disk, the end of the output, the rewritten file is
+        // valid without the compatibility layer
+        $printed = eval('return ['.substr($output, (int) strpos($output, "    'cloud' => [")).'];');
+        $this->assertIsArray($printed);
+        $this->assertSame([...self::SPACES_DISK, 'visibility' => 'public'], $printed['cloud'] ?? null);
+        $defaults = require __DIR__.'/../../../config/mediatheque.php';
+        config(['filesystems.disks' => ['spaces' => self::SPACES_DISK, ...$printed], 'mediatheque' => ConfigMerger::merge(is_array($defaults) ? $defaults : [], $config)]);
+        app(MediathequeConfig::class)->validate();
     }
 }
