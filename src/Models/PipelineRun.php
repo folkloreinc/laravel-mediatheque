@@ -29,7 +29,8 @@ use LogicException;
  *
  * `definition` is a JSON snapshot of the renditions the run produces, closed
  * under `from`, and of the name of its pipeline's main rendition, as they
- * were when the run was created.
+ * were when the run was created. The renditions have the run's options
+ * merged in; `options` keeps those options, for retries (docs/decisions/0027).
  *
  * @property int $id
  * @property string $uid
@@ -38,7 +39,7 @@ use LogicException;
  * @property int $pipelinable_id
  * @property string $transcoder
  * @property string|null $external_id
- * @property array{transcoder?: string, source?: string|null, renditions?: array<string, array<string, mixed>>, main?: string|null, then?: string|null} $definition
+ * @property array{transcoder?: string, source?: string|null, renditions?: array<string, array<string, mixed>>, main?: string|null, options?: array<string, array<string, mixed>>, then?: string|null} $definition
  * @property string $output_source
  * @property string $path_prefix
  * @property Visibility $visibility
@@ -135,19 +136,27 @@ class PipelineRun extends Model implements PipelineRunContract
 
     /**
      * The definition snapshot of a run of these renditions, closed under
-     * `from`.
+     * `from`, with the options of the run that apply to them.
      *
-     * @param  array<string, Rendition>  $renditions
-     * @return array{transcoder: string, source: string|null, renditions: array<string, array<string, mixed>>, main: string|null}
+     * @param  array<string, Rendition>  $renditions  With the run's options merged in
+     * @param  array<string, array<string, mixed>>  $options  The run's options, by rendition
+     * @return array{transcoder: string, source: string|null, renditions: array<string, array<string, mixed>>, main: string|null, options?: array<string, array<string, mixed>>}
      */
-    public static function snapshot(PipelineDefinition $pipeline, array $renditions): array
+    public static function snapshot(PipelineDefinition $pipeline, array $renditions, array $options = []): array
     {
-        return [
+        $snapshot = [
             'transcoder' => $pipeline->transcoder,
             'source' => $pipeline->source,
             'renditions' => array_map(fn (Rendition $rendition) => $rendition->toArray(), $renditions),
             'main' => $pipeline->mainRendition()?->name,
         ];
+
+        $options = array_filter(array_intersect_key($options, $renditions), fn (array $values) => $values !== []);
+        if ($options !== []) {
+            $snapshot['options'] = $options;
+        }
+
+        return $snapshot;
     }
 
     public function key(): string
@@ -195,6 +204,17 @@ class PipelineRun extends Model implements PipelineRunContract
             'transcoder' => $this->transcoder,
             'renditions' => $this->definition['renditions'] ?? [],
         ])->renditions;
+    }
+
+    /**
+     * The options the run was created with, by rendition: retry() creates
+     * the new run with them (docs/decisions/0027).
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function runOptions(): array
+    {
+        return $this->definition['options'] ?? [];
     }
 
     /**

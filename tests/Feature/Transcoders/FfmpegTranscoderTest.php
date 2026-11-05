@@ -15,6 +15,7 @@ use Folklore\Mediatheque\Events\MediaReady;
 use Folklore\Mediatheque\Events\PipelineCompleted;
 use Folklore\Mediatheque\Events\RenditionCompleted;
 use Folklore\Mediatheque\Events\RenditionProgressed;
+use Folklore\Mediatheque\Exceptions\InvalidPipeline;
 use Folklore\Mediatheque\Facades\Mediatheque;
 use Folklore\Mediatheque\Jobs\RunRendition;
 use Folklore\Mediatheque\Models\Media;
@@ -22,10 +23,12 @@ use Folklore\Mediatheque\Models\PipelineRun;
 use Folklore\Mediatheque\Pipelines\Rendition;
 use Folklore\Mediatheque\Support\LocalFiles;
 use Folklore\Mediatheque\Tests\DatabaseTestCase;
+use Folklore\Mediatheque\Tests\Support\TrimOperation;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\FfmpegTranscoder;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\OperationContext;
 use Folklore\Mediatheque\Transcoders\TranscoderManager;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
@@ -392,5 +395,84 @@ class FfmpegTranscoderTest extends DatabaseTestCase
         $this->ingest('media/test.mp4', 'clip.mp4');
 
         Event::assertDispatched(RenditionProgressed::class, fn (RenditionProgressed $event) => $event->rendition() === 'h264' && $event->progress > 0 && $event->progress < 1);
+    }
+
+    private function withTrimOperation(): void
+    {
+        config([
+            'mediatheque.transcoders.ffmpeg.operations' => ['app.trim' => TrimOperation::class],
+            'mediatheque.pipelines.edits' => ['renditions' => [
+                'trim' => ['op' => 'app.trim', 'role' => 'edit', 'duration' => 10],
+            ]],
+        ]);
+    }
+
+    #[Test]
+    public function the_driver_supports_the_operations_of_the_application(): void
+    {
+        $driver = app(FfmpegTranscoder::class);
+        $this->assertFalse($driver->supports('app.trim'));
+
+        $this->withTrimOperation();
+
+        $this->assertTrue($driver->supports('app.trim'));
+        $this->assertTrue($driver->supports('video.transcode'));
+        $this->assertInstanceOf(TrimOperation::class, $driver->operation('app.trim'));
+        $this->assertSame([...FfmpegTranscoder::OPERATIONS, 'app.trim' => TrimOperation::class], $driver->operations());
+    }
+
+    #[Test]
+    public function an_operation_of_the_application_runs_with_the_options_of_a_run(): void
+    {
+        $this->withTrimOperation();
+        $media = $this->ingest('media/test.mp4', 'clip.mp4');
+        $before = glob(LocalFiles::root().'/*') ?: [];
+
+        $run = Mediatheque::runPipeline($media, 'edits', options: ['trim' => ['start' => 0.2, 'duration' => 0.5]]);
+
+        $this->assertInstanceOf(PipelineRun::class, $run);
+        $run = PipelineRun::query()->with('pipelineJobs')->findOrFail($run->id);
+        $this->assertSame(PipelineStatus::Completed, $run->status());
+        $this->assertSame(['trim' => ['start' => 0.2, 'duration' => 0.5]], $run->runOptions());
+
+        $media = Media::query()->with('mediaFiles')->findOrFail($media->id);
+        $trim = $media->file('trim');
+        $this->assertNotNull($trim);
+        $this->assertSame(['video/mp4', 'edit'], [$trim->mime(), $trim->role()]);
+        $this->assertStringStartsWith($run->pathPrefix().'/', (string) $trim->path());
+        $this->assertEqualsWithDelta(0.5, (float) Arr::string($this->ffprobe($trim), 'format.duration'), 0.1, 'The run\'s duration replaced the config\'s.');
+        $this->assertSame(MediaStatus::Ready, $media->status());
+        $this->assertSame($before, glob(LocalFiles::root().'/*') ?: [], 'The temporary files are removed.');
+
+        $this->assertNull(Mediatheque::runPipeline($media, 'edits', options: ['trim' => ['start' => 0.2, 'duration' => 0.5]]), 'The same options again produce nothing.');
+    }
+
+    #[Test]
+    public function an_operation_of_the_application_that_fails_its_requirements_fails_its_rendition(): void
+    {
+        $this->withTrimOperation();
+        $media = $this->ingest('media/test.mp4', 'clip.mp4');
+
+        $run = Mediatheque::runPipeline($media, 'edits', options: ['trim' => ['duration' => -1]]);
+
+        $this->assertInstanceOf(PipelineRun::class, $run);
+        $run = PipelineRun::query()->with('pipelineJobs')->findOrFail($run->id);
+        $this->assertSame(PipelineStatus::Failed, $run->status());
+        $this->assertSame(TranscoderErrorCode::OperationFailed, $run->job('trim')?->error()?->code);
+        $media = Media::query()->with('mediaFiles')->findOrFail($media->id);
+        $this->assertNull($media->file('trim'));
+        $this->assertSame(MediaStatus::Ready, $media->status(), 'A rendition whose role is not main doesn\'t fail the media.');
+    }
+
+    #[Test]
+    public function a_rendition_whose_operation_is_not_registered_is_refused(): void
+    {
+        config(['mediatheque.pipelines.edits' => ['renditions' => ['trim' => ['op' => 'app.trim']]]]);
+        $media = $this->ingest('media/test.mp4', 'clip.mp4');
+
+        $this->expectException(InvalidPipeline::class);
+        $this->expectExceptionMessage('doesn\'t support the operation "app.trim"');
+
+        Mediatheque::runPipeline($media, 'edits');
     }
 }

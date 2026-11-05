@@ -6,6 +6,15 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Breaking changes
+
+- `Contracts\Mediatheque::runPipeline()` has a last parameter, `array $options = []`. Callers are unchanged; a class that implements the contract adds it (#157).
+
+### Added
+
+- Operations of the application's for the `ffmpeg` transcoder: classes that implement `Transcoders\Ffmpeg\Operation`, registered under a name of their own in `transcoders.ffmpeg.operations` (`'app.bumper' => Bumper::class`) and named in a rendition's `op`. The config reader refuses a name that replaces a built-in operation and a class that doesn't implement the contract. The upgrade guide described the key, which nothing read ([decisions/0027](docs/decisions/0027-custom-operations-and-run-options.md), #157).
+- `Mediatheque::runPipeline()` takes `options` for one run, keyed by rendition, which replace the rendition's options of the same name. They are part of its definition hash, recorded in the run's JSON snapshot, and reproduced by `retry()`, so a 1.x one-off pipeline built with `Pipeline::fromJobs()` and the job's options becomes a configured pipeline run with options ([decisions/0027](docs/decisions/0027-custom-operations-and-run-options.md), #157).
+
 ## [2.0.0-alpha.14] - 2026-10-30
 
 Web-ready H.264 on the `ffmpeg` driver (#152): `video.transcode` can copy an H.264 upload that already fits the rendition instead of encoding it (`passthrough`), takes Eclair's `max_bitrate`, and encodes H.264 with a keyframe every 4 seconds and a maximum bitrate from the output's size.

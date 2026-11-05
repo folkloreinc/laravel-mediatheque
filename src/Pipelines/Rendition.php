@@ -102,6 +102,46 @@ final readonly class Rendition
         );
     }
 
+    /**
+     * The rendition with options of one run (docs/decisions/0027): they
+     * replace the options of the same name, others keep their value. An
+     * option can't be named like one of the rendition's own keys, and its
+     * value must be one JSON can hold, since the run's snapshot stores it.
+     *
+     * @param  array<array-key, mixed>  $options
+     *
+     * @throws InvalidPipeline
+     */
+    public function withOptions(array $options): self
+    {
+        foreach ($options as $key => $value) {
+            if (! is_string($key) || $key === '') {
+                throw new InvalidPipeline(sprintf('The options of the rendition "%s" must be keyed by option name.', $this->name));
+            }
+            if (in_array($key, self::KEYS, true)) {
+                throw new InvalidPipeline(sprintf('The option "%s" of the rendition "%s" is one of the rendition\'s own keys (%s), which a run can\'t change.', $key, $this->name, implode(', ', self::KEYS)));
+            }
+            if (! self::isJsonValue($value)) {
+                throw new InvalidPipeline(sprintf('The option "%s" of the rendition "%s" must be a value JSON can hold: null, a boolean, a number, a string or an array of these.', $key, $this->name));
+            }
+        }
+
+        if ($options === []) {
+            return $this;
+        }
+
+        return new self(
+            name: $this->name,
+            operation: $this->operation,
+            options: array_replace($this->options, $options),
+            from: $this->from,
+            when: $this->when,
+            keep: $this->keep,
+            queue: $this->queue,
+            role: $this->role,
+        );
+    }
+
     public static function isValidHandle(string $handle): bool
     {
         return preg_match(self::HANDLE_PATTERN, $handle) === 1 && $handle !== File::ORIGINAL;
@@ -150,6 +190,25 @@ final readonly class Rendition
                 $name,
             ));
         }
+    }
+
+    private static function isJsonValue(mixed $value): bool
+    {
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                if (! self::isJsonValue($item)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return $value === null
+            || is_bool($value)
+            || is_int($value)
+            || (is_float($value) && is_finite($value))
+            || (is_string($value) && preg_match('//u', $value) === 1);
     }
 
     /**

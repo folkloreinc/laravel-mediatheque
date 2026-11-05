@@ -330,10 +330,10 @@ class MediathequeFake implements Fake, Mediatheque
         return new Collection($resolved);
     }
 
-    public function runPipeline(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false): ?PipelineRun
+    public function runPipeline(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false, array $options = []): ?PipelineRun
     {
         $media = $this->find($media);
-        $definition = $this->pipeline($pipeline ?? $this->pipelineOf($media->type) ?? throw new InvalidArgumentException(sprintf('The type "%s" has no pipeline.', $media->type)));
+        $definition = $this->pipeline($pipeline ?? $this->pipelineOf($media->type) ?? throw new InvalidArgumentException(sprintf('The type "%s" has no pipeline.', $media->type)))->withOptions($options);
 
         $names = $renditions ?? array_keys(array_filter($definition->renditions, fn (Rendition $rendition) => $rendition->keep));
         if (! $force) {
@@ -345,13 +345,15 @@ class MediathequeFake implements Fake, Mediatheque
         }
 
         $key = 'run_'.(count($this->runs) + 1);
+        $selected = $definition->closeUnderFrom($names);
         $run = new FakePipelineRun(
             key: $key,
             media: $media,
             pipeline: $definition,
-            renditions: $definition->closeUnderFrom($names),
+            renditions: $selected,
             outputSource: $definition->source ?? $media->original()?->source() ?? $this->string('mediatheque.source', 'public'),
             pathPrefix: $media->uid.'/'.$key,
+            options: array_filter(array_intersect_key($options, $selected), fn (array $values) => $values !== []),
         );
         $this->disk($run->outputSource);
         $this->runs[] = $run;
@@ -388,7 +390,13 @@ class MediathequeFake implements Fake, Mediatheque
             }
         }
 
-        return $renditions === [] ? null : $this->runPipeline($run->media, $run->name(), $renditions, force: true);
+        if ($renditions === []) {
+            return null;
+        }
+
+        $options = array_filter($run->options, fn (string $name) => $pipeline->rendition($name) !== null, ARRAY_FILTER_USE_KEY);
+
+        return $this->runPipeline($run->media, $run->name(), $renditions, force: true, options: $options);
     }
 
     public function cancel(PipelineRun $run): bool

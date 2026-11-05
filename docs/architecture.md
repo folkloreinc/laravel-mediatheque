@@ -133,7 +133,7 @@ A **pipeline run** (`pipelines` table) records one execution:
 |---|---|
 | `name`, `pipelinable` | The pipeline and the media it runs on |
 | `transcoder`, `external_id` | The driver and its job id (an Eclair job, a MediaConvert job) |
-| `definition` | JSON snapshot of the renditions, the output source, the run's path prefix and the media's visibility; never `serialize()` |
+| `definition` | JSON snapshot of the renditions, with the run's options merged in and kept under `options` for retries ([decisions/0027](decisions/0027-custom-operations-and-run-options.md)), the output source, the run's path prefix and the media's visibility; never `serialize()` |
 | `status` | `PipelineStatus` enum: `pending`, `running`, `completed`, `failed`, `canceled` |
 | `progress` | Null until one of its renditions is measured or ended; the recorder stores it with each call, for queries. `progress()` computes it ([Progress](#progress)) |
 | `attempts`, `error` (`{code, message}`), `started_at`, `ended_at` | |
@@ -294,6 +294,14 @@ $media->ensureRendition('vertical');          // queued if missing
 Mediatheque::runPipeline($media, 'video');    // the whole pipeline again
 ```
 
+A run can take **options of its own**, keyed by rendition, which replace the rendition's options of the same name ([decisions/0027](decisions/0027-custom-operations-and-run-options.md)):
+
+```php
+Mediatheque::runPipeline($media, 'bumpers', options: ['bumper' => ['title' => 'Episode 4']]);
+```
+
+They are part of the rendition's `definition_hash`, so the same options again produce nothing, and other options or none produce it again. The run's snapshot records them, and `retry()` creates the new run with them. A key that is not a rendition of the pipeline, an option named like a rendition's own keys (`op`, `from`, `when`, `keep`, `queue`, `role`) or a value JSON can't hold throws `InvalidPipeline` before the run is created. The options reach the operation as they are: an application that builds them from a request validates them.
+
 Applications, commands and the monitoring dashboard act on runs through the same entry point ([decisions/0017](decisions/0017-monitoring-dashboard.md)):
 
 ```php
@@ -377,7 +385,7 @@ With a 98-second video, `h264` at 50 % and the poster done, a run of `h264`, `po
 
 | Driver | Runs | Completion | Package |
 |---|---|---|---|
-| `ffmpeg` | ffmpeg, ffprobe, Imagick, Poppler and fonttools in the application's queue. Since 2.0.0-alpha.1: `video.transcode` (`h264`, `vp9`; `passthrough` of web-ready H.264 and `max_bitrate` since #152, [decisions/0026](decisions/0026-h264-for-the-web-and-passthrough.md)), `video.poster`, `video.thumbnails`, `audio.transcode` (`mp3`, `aac`), `audio.waveform`; `image.convert` (`jpeg`, `webp`, `png`, with Imagick) since #132; `document.thumbnails` (`jpeg`, `png`, with Poppler's `pdfinfo` and `pdftoppm`, [decisions/0025](decisions/0025-document-thumbnails-with-poppler.md)) since #147 | Each rendition is a queued job; dependent renditions are dispatched when their input completes | This package |
+| `ffmpeg` | ffmpeg, ffprobe, Imagick, Poppler and fonttools in the application's queue. Since 2.0.0-alpha.1: `video.transcode` (`h264`, `vp9`; `passthrough` of web-ready H.264 and `max_bitrate` since #152, [decisions/0026](decisions/0026-h264-for-the-web-and-passthrough.md)), `video.poster`, `video.thumbnails`, `audio.transcode` (`mp3`, `aac`), `audio.waveform`; `image.convert` (`jpeg`, `webp`, `png`, with Imagick) since #132; `document.thumbnails` (`jpeg`, `png`, with Poppler's `pdfinfo` and `pdftoppm`, [decisions/0025](decisions/0025-document-thumbnails-with-poppler.md)) since #147; the application's operations, classes that implement `Transcoders\Ffmpeg\Operation` registered in `transcoders.ffmpeg.operations` ([decisions/0027](decisions/0027-custom-operations-and-run-options.md)), since #157 | Each rendition is a queued job; dependent renditions are dispatched when their input completes | This package |
 | `eclair` | The whole run as one Eclair job (task graph, `when` conditions, outputs written to the application's storage) | Signed webhooks, deduplicated | [`laravel-eclair`](https://github.com/urbania-media/eclair/issues/13) |
 | `mediaconvert` | AWS Elemental MediaConvert jobs for video renditions | EventBridge notifications through a webhook, or a scheduled poller. Never `sleep()` in a worker | This package, with `aws/aws-sdk-php` (suggested) |
 | `cloudflare-stream` (2.x) | Upload to Cloudflare Stream; remote renditions | Webhook | Later, if a project needs it |
@@ -569,6 +577,7 @@ The fake stores files on fake disks, returns probe fixtures, and completes rendi
 - **Migrations.** `mediatheque:install` publishes the migrations; the package does not load them itself. The application owns its schema and can add its own columns (a tenant id, for example) in the same migration ([decisions/0015](decisions/0015-new-install-schema-attributes-and-uploads.md)).
 - **Global scopes.** Package workers load models through the morph map and without global scopes, so a tenant scope that depends on the current request does not hide media from queued jobs.
 - **Path formatter.** Receives the media and the file: `{media.uid}`, `{media.tenant_id}` (a column's raw value, or the model's accessor when no column has that name, such as `{media.tenant_uid}`), `{type}`, `{handle}`, `{index}` (`-2` in a group, empty otherwise), `{extension}`, `{date(Y/m)}`. It builds originals with `file_path_format`, and each run's prefix with `run_path_format` (the media's placeholders and `{run}`). Every driver writes a run's files under its prefix: remote transcoders with their own file names, the `ffmpeg` driver with the last segment of `file_path_format`. A placeholder that names a missing attribute, or a value that would leave its directory, throws. Paths are recorded, so consumers never rebuild them.
+- **Operations of the `ffmpeg` driver.** An application's operation implements `Transcoders\Ffmpeg\Operation` (and `ChecksRequirements` to check its options before its input is copied), and registers under a name of its own in `transcoders.ffmpeg.operations`: `'app.bumper' => Bumper::class`. A name can't replace a built-in operation. Other drivers don't run them ([decisions/0027](decisions/0027-custom-operations-and-run-options.md)).
 - **Types, renditions, transcoders, probers, URL signers and sources** register through the config or `Mediatheque::extend*()`.
 
 ## Commands

@@ -209,6 +209,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Transcoders
+    |--------------------------------------------------------------------------
+    |
+    | Operations of the application's for the ffmpeg transcoder: a name a
+    | rendition's `op` uses, and a class that implements
+    | Folklore\Mediatheque\Transcoders\Ffmpeg\Operation. A name can't replace
+    | a built-in operation; prefix yours (`app.bumper`). Other transcoders
+    | don't run them (docs/decisions/0027).
+    |
+    */
+    'transcoders' => [
+        'ffmpeg' => [
+            'operations' => [
+                // 'app.bumper' => App\Media\Bumper::class,
+            ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Binaries
     |--------------------------------------------------------------------------
     |

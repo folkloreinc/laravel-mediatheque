@@ -34,6 +34,7 @@ use Folklore\Mediatheque\Tests\Contracts\ChangesVisibilityContractTests;
 use Folklore\Mediatheque\Tests\Contracts\ReplacesOriginalsContractTests;
 use Folklore\Mediatheque\Tests\Contracts\ResolvesReferencesContractTests;
 use Folklore\Mediatheque\Tests\Contracts\RunActionsContractTests;
+use Folklore\Mediatheque\Tests\Contracts\RunOptionsContractTests;
 use Folklore\Mediatheque\Tests\TestCase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Event;
@@ -47,6 +48,7 @@ class MediathequeFakeTest extends TestCase
     use ReplacesOriginalsContractTests;
     use ResolvesReferencesContractTests;
     use RunActionsContractTests;
+    use RunOptionsContractTests;
 
     protected function mediatheque(): MediathequeContract
     {

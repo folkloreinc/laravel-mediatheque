@@ -7,6 +7,8 @@ use Folklore\Mediatheque\Exceptions\InvalidConfig;
 use Folklore\Mediatheque\Exceptions\InvalidPipeline;
 use Folklore\Mediatheque\Pipelines\PipelineDefinition;
 use Folklore\Mediatheque\Pipelines\Rendition;
+use Folklore\Mediatheque\Transcoders\Ffmpeg\FfmpegTranscoder;
+use Folklore\Mediatheque\Transcoders\Ffmpeg\Operation;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 
@@ -20,6 +22,9 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class MediathequeConfig
 {
+    /** Operation names: `app.bumper`, `video.transcode`. */
+    private const string OPERATION_PATTERN = '/^[A-Za-z][A-Za-z0-9_-]*(\.[A-Za-z][A-Za-z0-9_-]*)*$/';
+
     public function __construct(
         private readonly Repository $config,
     ) {}
@@ -317,6 +322,47 @@ final class MediathequeConfig
     }
 
     /**
+     * The application's operations of the ffmpeg transcoder
+     * (`transcoders.ffmpeg.operations`, docs/decisions/0027): names like
+     * `app.bumper`, which can't replace a built-in operation, and classes
+     * that implement its Operation contract.
+     *
+     * @return array<string, class-string<Operation>>
+     */
+    public function ffmpegOperations(): array
+    {
+        $key = 'transcoders.ffmpeg.operations';
+        $operations = $this->config->get('mediatheque.'.$key) ?? [];
+
+        if (! is_array($operations)) {
+            throw InvalidConfig::at($key, 'expected an array of operation classes keyed by operation name');
+        }
+
+        $read = [];
+        foreach ($operations as $name => $class) {
+            if (! is_string($name) || preg_match(self::OPERATION_PATTERN, $name) !== 1) {
+                throw InvalidConfig::at($key, sprintf(
+                    '"%s" is not an operation name: segments of letters, digits, "_" and "-", separated by dots, such as "app.bumper"',
+                    is_string($name) ? $name : get_debug_type($name),
+                ));
+            }
+            if (isset(FfmpegTranscoder::OPERATIONS[$name])) {
+                throw InvalidConfig::at($key.'.'.$name, 'a built-in operation can\'t be replaced: give yours another name, such as "app.'.$name.'"');
+            }
+            if (! is_string($class) || ! class_exists($class) || ! is_subclass_of($class, Operation::class)) {
+                throw InvalidConfig::at($key.'.'.$name, sprintf(
+                    'expected a class that implements %s, got "%s"',
+                    Operation::class,
+                    is_string($class) ? $class : get_debug_type($class),
+                ));
+            }
+            $read[$name] = $class;
+        }
+
+        return $read;
+    }
+
+    /**
      * The pipeline a type runs by default, or null when it has none.
      */
     public function pipelineOfType(string $type): ?PipelineDefinition
@@ -357,6 +403,7 @@ final class MediathequeConfig
         $this->temporaryTtl();
         $this->binary('ffmpeg');
         $this->binary('ffprobe');
+        $this->ffmpegOperations();
         $this->probeTimeout();
         $this->jobsConnection();
         $this->jobsQueue();

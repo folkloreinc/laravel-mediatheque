@@ -82,6 +82,35 @@ final readonly class PipelineDefinition
         return new self($name, $parsed, $transcoder, $source);
     }
 
+    /**
+     * The pipeline with options of one run, keyed by rendition name
+     * (docs/decisions/0027): each rendition's options replace its options of
+     * the same name.
+     *
+     * @param  array<array-key, mixed>  $options
+     *
+     * @throws InvalidPipeline
+     */
+    public function withOptions(array $options): self
+    {
+        if ($options === []) {
+            return $this;
+        }
+
+        $renditions = $this->renditions;
+        foreach ($options as $name => $renditionOptions) {
+            if (! is_string($name) || ! isset($renditions[$name])) {
+                throw new InvalidPipeline(sprintf('The pipeline "%s" has no rendition "%s" to pass options to.', $this->name, $name));
+            }
+            if (! is_array($renditionOptions)) {
+                throw new InvalidPipeline(sprintf('The options of the rendition "%s" must be an array keyed by option name.', $name));
+            }
+            $renditions[$name] = $renditions[$name]->withOptions($renditionOptions);
+        }
+
+        return new self($this->name, $renditions, $this->transcoder, $this->source);
+    }
+
     public function rendition(string $name): ?Rendition
     {
         return $this->renditions[$name] ?? null;

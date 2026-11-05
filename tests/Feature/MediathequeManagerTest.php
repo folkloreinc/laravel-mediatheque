@@ -28,6 +28,7 @@ use Folklore\Mediatheque\Tests\Contracts\ChangesVisibilityContractTests;
 use Folklore\Mediatheque\Tests\Contracts\ReplacesOriginalsContractTests;
 use Folklore\Mediatheque\Tests\Contracts\ResolvesReferencesContractTests;
 use Folklore\Mediatheque\Tests\Contracts\RunActionsContractTests;
+use Folklore\Mediatheque\Tests\Contracts\RunOptionsContractTests;
 use Folklore\Mediatheque\Tests\DatabaseTestCase;
 use Folklore\Mediatheque\Tests\Support\ScriptedTranscoder;
 use Folklore\Mediatheque\Transcoders\Capabilities;
@@ -46,6 +47,7 @@ class MediathequeManagerTest extends DatabaseTestCase
     use ReplacesOriginalsContractTests;
     use ResolvesReferencesContractTests;
     use RunActionsContractTests;
+    use RunOptionsContractTests;
 
     private ScriptedTranscoder $transcoder;
 
