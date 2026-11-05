@@ -15,6 +15,7 @@ final readonly class ConfigConversion
      * @param  list<string>  $notices  What was dropped, and why
      * @param  array<string, string>  $env  The environment variables that keys of the config read, by dot path: their value is the variable's default
      * @param  list<string>  $conflicts  1.x sources that an existing disk of the same name doesn't store like they did: their files resolve elsewhere
+     * @param  list<string>  $unmappedOptions  Options of the 1.x jobs of converted pipelines that 2.0 has no option for, by dot path (`pipelines.video.jobs.webm.parameters`)
      */
     public function __construct(
         public array $config,
@@ -22,6 +23,7 @@ final readonly class ConfigConversion
         public array $notices,
         public array $env = [],
         public array $conflicts = [],
+        public array $unmappedOptions = [],
     ) {}
 
     /**

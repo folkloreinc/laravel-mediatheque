@@ -19,7 +19,10 @@ use Illuminate\Support\Arr;
  * - the `mimes` of a type become a list of patterns, and its `pipeline`
  *   stays;
  * - the `jobs` of a pipeline become renditions when the `ffmpeg`
- *   transcoder can produce them;
+ *   transcoder can produce them, with the options that 2.0 has
+ *   (`max_width`, `resize`, `quality`…); the others are listed. A 1.x
+ *   default pipeline is written as 1.x ran it when the 2.0 default would
+ *   produce renditions it didn't (MP3 of audio);
  * - `uploads.max_size` (kilobytes), `process_timeout`, `jobs` and the
  *   ffmpeg binaries move to their 2.0 keys.
  *
@@ -93,6 +96,7 @@ final class LegacyConfig
         $notices = [];
         $conflicts = [];
         $variables = [];
+        $unmapped = [];
 
         foreach ($config as $key => $value) {
             if (! is_string($key)) {
@@ -157,14 +161,15 @@ final class LegacyConfig
 
                 case 'pipelines':
                     foreach (is_array($value) ? $value : [] as $name => $pipeline) {
-                        if ($name === 'document' && $pipeline == Arr::get($defaults, 'pipelines.document')) {
-                            $notices[] = self::DOCUMENT_PAGES;
-                        }
-                        if (! is_string($name) || $pipeline == Arr::get($defaults, 'pipelines.'.$name)) {
+                        if (! is_string($name)) {
                             continue;
                         }
 
-                        $pipeline = self::pipeline($name, $pipeline, $notices);
+                        if ($pipeline == Arr::get($defaults, 'pipelines.'.$name)) {
+                            $pipeline = self::defaultPipeline($name, $pipeline, $notices, $unmapped);
+                        } else {
+                            $pipeline = self::pipeline($name, $pipeline, $notices, $unmapped);
+                        }
                         if ($pipeline !== null) {
                             $pipelines[$name] = $pipeline;
                         }
@@ -263,7 +268,7 @@ final class LegacyConfig
             $converted['jobs'] = $jobs;
         }
 
-        return new ConfigConversion($converted, $newDisks, array_values(array_unique([...$conflicts, ...$notices])), $variables, $conflicts);
+        return new ConfigConversion($converted, $newDisks, array_values(array_unique([...$conflicts, ...$notices])), $variables, $conflicts, $unmapped);
     }
 
     /**
@@ -331,13 +336,58 @@ final class LegacyConfig
     }
 
     /**
+     * A 1.x pipeline equal to the 1.x default. The 2.0 default replaces it,
+     * unless it produces renditions that 1.x didn't (the 2.0 `audio`
+     * pipeline transcodes to MP3, which 1.x didn't) and every job of the 1.x
+     * pipeline has a 2.0 rendition: then it is written as 1.x ran it. Null
+     * for the 2.0 default.
+     *
+     * @param  list<string>  $notices
+     * @param  list<string>  $unmapped
+     * @return array<array-key, mixed>|null
+     */
+    private static function defaultPipeline(string $name, mixed $pipeline, array &$notices, array &$unmapped): ?array
+    {
+        if ($name === 'document') {
+            $notices[] = self::DOCUMENT_PAGES;
+        }
+
+        $jobs = is_array($pipeline) && is_array($pipeline['jobs'] ?? null) ? array_filter($pipeline['jobs'], fn (mixed $job) => $job !== null) : [];
+        $defaults = require dirname(__DIR__, 2).'/config/mediatheque.php';
+        $renditions = is_array($defaults) ? Arr::get($defaults, 'pipelines.'.$name.'.renditions') : null;
+        if ($jobs === [] || ! is_array($renditions)) {
+            return null;
+        }
+
+        $ignored = [];
+        $dropped = [];
+        $converted = self::pipeline($name, $pipeline, $ignored, $dropped);
+        $kept = is_array($converted) && is_array($converted['renditions'] ?? null) ? $converted['renditions'] : [];
+        if (count($kept) !== count($jobs)) {
+            return null;
+        }
+
+        $operations = fn (array $renditions): array => array_unique(array_filter(array_map(fn (mixed $rendition) => is_array($rendition) && is_string($rendition['op'] ?? null) ? $rendition['op'] : null, $renditions)));
+        $added = array_values(array_diff($operations($renditions), $operations($kept)));
+        if ($added === []) {
+            return null;
+        }
+
+        $notices[] = sprintf('The 1.x pipeline "%s" is written as 1.x ran it: the 2.0 default would also run %s, which 1.x didn\'t.', $name, implode(', ', $added));
+        array_push($unmapped, ...$dropped);
+
+        return $converted;
+    }
+
+    /**
      * A 2.0 pipeline from a 1.x one: the renditions of its jobs that the
      * `ffmpeg` transcoder can produce. Null when none can be produced.
      *
      * @param  list<string>  $notices
+     * @param  list<string>  $unmapped  The options of its jobs that 2.0 doesn't have, by dot path
      * @return array<array-key, mixed>|false|null
      */
-    private static function pipeline(string $name, mixed $pipeline, array &$notices): array|false|null
+    private static function pipeline(string $name, mixed $pipeline, array &$notices, array &$unmapped): array|false|null
     {
         if ($pipeline === false || $pipeline === null) {
             return $pipeline === false ? false : null;
@@ -356,6 +406,7 @@ final class LegacyConfig
         $queue = is_string($pipeline['queue'] ?? null) ? $pipeline['queue'] : null;
         $fromFile = $pipeline['from_file'] ?? null;
         $renditions = [];
+        $dropped = [];
 
         foreach (is_array($pipeline['jobs']) ? $pipeline['jobs'] : [] as $job => $definition) {
             if (! is_string($job) || $definition === null) {
@@ -378,6 +429,12 @@ final class LegacyConfig
             } else {
                 $renditions[$job] = $rendition;
             }
+
+            if (isset($renditions[$job])) {
+                foreach (LegacyJobs::unmappedOptions($definition) as $option) {
+                    $dropped[] = sprintf('pipelines.%s.jobs.%s.%s', $name, $job, $option);
+                }
+            }
         }
 
         if ($renditions === []) {
@@ -393,6 +450,8 @@ final class LegacyConfig
 
             return null;
         }
+
+        array_push($unmapped, ...$dropped);
 
         return ['renditions' => $renditions];
     }
