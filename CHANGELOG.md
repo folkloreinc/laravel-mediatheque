@@ -6,6 +6,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Fixed
+
+- `mediatheque:upgrade --config` keeps the options of 1.x jobs that 2.0 has, which a pipeline's renditions would otherwise lose: `max_width` and `max_height` of `H264` and `WebM`, their `resize` (`['720', '-2']`) as `max_width` or `max_height`, their `quality` as `crf`, and the `width` and `height` of `Audio\Thumbnails` as the waveform's. It lists the options it can't write (`parameters`, `audio_codec`, `zoom`…). A 1.x `audio` pipeline left as the 1.x default is written as 1.x ran it, a waveform only, instead of the 2.0 default, which also transcodes audio to MP3. The compatibility layer reads a 1.x config the same way. `--config` also prints the disks of the 1.x sources that the package made disks of when it booted, a `filesystem` source on another disk for instance, instead of leaving `source` on a disk that `config/filesystems.php` doesn't have (#156).
+
 ## [2.0.0-alpha.14] - 2026-10-30
 
 Web-ready H.264 on the `ffmpeg` driver (#152): `video.transcode` can copy an H.264 upload that already fits the rendition instead of encoding it (`passthrough`), takes Eclair's `max_bitrate`, and encodes H.264 with a keyframe every 4 seconds and a maximum bitrate from the output's size.

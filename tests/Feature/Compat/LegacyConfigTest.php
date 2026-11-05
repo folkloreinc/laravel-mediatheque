@@ -8,7 +8,9 @@ use Folklore\Mediatheque\Models\Media;
 use Folklore\Mediatheque\Support\ConfigMerger;
 use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Tests\TestCase;
+use Illuminate\Foundation\Application;
 use Illuminate\Support\Arr;
+use Orchestra\Testbench\Attributes\DefineEnvironment;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
@@ -60,11 +62,25 @@ class LegacyConfigTest extends TestCase
     }
 
     #[Test]
-    public function the_1x_defaults_are_no_overrides(): void
+    public function the_1x_defaults_are_no_overrides_but_the_audio_pipeline(): void
     {
         $conversion = LegacyConfig::convert(self::v1Config(), ['public' => ['driver' => 'local', 'root' => storage_path('app/public'), 'url' => 'http://localhost/storage']]);
 
-        $this->assertSame(['table_prefix' => 'mediatheque_', 'source' => 'public'], $conversion->config);
+        // The 2.0 audio pipeline would also transcode audio to MP3, which 1.x
+        // didn't: the 1.x waveform is kept. The video pipeline has a job 2.0
+        // can't run (HEVC), and the document one is the 2.0 default: their
+        // 2.0 defaults apply
+        $this->assertSame([
+            'table_prefix' => 'mediatheque_',
+            'source' => 'public',
+            'pipelines' => ['audio' => ['renditions' => ['thumbnails' => ['op' => 'audio.waveform', 'width' => 1200, 'height' => 400, 'color' => '#000000', 'role' => 'thumbnail']]]],
+        ], $conversion->config);
+        $this->assertContains('The 1.x pipeline "audio" is written as 1.x ran it: the 2.0 default would also run audio.transcode, which 1.x didn\'t.', $conversion->notices);
+        $this->assertContains(LegacyConfig::DOCUMENT_PAGES, $conversion->notices);
+        $this->assertSame([
+            'pipelines.audio.jobs.thumbnails.zoom',
+            'pipelines.audio.jobs.thumbnails.background_color',
+        ], $conversion->unmappedOptions);
         // The `cloud` source of the defaults becomes a disk; `public` is one already
         $this->assertSame(['cloud'], array_keys($conversion->disks));
         $this->assertSame(storage_path('app/public'), Arr::get($conversion->disks, 'cloud.root'));
@@ -139,7 +155,9 @@ class LegacyConfigTest extends TestCase
         $conversion = LegacyConfig::convert($config, []);
 
         $this->assertSame(['pipeline' => null], Arr::get($conversion->config, 'types.font'));
-        $this->assertArrayNotHasKey('pipelines', $conversion->config);
+        $pipelines = $conversion->config['pipelines'] ?? [];
+        $this->assertIsArray($pipelines);
+        $this->assertArrayNotHasKey('fonts', $pipelines);
         $this->assertStringContainsString('Font\\WebFonts', implode("\n", $conversion->notices));
         $this->assertNull($this->read($conversion->config)->type('font')->pipeline);
     }
@@ -169,5 +187,111 @@ class LegacyConfigTest extends TestCase
         $laravel = ['public' => ['driver' => 'local', 'root' => storage_path('app/public').'/', 'url' => 'http://localhost/storage', 'visibility' => 'public']];
 
         $this->assertSame([], LegacyConfig::convert($config, $laravel)->conflicts);
+    }
+
+    /**
+     * The video and audio pipelines of a 1.x site, with options of their
+     * jobs, and named pipelines that resize their video.
+     *
+     * @return array<array-key, mixed>
+     */
+    public static function v1ConfigWithJobOptions(): array
+    {
+        $config = self::v1Config();
+        Arr::set($config, 'pipelines.video.jobs', [
+            'h264' => ['job' => 'Folklore\\Mediatheque\\Jobs\\Video\\H264', 'max_width' => 1920, 'max_height' => 1920],
+            'webm' => [
+                'job' => 'Folklore\\Mediatheque\\Jobs\\Video\\WebM',
+                'max_width' => '1920',
+                'max_height' => '1920',
+                'quality' => 14,
+                'audio_codec' => 'libvorbis',
+                'parameters' => ['-deadline', 'good'],
+            ],
+            'thumbnails' => ['job' => 'Folklore\\Mediatheque\\Jobs\\Video\\Thumbnails', 'count' => 5, 'in_middle' => true],
+        ]);
+        Arr::set($config, 'pipelines.bumper_720', ['jobs' => ['h264' => ['job' => 'Folklore\\Mediatheque\\Jobs\\Video\\H264', 'resize' => ['720', '-2']]]]);
+        Arr::set($config, 'pipelines.bumper_portrait', ['jobs' => ['h264' => ['job' => 'Folklore\\Mediatheque\\Jobs\\Video\\H264', 'resize' => ['-2', '1280'], 'max_height' => 1080]]]);
+        Arr::set($config, 'pipelines.bumper_half', ['jobs' => ['h264' => ['job' => 'Folklore\\Mediatheque\\Jobs\\Video\\H264', 'resize' => ['iw/2', '-2'], 'quality' => '20']]]);
+        Arr::set($config, 'pipelines.audio.jobs.thumbnails.width', '800');
+        Arr::set($config, 'pipelines.audio.jobs.thumbnails.height', 200);
+        Arr::set($config, 'pipelines.audio.jobs.thumbnails.color', 'FF0000');
+
+        return $config;
+    }
+
+    #[Test]
+    public function the_options_of_1x_jobs_become_the_options_of_their_renditions(): void
+    {
+        $conversion = LegacyConfig::convert(self::v1ConfigWithJobOptions(), []);
+
+        $this->assertSame([
+            'video' => ['renditions' => [
+                'h264' => ['op' => 'video.transcode', 'codec' => 'h264', 'max_width' => 1920, 'max_height' => 1920],
+                'webm' => ['op' => 'video.transcode', 'codec' => 'vp9', 'max_width' => 1920, 'max_height' => 1920, 'crf' => 14],
+                'thumbnails' => ['op' => 'video.thumbnails', 'count' => 5, 'role' => 'thumbnail'],
+            ]],
+            'audio' => ['renditions' => [
+                'thumbnails' => ['op' => 'audio.waveform', 'width' => 800, 'height' => 200, 'color' => '#FF0000', 'role' => 'thumbnail'],
+            ]],
+            // `resize` is a width, or a height, and the smaller of a size and `max_*`
+            'bumper_720' => ['renditions' => ['h264' => ['op' => 'video.transcode', 'codec' => 'h264', 'max_width' => 720]]],
+            'bumper_portrait' => ['renditions' => ['h264' => ['op' => 'video.transcode', 'codec' => 'h264', 'max_height' => 1080]]],
+            // An expression is no size
+            'bumper_half' => ['renditions' => ['h264' => ['op' => 'video.transcode', 'codec' => 'h264', 'crf' => 20]]],
+        ], $conversion->config['pipelines'] ?? null);
+
+        $this->assertSame([
+            'pipelines.video.jobs.webm.audio_codec',
+            'pipelines.video.jobs.webm.parameters',
+            'pipelines.video.jobs.thumbnails.in_middle',
+            'pipelines.audio.jobs.thumbnails.zoom',
+            'pipelines.audio.jobs.thumbnails.background_color',
+            'pipelines.bumper_half.jobs.h264.resize',
+        ], $conversion->unmappedOptions);
+
+        $read = $this->read($conversion->config);
+        $read->validate();
+        $this->assertSame(['max_width' => 720], Arr::except($read->pipeline('bumper_720')->renditions['h264']->options, ['codec']));
+    }
+
+    #[Test]
+    public function a_1x_default_pipeline_with_a_job_2_0_cant_run_gets_the_2_0_default(): void
+    {
+        $config = self::v1Config();
+        Arr::set($config, 'pipelines.audio.jobs.mp3', 'Folklore\\Mediatheque\\Jobs\\Audio\\Mp3');
+        // Equal to the 1.x default: HEVC doesn't run on ffmpeg
+        $video = Arr::get($config, 'pipelines.video');
+
+        $conversion = LegacyConfig::convert($config, []);
+
+        $this->assertSame(Arr::get(V1Defaults::config(), 'pipelines.video'), $video);
+        $pipelines = $conversion->config['pipelines'] ?? [];
+        $this->assertIsArray($pipelines);
+        $this->assertArrayNotHasKey('video', $pipelines);
+        $this->assertArrayNotHasKey('document', $pipelines);
+        $renditions = Arr::get($pipelines, 'audio.renditions');
+        $this->assertIsArray($renditions);
+        $this->assertSame(['thumbnails', 'mp3'], array_keys($renditions));
+    }
+
+    /**
+     * @param  Application  $app
+     */
+    protected function bootWithJobOptions($app): void
+    {
+        $app['config']->set('mediatheque', self::v1ConfigWithJobOptions());
+    }
+
+    #[Test]
+    #[DefineEnvironment('bootWithJobOptions')]
+    public function the_package_reads_the_options_of_1x_jobs_as_the_upgrade_writes_them(): void
+    {
+        $config = app(MediathequeConfig::class);
+
+        $this->assertSame(['codec' => 'vp9', 'max_width' => 1920, 'max_height' => 1920, 'crf' => 14], $config->pipeline('video')->renditions['webm']->options);
+        $this->assertSame(['codec' => 'h264', 'max_width' => 720], $config->pipeline('bumper_720')->renditions['h264']->options);
+        $this->assertSame(['thumbnails'], array_keys($config->pipeline('audio')->renditions), 'No MP3, as in 1.x.');
+        $this->assertSame(['width' => 800, 'height' => 200, 'color' => '#FF0000'], $config->pipeline('audio')->renditions['thumbnails']->options);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Folklore\Mediatheque\Console;
 
+use Folklore\Mediatheque\Compat\ConfigConversion;
 use Folklore\Mediatheque\Compat\LegacyConfig;
 use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Upgrade\Converter;
@@ -102,7 +103,7 @@ class UpgradeCommand extends Command
         $this->components->info('Media are recognized by these morph types: '.implode(', ', $tables->mediaTypes).'; files by: '.implode(', ', $tables->fileTypes).'.');
 
         $legacy = $this->legacyConfig($files);
-        $conflicts = $legacy !== null ? LegacyConfig::convert($legacy)->conflicts : [];
+        $conflicts = $legacy !== null ? LegacyConfig::convert($legacy, $this->applicationDisks())->conflicts : [];
         foreach ($conflicts as $conflict) {
             $this->components->warn($conflict);
         }
@@ -244,12 +245,13 @@ class UpgradeCommand extends Command
             return self::SUCCESS;
         }
 
-        $conversion = LegacyConfig::convert($file->config, null, $file->env);
+        $disks = $this->applicationDisks();
+        $conversion = LegacyConfig::convert($file->config, $disks, $file->env);
 
         // Disks are compared with config/filesystems.php as this machine
         // reads it: the 1.x sources too, as --check and the boot do
         $live = require $path;
-        $conflicts = is_array($live) ? LegacyConfig::convert($live)->conflicts : $conversion->conflicts;
+        $conflicts = is_array($live) ? LegacyConfig::convert($live, $disks)->conflicts : $conversion->conflicts;
         $notices = array_values(array_unique([...$conflicts, ...array_diff($conversion->notices, $conversion->conflicts)]));
         $backup = $path.'.1x.bak';
         $files->copy($path, $backup);
@@ -259,6 +261,10 @@ class UpgradeCommand extends Command
 
         foreach ($notices as $notice) {
             $this->components->warn($notice);
+        }
+
+        if ($conversion->unmappedOptions !== []) {
+            $this->components->warn(sprintf('These options of 1.x jobs have no 2.0 option, and are dropped: %s. Check the renditions of the rewritten file (docs/upgrade.md).', implode(', ', $conversion->unmappedOptions)));
         }
 
         $unread = array_values(array_diff($file->variables, $conversion->env));
@@ -279,6 +285,30 @@ class UpgradeCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The disks of config/filesystems.php, without those the package added
+     * for the 1.x sources when it booted with a 1.x config: the rewritten
+     * file has no 1.x sources, so they are disks to add.
+     *
+     * @return array<array-key, mixed>
+     */
+    private function applicationDisks(): array
+    {
+        $disks = $this->laravel->make('config')->get('filesystems.disks', []);
+        $disks = is_array($disks) ? $disks : [];
+
+        if ($this->laravel->bound(ConfigConversion::class)) {
+            $booted = $this->laravel->make(ConfigConversion::class);
+            foreach ($booted->disks as $name => $disk) {
+                if (($disks[$name] ?? null) === $disk) {
+                    unset($disks[$name]);
+                }
+            }
+        }
+
+        return $disks;
     }
 
     /**

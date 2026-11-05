@@ -3,6 +3,7 @@
 namespace Folklore\Mediatheque;
 
 use Folklore\Image\Contracts\SourceResolver;
+use Folklore\Mediatheque\Compat\ConfigConversion;
 use Folklore\Mediatheque\Compat\Deprecation;
 use Folklore\Mediatheque\Compat\LegacyBindings;
 use Folklore\Mediatheque\Compat\LegacyConfig;
@@ -105,6 +106,9 @@ class ServiceProvider extends BaseServiceProvider
             foreach ($conversion->disks as $name => $disk) {
                 $config->set('filesystems.disks.'.$name, $disk);
             }
+            // `mediatheque:upgrade --config` prints the disks that
+            // config/filesystems.php needs without these
+            $this->app->instance(ConfigConversion::class, $conversion);
 
             Deprecation::trigger('config/mediatheque.php has the 1.x shape: rewrite it with `php artisan mediatheque:upgrade --config`.');
 
