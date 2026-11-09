@@ -324,6 +324,18 @@ class MediathequeFakeTest extends TestCase
     }
 
     #[Test]
+    public function a_transcode_of_a_span_lasts_as_long_as_the_span(): void
+    {
+        config(['mediatheque.pipelines.video.renditions.preview' => ['op' => 'video.transcode', 'duration' => 5, 'role' => 'preview']]);
+        Mediatheque::fake()->probeWith(['duration' => 12.5]);
+
+        $media = Mediatheque::ingest($this->video());
+
+        $this->assertSame(5.0, $media->file('preview')?->duration());
+        $this->assertSame(12.5, $media->file('h264')?->duration());
+    }
+
+    #[Test]
     public function a_failed_probe_fails_the_media_before_its_pipeline(): void
     {
         Event::fake();

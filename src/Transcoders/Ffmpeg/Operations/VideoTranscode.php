@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque\Transcoders\Ffmpeg\Operations;
 
 use Folklore\Mediatheque\Enums\TranscoderErrorCode;
 use Folklore\Mediatheque\Pipelines\Rendition;
+use Folklore\Mediatheque\Pipelines\Span;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\Ffmpeg;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\LocalOutput;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\Operation;
@@ -29,9 +30,13 @@ use Folklore\Mediatheque\Transcoders\Ffmpeg\VideoSource;
  *   bitrate) is copied instead of encoded, with its audio when it is AAC in
  *   mono or stereo at most twice `audio_bitrate`. The file's metadata says
  *   what was copied: `video` and `audio`, `copied` or `encoded`.
+ * - `start` and `duration`, in seconds: the output keeps a span of the input,
+ *   from `start` (0) for `duration` (until the end). A copied video starts
+ *   at the keyframe at or before `start`, so a cut from 0 starts on a
+ *   keyframe. The progress is measured on the span (docs/decisions/0028).
  *
- * The defaults and `passthrough` are those of Eclair's `video.transcode`
- * (docs/decisions/0026).
+ * The defaults, `passthrough`, `start` and `duration` are those of Eclair's
+ * `video.transcode` (docs/decisions/0026 and 0028).
  */
 class VideoTranscode implements Operation
 {
@@ -54,8 +59,13 @@ class VideoTranscode implements Operation
             throw OperationFailed::because(TranscoderErrorCode::OperationFailed, sprintf('The codec "%s" of the rendition "%s" is not supported: use h264 or vp9.', $codec, $context->rendition->name));
         }
 
+        $span = self::span($context);
         $source = VideoSource::fromFfprobe($this->ffmpeg->probe($context->input, $context))
             ?? throw OperationFailed::because(TranscoderErrorCode::UnsupportedInput, 'The file has no video stream.');
+        $inputDuration = $context->duration();
+        if ($inputDuration !== null && $span->start >= $inputDuration) {
+            throw OperationFailed::because(TranscoderErrorCode::UnsupportedInput, sprintf('The video lasts %s seconds: it ends before the start of the rendition "%s", at %s.', round($inputDuration, 3), $context->rendition->name, $span->start));
+        }
         $output = $context->outputDirectory.'/output.'.$this->extension($context->rendition);
         $maxWidth = Ffmpeg::intOption($context, 'max_width', null);
         $maxHeight = Ffmpeg::intOption($context, 'max_height', null);
@@ -78,14 +88,17 @@ class VideoTranscode implements Operation
             : ['-c:a', $codec === 'vp9' ? 'libopus' : 'aac', '-b:a', $audioBitrate.'k', '-ac', '2'];
 
         $this->ffmpeg->run([
+            // Before the input, so that ffmpeg seeks instead of decoding up to the start.
+            ...($span->start > 0 ? ['-ss', (string) $span->start] : []),
             '-i', $context->input,
+            ...($span->duration === null ? [] : ['-t', (string) $span->duration]),
             '-map', '0:v:0',
             '-map', '0:a:0?',
             ...$video,
             ...$audio,
             ...($codec === 'h264' ? ['-movflags', '+faststart'] : []),
             $output,
-        ], $context, reportsProgress: true);
+        ], $context, reportsProgress: true, duration: $span->length($inputDuration));
 
         return [new LocalOutput($output, $codec === 'vp9' ? 'video/webm' : 'video/mp4', metadata: [
             'video' => $copiesVideo ? 'copied' : 'encoded',
@@ -116,6 +129,24 @@ class VideoTranscode implements Operation
             '-g', (string) (int) round(self::KEYFRAME_INTERVAL * ($source->frameRate ?? 25)),
             ...($maxBitrate === null ? [] : ['-maxrate', $maxBitrate.'k', '-bufsize', ($maxBitrate * 2).'k']),
         ];
+    }
+
+    /**
+     * The span of `start` and `duration`, which must be numbers of seconds.
+     */
+    private static function span(OperationContext $context): Span
+    {
+        $start = $context->option('start', 0);
+        $duration = $context->option('duration');
+
+        if ((! is_int($start) && ! is_float($start)) || $start < 0) {
+            throw OperationFailed::because(TranscoderErrorCode::OperationFailed, sprintf('The option "start" of the rendition "%s" must be a number of seconds, 0 or more.', $context->rendition->name));
+        }
+        if ($duration !== null && ((! is_int($duration) && ! is_float($duration)) || $duration <= 0)) {
+            throw OperationFailed::because(TranscoderErrorCode::OperationFailed, sprintf('The option "duration" of the rendition "%s" must be a number of seconds, more than 0.', $context->rendition->name));
+        }
+
+        return Span::of($context->rendition);
     }
 
     private static function codec(Rendition $rendition): string

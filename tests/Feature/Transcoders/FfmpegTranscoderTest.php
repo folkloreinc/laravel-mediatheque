@@ -207,6 +207,70 @@ class FfmpegTranscoderTest extends DatabaseTestCase
         $this->assertSame('encoded', $media->file('bitrate')?->metadata('video'), 'The video is above `max_bitrate`.');
     }
 
+    #[Test]
+    public function a_transcode_keeps_the_span_of_start_and_duration(): void
+    {
+        config(['mediatheque.pipelines.video.renditions' => [
+            'h264' => ['op' => 'video.transcode', 'start' => 2, 'duration' => 3, 'preset' => 'ultrafast'],
+        ]]);
+
+        $media = $this->ingest('media/test_vertical_hevc.mp4', 'portrait.mp4');
+
+        $h264 = $media->file('h264');
+        $this->assertNotNull($h264);
+        $this->assertSame('encoded', $h264->metadata('video'));
+        $this->assertEqualsWithDelta(3.0, $h264->duration(), 0.1);
+        $duration = data_get($this->ffprobe($h264), 'format.duration');
+        $this->assertIsNumeric($duration);
+        $this->assertEqualsWithDelta(3.0, (float) $duration, 0.1);
+    }
+
+    #[Test]
+    public function passthrough_copies_the_first_seconds_of_a_video_that_already_fits(): void
+    {
+        config(['mediatheque.pipelines.video.renditions' => [
+            'preview' => ['op' => 'video.transcode', 'max_width' => 1280, 'max_height' => 1280, 'passthrough' => true, 'duration' => 0.5],
+        ]]);
+
+        $media = $this->ingest('media/test.mp4', 'clip.mp4');
+
+        $preview = $media->file('preview');
+        $this->assertNotNull($preview);
+        $this->assertSame(['copied', 'copied'], [$preview->metadata('video'), $preview->metadata('audio')]);
+        // Copied packets end on their own boundaries: the last audio frame can run over.
+        $this->assertEqualsWithDelta(0.5, $preview->duration(), 0.1);
+        $this->assertTrue($this->startsFast($preview));
+    }
+
+    #[Test]
+    public function a_transcode_that_starts_after_the_end_fails(): void
+    {
+        config(['mediatheque.pipelines.video.renditions' => [
+            'h264' => ['op' => 'video.transcode', 'start' => 30],
+        ]]);
+
+        $media = $this->ingest('media/test.mp4', 'clip.mp4');
+
+        $job = PipelineRun::query()->where('name', 'video')->sole()->job('h264');
+        $this->assertSame(JobStatus::Failed, $job?->status());
+        $this->assertSame(TranscoderErrorCode::UnsupportedInput, $job->error()?->code);
+        $this->assertNull($media->file('h264'));
+    }
+
+    #[Test]
+    public function a_transcode_refuses_a_span_that_is_not_in_seconds(): void
+    {
+        config(['mediatheque.pipelines.video.renditions' => [
+            'h264' => ['op' => 'video.transcode', 'duration' => '15s'],
+        ]]);
+
+        $this->ingest('media/test.mp4', 'clip.mp4');
+
+        $job = PipelineRun::query()->where('name', 'video')->sole()->job('h264');
+        $this->assertSame(TranscoderErrorCode::OperationFailed, $job?->error()?->code);
+        $this->assertStringContainsString('"duration"', (string) $job->error()->message);
+    }
+
     /**
      * The hash of each stream's packets, which a copy keeps.
      */
@@ -385,6 +449,31 @@ class FfmpegTranscoderTest extends DatabaseTestCase
     {
         $this->assertSame([], $this->transcodeReports([]), 'Without a duration, ffmpeg measures nothing: the rendition\'s progress stays null until it ends.');
         $this->assertNotSame([], $this->transcodeReports(['duration' => 1.0]));
+    }
+
+    #[Test]
+    public function a_transcode_of_a_span_measures_its_progress_on_the_span(): void
+    {
+        $reports = [];
+        $directory = app(LocalFiles::class)->temporaryDirectory();
+
+        try {
+            app(FfmpegTranscoder::class)->operation('video.transcode')->run(new OperationContext(
+                input: self::fixturePath('media/test_vertical_hevc.mp4'),
+                outputDirectory: $directory,
+                rendition: Rendition::fromArray('preview', ['op' => 'video.transcode', 'duration' => 4, 'preset' => 'ultrafast']),
+                metadata: ['duration' => 22.1],
+                progress: function (float $progress) use (&$reports) {
+                    $reports[] = $progress;
+                },
+                timeout: 60,
+            ));
+        } finally {
+            LocalFiles::removeDirectory($directory);
+        }
+
+        $this->assertNotEmpty($reports);
+        $this->assertGreaterThan(0.5, max(0.0, ...$reports), 'On the 4 seconds of the span, not the input\'s 22.');
     }
 
     #[Test]

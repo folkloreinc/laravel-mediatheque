@@ -9,6 +9,7 @@ use Folklore\Mediatheque\Enums\ProgressReporting;
 use Folklore\Mediatheque\Pipelines\OutputFile;
 use Folklore\Mediatheque\Pipelines\Outputs;
 use Folklore\Mediatheque\Pipelines\Rendition;
+use Folklore\Mediatheque\Pipelines\Span;
 use Folklore\Mediatheque\Transcoders\Capabilities;
 use Folklore\Mediatheque\Transcoders\TranscoderError;
 use Illuminate\Contracts\Filesystem\Factory as Filesystems;
@@ -16,7 +17,8 @@ use Illuminate\Contracts\Filesystem\Factory as Filesystems;
 /**
  * Completes every rendition at once with placeholder files, unless the test
  * made it fail or skip. Conditions (`when`) are checked against the probed
- * metadata, as a real transcoder does.
+ * metadata, as a real transcoder does. A file lasts as long as the input,
+ * or as the rendition's span (`start` and `duration` of `video.transcode`).
  */
 class FakeTranscoder implements Transcoder
 {
@@ -95,6 +97,7 @@ class FakeTranscoder implements Transcoder
         $count = $rendition->options['count'] ?? 1;
         $count = is_int($count) && $count > 1 ? $count : null;
         $disk = $this->filesystems->disk($run->outputSource());
+        $duration = Span::of($rendition)->length(is_float($metadata['duration'] ?? null) ? $metadata['duration'] : null);
 
         $files = [];
         foreach (range(0, ($count ?? 1) - 1) as $index) {
@@ -107,7 +110,7 @@ class FakeTranscoder implements Transcoder
                 size: strlen('placeholder'),
                 width: is_int($metadata['width'] ?? null) ? $metadata['width'] : null,
                 height: is_int($metadata['height'] ?? null) ? $metadata['height'] : null,
-                duration: str_starts_with($mime, 'image/') ? null : (is_float($metadata['duration'] ?? null) ? $metadata['duration'] : null),
+                duration: str_starts_with($mime, 'image/') ? null : $duration,
             );
         }
 

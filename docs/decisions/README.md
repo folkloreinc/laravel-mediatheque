@@ -26,11 +26,12 @@ One file per decision. A decision is not edited once accepted: a later one repla
 | [0020](0020-attachments-by-handle-and-usages.md) | Attachments by handle, and the usage graph | Accepted, amended by 0021 |
 | [0021](0021-json-references-handle.md) | JSON references sync under one handle, `json` | Accepted |
 | [0022](0022-image-transform-and-orientation.md) | The transform, focal point and orientation of an image | Accepted |
-| [0023](0023-progress-of-runs.md) | The progress of runs, on the media, and an event | Accepted |
+| [0023](0023-progress-of-runs.md) | The progress of runs, on the media, and an event | Accepted, amended by 0028 |
 | [0024](0024-upgrade-conversion-rules.md) | How the upgrade from 1.x converts the data | Proposed |
 | [0025](0025-document-thumbnails-with-poppler.md) | Document thumbnails with Poppler | Proposed |
-| [0026](0026-h264-for-the-web-and-passthrough.md) | H.264 for the web, and `passthrough` of web-ready videos | Proposed |
+| [0026](0026-h264-for-the-web-and-passthrough.md) | H.264 for the web, and `passthrough` of web-ready videos | Proposed, amended by 0028 |
 | [0027](0027-custom-operations-and-run-options.md) | Custom operations of the `ffmpeg` driver, and the options of one run | Proposed |
+| [0028](0028-video-transcode-span.md) | A span of a video, with `start` and `duration` of `video.transcode` | Proposed |
 
 Template:
 
