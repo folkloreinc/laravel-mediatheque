@@ -10,7 +10,7 @@ use Symfony\Component\Process\Process;
 
 /**
  * Runs ffmpeg with `symfony/process`, without a shell. Reports progress
- * from `-progress` when the input's duration is known, and turns failures
+ * from `-progress` when the output's duration is known, and turns failures
  * into `OperationFailed` with Eclair's error codes.
  */
 class Ffmpeg
@@ -21,10 +21,11 @@ class Ffmpeg
 
     /**
      * @param  list<string>  $arguments  What follows `ffmpeg`, with the output last
+     * @param  float|null  $duration  The output's duration in seconds, which the progress is measured on: the input's by default
      */
-    public function run(array $arguments, OperationContext $context, bool $reportsProgress = false): void
+    public function run(array $arguments, OperationContext $context, bool $reportsProgress = false, ?float $duration = null): void
     {
-        $duration = $reportsProgress ? $context->duration() : null;
+        $duration = $reportsProgress ? ($duration ?? $context->duration()) : null;
         $command = [
             $this->binaries->path('ffmpeg'),
             '-hide_banner',

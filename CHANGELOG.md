@@ -6,6 +6,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Added
+
+- `video.transcode` takes Eclair's `start` and `duration`, in seconds, to keep a span of the video, such as its first 15 seconds for a short preview: from `start` (0 by default) for `duration` (until the end by default). On the `ffmpeg` driver they work with `passthrough` too, where a copied video starts at the keyframe at or before `start`; a `start` after the end of the video fails with `unsupported_input`. The progress of a run weighs such a rendition by its span rather than the input's duration, and `FakeTranscoder` gives its file the span as its duration (`Pipelines\Span`, [decisions/0028](docs/decisions/0028-video-transcode-span.md), #161).
+
 ## [2.0.0-alpha.15] - 2026-11-05
 
 Operations of the application's for the `ffmpeg` transcoder, and options for one run of a pipeline (#157, [decisions/0027](docs/decisions/0027-custom-operations-and-run-options.md)). `mediatheque:upgrade --config` keeps the options of 1.x jobs that 2.0 has (#156).

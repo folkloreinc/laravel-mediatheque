@@ -353,6 +353,23 @@ trait RecorderContractTests
     }
 
     #[Test]
+    public function a_run_weighs_a_transcode_of_a_span_by_the_span(): void
+    {
+        Event::fake();
+        $run = $this->createRun(PipelineDefinition::fromArray('video_preview', ['renditions' => [
+            'preview_15' => ['op' => 'video.transcode', 'duration' => 15],
+            'poster' => ['op' => 'video.poster', 'role' => 'poster'],
+        ]]));
+        $this->setDuration($run, 98.0);
+
+        $this->complete($run, 'poster');
+        $this->assertEqualsWithDelta(1 / 16, $this->freshRun($run)->progress(), 0.0001, 'The preview weighs its 15 seconds, not the input\'s 98.');
+
+        $this->recorder()->progress($this->job($run, 'preview_15'), 0.5);
+        $this->assertEqualsWithDelta(8.5 / 16, $this->freshRun($run)->progress(), 0.0001);
+    }
+
+    #[Test]
     public function rendition_progressed_is_dispatched_each_time_a_step_is_passed(): void
     {
         Event::fake([RenditionProgressed::class]);

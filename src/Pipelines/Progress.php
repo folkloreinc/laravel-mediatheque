@@ -8,9 +8,10 @@ use Folklore\Mediatheque\Metadata\MetadataKey;
 /**
  * The progress of a run, from its renditions (docs/decisions/0023).
  *
- * A rendition that transcodes the whole input weighs the input's duration
- * in seconds; any other rendition (poster, thumbnails, waveform, probe)
- * weighs one second. An ended rendition is done. A rendition that nothing
+ * A rendition that transcodes the input weighs the duration it encodes, in
+ * seconds: the input's, or its span's for a `video.transcode` with `start`
+ * or `duration` (docs/decisions/0028); any other rendition (poster,
+ * thumbnails, waveform, probe) weighs one second. An ended rendition is done. A rendition that nothing
  * measured yet counts as not started, so a short rendition that ends first
  * doesn't make the run look done, and the run's progress never goes down.
  */
@@ -38,7 +39,9 @@ final class Progress
                 continue;
             }
 
-            $weight = in_array($rendition->operation, self::TRANSCODES, true) && $duration !== null ? max(1.0, $duration) : 1.0;
+            $weight = in_array($rendition->operation, self::TRANSCODES, true) && $duration !== null
+                ? max(1.0, Span::of($rendition)->length($duration) ?? $duration)
+                : 1.0;
             $progress = $job->status()->isFinal() ? 1.0 : $job->progress();
             $total += $weight;
 
