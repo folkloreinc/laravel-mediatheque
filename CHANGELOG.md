@@ -6,6 +6,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+## [2.0.0-alpha.16] - 2026-11-09
+
+A span of a video with `start` and `duration` of `video.transcode`, for short previews (#161, [decisions/0028](docs/decisions/0028-video-transcode-span.md)).
+
 ### Added
 
 - `video.transcode` takes Eclair's `start` and `duration`, in seconds, to keep a span of the video, such as its first 15 seconds for a short preview: from `start` (0 by default) for `duration` (until the end by default). On the `ffmpeg` driver they work with `passthrough` too, where a copied video starts at the keyframe at or before `start`; a `start` after the end of the video fails with `unsupported_input`. The progress of a run weighs such a rendition by its span rather than the input's duration, and `FakeTranscoder` gives its file the span as its duration (`Pipelines\Span`, [decisions/0028](docs/decisions/0028-video-transcode-span.md), #161).
@@ -309,7 +313,8 @@ The first alpha of 2.0, for new projects: upload and play a video. The [README](
 - Presigned multipart uploads to an S3-compatible disk, for Uppy's `AwsS3` plugin: `Route::mediatheque()` registers routes to create an upload, sign its parts, list them, complete and abort it, inside the application's own middleware. A fresh install still exposes no route. Each step is authorized with the `create` ability of the media policy (denied without a policy); an upload belongs to the user who created it, and guests can't upload. Completing an upload ingests the file from the disk with the options of `Mediatheque::uploadsUsing()` (the application's attributes, such as a tenant id, chosen on the server); a rejected file is deleted. Errors are `application/problem+json`. New: the `uploads` table (published by `mediatheque:install`), the `Upload` model, and the `uploads` config (`disk`, `path`, `expires_after`, `url_ttl`) ([decisions/0015](docs/decisions/0015-new-install-schema-attributes-and-uploads.md), #54).
 - Releases are tagged by CI, from a commit of `v2.x` whose lint and test jobs passed, when `CHANGELOG.md` gets a dated section for a new version (#30).
 
-[Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.15...v2.x
+[Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.16...v2.x
+[2.0.0-alpha.16]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.15...v2.0.0-alpha.16
 [2.0.0-alpha.15]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.14...v2.0.0-alpha.15
 [2.0.0-alpha.14]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.13...v2.0.0-alpha.14
 [2.0.0-alpha.13]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.12...v2.0.0-alpha.13
