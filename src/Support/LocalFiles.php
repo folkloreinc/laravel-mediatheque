@@ -120,14 +120,33 @@ final class LocalFiles
         @rmdir($directory);
     }
 
+    /**
+     * The package's temporary directory, one per system user. Queue
+     * workers, the scheduler and commands run by hand often run as
+     * different users on the same server, sharing its temporary directory:
+     * a single directory, private to the user who created it first, would
+     * stop all the others.
+     */
     public static function root(): string
     {
-        $root = rtrim(sys_get_temp_dir(), '/').'/mediatheque';
+        $root = rtrim(sys_get_temp_dir(), '/').'/mediatheque'.self::userSuffix();
 
         if (! is_dir($root) && ! @mkdir($root, 0700, true) && ! is_dir($root)) {
             throw new RuntimeException(sprintf('Can\'t create the temporary directory "%s".', $root));
         }
 
+        if (! is_writable($root)) {
+            throw new RuntimeException(sprintf('The temporary directory "%s" isn\'t writable by this user.', $root));
+        }
+
         return $root;
+    }
+
+    /**
+     * The effective user id, when the posix extension tells it.
+     */
+    private static function userSuffix(): string
+    {
+        return function_exists('posix_geteuid') ? '-'.posix_geteuid() : '';
     }
 }

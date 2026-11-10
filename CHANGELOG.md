@@ -6,6 +6,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Fixed
+
+- The temporary directory is now one per system user, `mediatheque-{uid}` in the system's temporary directory. A single `mediatheque` directory, private to the user who created it first, stopped every other user: a command run by hand as one user made the queue workers, running as another, fail to copy any file. A temporary directory that the current user can't write to fails with a clear message.
+
 ## [2.0.0-alpha.16] - 2026-11-09
 
 A span of a video with `start` and `duration` of `video.transcode`, for short previews (#161, [decisions/0028](docs/decisions/0028-video-transcode-span.md)).
