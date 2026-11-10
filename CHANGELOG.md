@@ -6,6 +6,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+## [2.0.0-alpha.17] - 2026-11-10
+
+One temporary directory per system user, so that workers and commands run by different users no longer lock each other out (#164).
+
 ### Fixed
 
 - The temporary directory is now one per system user, `mediatheque-{uid}` in the system's temporary directory. A single `mediatheque` directory, private to the user who created it first, stopped every other user: a command run by hand as one user made the queue workers, running as another, fail to copy any file. A temporary directory that the current user can't write to fails with a clear message.
@@ -317,7 +321,8 @@ The first alpha of 2.0, for new projects: upload and play a video. The [README](
 - Presigned multipart uploads to an S3-compatible disk, for Uppy's `AwsS3` plugin: `Route::mediatheque()` registers routes to create an upload, sign its parts, list them, complete and abort it, inside the application's own middleware. A fresh install still exposes no route. Each step is authorized with the `create` ability of the media policy (denied without a policy); an upload belongs to the user who created it, and guests can't upload. Completing an upload ingests the file from the disk with the options of `Mediatheque::uploadsUsing()` (the application's attributes, such as a tenant id, chosen on the server); a rejected file is deleted. Errors are `application/problem+json`. New: the `uploads` table (published by `mediatheque:install`), the `Upload` model, and the `uploads` config (`disk`, `path`, `expires_after`, `url_ttl`) ([decisions/0015](docs/decisions/0015-new-install-schema-attributes-and-uploads.md), #54).
 - Releases are tagged by CI, from a commit of `v2.x` whose lint and test jobs passed, when `CHANGELOG.md` gets a dated section for a new version (#30).
 
-[Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.16...v2.x
+[Unreleased]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.17...v2.x
+[2.0.0-alpha.17]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.16...v2.0.0-alpha.17
 [2.0.0-alpha.16]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.15...v2.0.0-alpha.16
 [2.0.0-alpha.15]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.14...v2.0.0-alpha.15
 [2.0.0-alpha.14]: https://github.com/folkloreinc/laravel-mediatheque/compare/v2.0.0-alpha.13...v2.0.0-alpha.14
