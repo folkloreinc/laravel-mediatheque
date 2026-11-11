@@ -22,9 +22,9 @@ jobs:
         runs-on: ubuntu-24.04
         timeout-minutes: 10
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-            - uses: shivammathur/setup-php@v2
+            - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
               with:
                   php-version: '8.4'
                   coverage: none
@@ -33,7 +33,7 @@ jobs:
               run: composer validate --strict
 
             - name: Cache Composer downloads
-              uses: actions/cache@v4
+              uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
               with:
                   path: ~/.cache/composer/files
                   key: composer-${{ runner.os }}-lint-${{ hashFiles('composer.json') }}
@@ -56,9 +56,9 @@ jobs:
             run:
                 working-directory: dashboard
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-            - uses: actions/setup-node@v5
+            - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
               with:
                   node-version: 24
                   cache: npm
@@ -90,7 +90,7 @@ jobs:
                 php: ['8.3', '8.4', '8.5']
                 laravel: ['12.*', '13.*']
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
             # The Azure Ubuntu mirror sometimes throttles a runner to a few
             # dozen kB/s for the whole job, which apt's own timeouts don't catch
@@ -102,7 +102,7 @@ jobs:
 
             - name: Restore media tools packages
               id: apt-cache
-              uses: actions/cache/restore@v4
+              uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
               env:
                   # A slow restore counts as a miss instead of holding the job
                   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
@@ -147,19 +147,19 @@ jobs:
 
             - name: Save media tools packages
               if: steps.apt-cache.outputs.cache-hit != 'true'
-              uses: actions/cache/save@v4
+              uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
               with:
                   path: ~/apt-archives
                   key: ${{ steps.apt-cache.outputs.cache-primary-key }}
 
-            - uses: shivammathur/setup-php@v2
+            - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
               with:
                   php-version: ${{ matrix.php }}
                   extensions: imagick
                   coverage: none
 
             - name: Cache Composer downloads
-              uses: actions/cache@v4
+              uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
               with:
                   path: ~/.cache/composer/files
                   key: composer-${{ runner.os }}-${{ matrix.php }}-${{ matrix.laravel }}-${{ hashFiles('composer.json') }}
@@ -204,16 +204,16 @@ jobs:
                     --health-timeout=5s
                     --health-retries=30
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-            - uses: shivammathur/setup-php@v2
+            - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
               with:
                   php-version: '8.4'
                   extensions: pdo_mysql
                   coverage: none
 
             - name: Cache Composer downloads
-              uses: actions/cache@v4
+              uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
               with:
                   path: ~/.cache/composer/files
                   key: composer-${{ runner.os }}-8.4-${{ matrix.laravel }}-${{ hashFiles('composer.json') }}
@@ -260,16 +260,16 @@ jobs:
                     --health-timeout=5s
                     --health-retries=30
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-            - uses: shivammathur/setup-php@v2
+            - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
               with:
                   php-version: '8.4'
                   extensions: pdo_pgsql
                   coverage: none
 
             - name: Cache Composer downloads
-              uses: actions/cache@v4
+              uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
               with:
                   path: ~/.cache/composer/files
                   key: composer-${{ runner.os }}-8.4-${{ matrix.laravel }}-${{ hashFiles('composer.json') }}
@@ -304,7 +304,9 @@ jobs:
         env:
             GH_TOKEN: ${{ github.token }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+              with:
+                  persist-credentials: false
 
             - name: Find the version to release
               id: version
