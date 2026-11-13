@@ -34,6 +34,7 @@ class EnumsTest extends TestCase
         yield 'TranscoderErrorCode (Eclair\'s task error codes)' => [TranscoderErrorCode::class, [
             'input_unreadable', 'unsupported_input', 'timeout', 'limit_exceeded',
             'operation_failed', 'storage_failed', 'provider_failed', 'dependency_failed',
+            'provider_unavailable', 'provider_refused',
         ]];
     }
 

@@ -124,4 +124,16 @@ interface Media
      * the deletion is forced.
      */
     public function isUsed(): bool;
+
+    /**
+     * Whether the media is an embed: a video or audio on a platform, whose
+     * original is the platform's page (docs/decisions/0029).
+     */
+    public function isEmbed(): bool;
+
+    /**
+     * The URL of an embed's player, for an iframe, once probed. Null for
+     * other media.
+     */
+    public function embedUrl(): ?string;
 }

@@ -32,6 +32,7 @@ One file per decision. A decision is not edited once accepted: a later one repla
 | [0026](0026-h264-for-the-web-and-passthrough.md) | H.264 for the web, and `passthrough` of web-ready videos | Proposed, amended by 0028 |
 | [0027](0027-custom-operations-and-run-options.md) | Custom operations of the `ffmpeg` driver, and the options of one run | Proposed |
 | [0028](0028-video-transcode-span.md) | A span of a video, with `start` and `duration` of `video.transcode` | Proposed |
+| [0029](0029-embeds.md) | Embeds, media whose original is a platform's page | Proposed |
 
 Template:
 

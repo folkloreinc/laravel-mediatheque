@@ -73,6 +73,11 @@ class MediaResource extends JsonResource
             'url' => FileResource::url(fn () => $media->url()),
             'thumbnail_url' => $this->thumbnailUrl($media),
             'transform' => $media->transform(),
+            'embed' => $media->isEmbed() ? [
+                'provider' => self::string($media->metadata(MetadataKey::Provider->value)),
+                'url' => self::string($media->metadata(MetadataKey::ProviderUrl->value)),
+                'embed_url' => $media->embedUrl(),
+            ] : null,
             'metadata' => (object) array_filter($media->metadata(), fn (mixed $value) => $value !== null),
             'files' => (object) $this->files($media, $request),
             'created_at' => self::time(self::timestamp($media, 'created')),
@@ -82,7 +87,7 @@ class MediaResource extends JsonResource
 
     /**
      * The URL of the media's thumbnail: the file an image plays, or the
-     * poster or first thumbnail of other types.
+     * poster or first thumbnail of other types, or an embed's provider's.
      */
     protected function thumbnailUrl(Media $media): ?string
     {
@@ -91,8 +96,12 @@ class MediaResource extends JsonResource
         }
 
         $thumbnail = $media->thumbnail();
+        if ($thumbnail !== null) {
+            return FileResource::url(fn () => $thumbnail->url());
+        }
 
-        return $thumbnail !== null ? FileResource::url(fn () => $thumbnail->url()) : null;
+        // An embed without a poster of its own: its provider's thumbnail (docs/decisions/0029)
+        return $media->isEmbed() ? self::string($media->metadata(MetadataKey::ThumbnailUrl->value)) : null;
     }
 
     /**

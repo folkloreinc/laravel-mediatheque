@@ -5,6 +5,7 @@ namespace Folklore\Mediatheque\Testing;
 use Closure;
 use Folklore\Mediatheque\Contracts\Models\File;
 use Folklore\Mediatheque\Contracts\Prober;
+use Folklore\Mediatheque\Embeds\EmbedProviders;
 use Folklore\Mediatheque\Enums\ProbeKind;
 use Folklore\Mediatheque\Probe\ProbeOutcome;
 use Folklore\Mediatheque\Transcoders\TranscoderError;
@@ -43,6 +44,24 @@ class FakeProber implements Prober
      */
     public static function fixture(File $file): array
     {
+        // An embed: what a provider says, with its URL's kind (docs/decisions/0029)
+        $url = $file->metadata('provider_url');
+        $embed = $file->isRemote() && is_string($url) ? EmbedProviders::match($url) : null;
+        if ($embed !== null) {
+            return [
+                'kind' => $embed->kind->value,
+                'mime' => 'text/html',
+                'provider' => $embed->provider,
+                'provider_id' => $embed->id,
+                'provider_url' => $embed->url,
+                'embed_url' => $embed->url.'#player',
+                'title' => 'Fake embed',
+                'author_name' => 'Fake author',
+                'thumbnail_url' => 'https://example.com/'.$embed->id.'.jpg',
+                ...($embed->kind === ProbeKind::Audio ? ['duration' => 10.0] : ['width' => 1920, 'height' => 1080, 'duration' => 10.0]),
+            ];
+        }
+
         $mime = $file->mime() ?? 'application/octet-stream';
         $kind = self::kind($mime);
 

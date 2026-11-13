@@ -22,6 +22,7 @@ use Folklore\Mediatheque\Exceptions\MediaInUse;
 use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
 use Folklore\Mediatheque\Jobs\DeleteStoredFiles;
+use Folklore\Mediatheque\Metadata\MetadataKey;
 use Folklore\Mediatheque\Pipelines\Processing;
 use Folklore\Mediatheque\Pipelines\RunFailure;
 use Folklore\Mediatheque\Support\MediathequeConfig;
@@ -471,5 +472,17 @@ class Media extends Model implements MediaContract
         $main = app(MediathequeConfig::class)->mainRenditionOfType($this->type);
 
         return ($main !== null ? $this->file($main) : null) ?? $this->original();
+    }
+
+    public function isEmbed(): bool
+    {
+        return $this->original()?->isRemote() === true && is_string($this->metadata(MetadataKey::Provider->value));
+    }
+
+    public function embedUrl(): ?string
+    {
+        $url = $this->isEmbed() ? $this->metadata(MetadataKey::EmbedUrl->value) : null;
+
+        return is_string($url) && $url !== '' ? $url : null;
     }
 }

@@ -6,6 +6,15 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Breaking changes
+
+- The `File` contract has `provider()` and `providerRef()`, and the `Media` contract `isEmbed()` and `embedUrl()`: an application's own implementations of these contracts add them (#170).
+- `MediaResource` has an `embed` key, null for media that aren't embeds (#170).
+
+### Added
+
+- Embeds: `Source::embed($url)` ingests a video or audio on YouTube, Vimeo, Dailymotion, SoundCloud, Spotify, TikTok or Instagram as a media whose original is the platform's page, of its provider's `video` or `audio` type, without downloading anything. Only the providers of `mediatheque.embeds.providers` are accepted; another URL is rejected with `RejectionReason::EmbedNotAllowed`. The local prober reads the provider's oEmbed (`OEmbedProber`, `mediatheque.embeds.timeout`), never the page itself; Eclair's prober reads the providers' APIs. An embed runs `mediatheque.embeds.pipeline`, or none, and is `ready` once probed. New canonical metadata keys (`provider`, `provider_id`, `provider_url`, `embed_url`, `title`, `author_name`, `thumbnail_url`…), `TranscoderErrorCode::ProviderUnavailable` and `ProviderRefused`, and `MediaResource`'s `thumbnail_url` falls back on the provider's thumbnail. The fake ingests and probes embeds too ([decisions/0029](docs/decisions/0029-embeds.md), #170).
+
 ## [2.0.0-alpha.17] - 2026-11-10
 
 One temporary directory per system user, so that workers and commands run by different users no longer lock each other out (#164).

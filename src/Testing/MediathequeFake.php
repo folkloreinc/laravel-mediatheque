@@ -12,9 +12,11 @@ use Folklore\Mediatheque\Contracts\Models\PipelineRun;
 use Folklore\Mediatheque\Contracts\Prober;
 use Folklore\Mediatheque\Contracts\Recorder;
 use Folklore\Mediatheque\Contracts\UrlGenerator;
+use Folklore\Mediatheque\Embeds\EmbedProviders;
 use Folklore\Mediatheque\Enums\JobStatus;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\PipelineStatus;
+use Folklore\Mediatheque\Enums\ProbeKind;
 use Folklore\Mediatheque\Enums\RejectionReason;
 use Folklore\Mediatheque\Enums\TranscoderErrorCode;
 use Folklore\Mediatheque\Enums\Visibility;
@@ -124,6 +126,10 @@ class MediathequeFake implements Fake, Mediatheque
      */
     public function ingestSource(Source $source, IngestOptions $options): Media
     {
+        if ($source->kind === SourceKind::Embed) {
+            return $this->ingestEmbed($source, $options);
+        }
+
         try {
             [$localPath, $mime] = $this->read($source);
             $type = $this->detectType($mime) ?? throw FileRejected::because(
@@ -175,6 +181,60 @@ class MediathequeFake implements Fake, Mediatheque
             MetadataKey::Extension->value => $extension,
             MetadataKey::Size->value => $size,
             MetadataKey::Checksum->value => $checksum,
+        ];
+
+        $this->media[] = $media;
+        $this->events->dispatch(new MediaCreated($media));
+
+        $this->probe($media, $pipeline);
+
+        return $media;
+    }
+
+    /**
+     * An embed, as the package ingests it (docs/decisions/0029): a media of
+     * its provider's type whose original is remote, then probed at once.
+     */
+    private function ingestEmbed(Source $source, IngestOptions $options): Media
+    {
+        $providers = $this->config->get('mediatheque.embeds.providers', EmbedProviders::PROVIDERS);
+        $match = EmbedProviders::match((string) $source->url, is_array($providers) ? array_values(array_filter($providers, 'is_string')) : []);
+        if ($match === null) {
+            $exception = FileRejected::because(RejectionReason::EmbedNotAllowed, sprintf('"%s" is not a page of an embed provider this application accepts.', $source->url));
+            $this->events->dispatch(new IngestRejected($exception->reason, $exception->getMessage(), $source->url));
+
+            throw $exception;
+        }
+
+        $pipeline = $options->pipeline ?? $this->config->get('mediatheque.embeds.pipeline');
+        $pipeline = is_string($pipeline) && $pipeline !== '' ? $pipeline : null;
+        $media = new FakeMedia(
+            id: count($this->media) + 1,
+            uid: Uid::generate($this->string('mediatheque.ids.media_prefix', 'med')),
+            type: $match->kind === ProbeKind::Audio ? 'audio' : 'video',
+            name: $options->name ?? $match->url,
+            visibility: $options->visibility ?? Visibility::tryFrom($this->string('mediatheque.ingest.visibility', 'public')) ?? Visibility::Public,
+            data: $options->data,
+            attributes: $options->attributes,
+            mainRendition: $pipeline !== null ? $this->pipeline($pipeline)->mainRendition()?->name : null,
+        );
+        $media->attach(new FakeFile(
+            media: $media,
+            urls: $this->urls,
+            handle: File::ORIGINAL,
+            source: null,
+            path: null,
+            role: 'original',
+            mime: 'text/html',
+            metadata: [MetadataKey::ProviderUrl->value => $match->url],
+            provider: $match->provider,
+            providerRef: $match->id,
+            name: $match->url,
+        ));
+        $media->metadata = [
+            MetadataKey::Provider->value => $match->provider,
+            MetadataKey::ProviderId->value => $match->id,
+            MetadataKey::ProviderUrl->value => $match->url,
         ];
 
         $this->media[] = $media;
@@ -785,6 +845,8 @@ class MediathequeFake implements Fake, Mediatheque
 
                 return [$local, (new LocalFile($local))->getMimeType() ?? 'application/octet-stream'];
 
+            case SourceKind::Embed:
+                throw $unreadable();
             case SourceKind::Url:
                 // The fake downloads nothing: the mime comes from the URL's extension.
                 $local = $this->temporaryFile();

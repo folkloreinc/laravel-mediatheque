@@ -1,0 +1,23 @@
+{
+    "type": "video",
+    "version": "1.0",
+    "provider_name": "Vimeo",
+    "provider_url": "https://vimeo.com/",
+    "title": "The New Vimeo Player (You Know, For Videos)",
+    "author_name": "Vimeo",
+    "author_url": "https://vimeo.com/staff",
+    "is_plus": "0",
+    "account_type": "enterprise",
+    "html": "<iframe src=\"https://player.vimeo.com/video/76979871?app_id=122963\" width=\"1920\" height=\"1080\" frameborder=\"0\" allow=\"autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share\" referrerpolicy=\"strict-origin-when-cross-origin\" title=\"The New Vimeo Player (You Know, For Videos)\"></iframe>",
+    "width": 1920,
+    "height": 1080,
+    "duration": 62,
+    "description": "It may look (mostly) the same on the surface, but under the hood we totally rebuilt our player. Here’s a quick rundown o",
+    "thumbnail_url": "https://i.vimeocdn.com/video/452001751-8216e0571c251a09d7a8387550942d89f7f86f6398f8ed886e639b0dd50d3c90-d_1280?region=us",
+    "thumbnail_width": 1280,
+    "thumbnail_height": 720,
+    "thumbnail_url_with_play_button": "https://i.vimeocdn.com/filter/overlay?src0=https%3A%2F%2Fi.vimeocdn.com%2Fvideo%2F452001751-8216e0571c251a09d7a8387550942d89f7f86f6398f8ed886e639b0dd50d3c90-d_1280%3Fregion%3Dus&src1=http%3A%2F%2Ff.vimeocdn.com%2Fp%2Fimages%2Fcrawler_play.png",
+    "upload_date": "2013-10-15 14:08:29",
+    "video_id": 76979871,
+    "uri": "/videos/76979871"
+}

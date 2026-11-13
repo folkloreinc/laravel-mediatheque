@@ -35,6 +35,7 @@ class FakeFile implements File
         public array $metadata = [],
         public ?string $definitionHash = null,
         public ?string $provider = null,
+        public ?string $providerRef = null,
         public ?string $name = null,
     ) {}
 
@@ -121,6 +122,16 @@ class FakeFile implements File
     public function isRemote(): bool
     {
         return $this->provider !== null;
+    }
+
+    public function provider(): ?string
+    {
+        return $this->provider;
+    }
+
+    public function providerRef(): ?string
+    {
+        return $this->providerRef;
     }
 
     public function url(): ?string

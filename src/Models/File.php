@@ -189,7 +189,25 @@ class File extends Model implements FileContract
 
     public function isRemote(): bool
     {
-        return $this->provider !== null;
+        return $this->provider() !== null;
+    }
+
+    /**
+     * Read from the loaded attributes: a file selected without these
+     * columns is on a source.
+     */
+    public function provider(): ?string
+    {
+        $provider = $this->getAttributes()['provider'] ?? null;
+
+        return is_string($provider) ? $provider : null;
+    }
+
+    public function providerRef(): ?string
+    {
+        $ref = $this->getAttributes()['provider_ref'] ?? null;
+
+        return is_string($ref) ? $ref : null;
     }
 
     public function url(): ?string

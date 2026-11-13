@@ -96,7 +96,7 @@ A file belongs to one media. Its **handle** says what it is: `original` for the 
 | `metadata` | JSON for anything else |
 | `definition_hash` | Hash of the rendition definition that produced it, so an unchanged rendition is not produced twice |
 | `pipeline_job_id` | The job that produced it |
-| `provider`, `provider_ref` | For a remote rendition, played from a provider's URL instead of a file on a source (prepared in 2.0, used by a later Cloudflare Stream driver) |
+| `provider`, `provider_ref` | For a remote file, played from a provider's URL instead of a file on a source: the original of an embed (its platform and id, [decisions/0029](decisions/0029-embeds.md)), or a rendition of a later Cloudflare Stream driver. `File::provider()` and `providerRef()` read them |
 
 Outputs that are not files (palette, thumbhash, scenes, a transcript's words) are written to `metadata`: the media's for a rendition without files, its main file's for a rendition with files (index 0 for a group).
 
@@ -120,6 +120,9 @@ Metadata keys are snake_case and come from one list, so every prober and transco
 | `palette`, `scenes` | Metadata outputs of renditions |
 | `thumbhash` | An image placeholder, a [ThumbHash](https://evanw.github.io/thumbhash/) in base64, of its first frame, upright: the local prober's for an image other than SVG, the `ffmpeg` driver's for the image files it writes ([decisions/0013](decisions/0013-media-resolver-for-laravel-image.md)) |
 | `locale` | Caption tracks |
+| `provider`, `provider_id`, `provider_url` | An embed's platform, its id there and the canonical URL of its page ([decisions/0029](decisions/0029-embeds.md)) |
+| `embed_url`, `embed_html` | An embed's player, for an iframe; its HTML, from the provider's oEmbed only |
+| `title`, `description`, `author_id`, `author_name`, `author_url`, `thumbnail_url`, `published_at`, `embeddable`, `privacy`, `live` | What an embed's provider says about it. `author_id` is the provider's id of the author (a YouTube channel, a Vimeo user), when the prober reads it |
 
 `mediatheque:upgrade` maps the 1.x names to these keys (`font_family_name` → `font_names`, `colors` → `palette`).
 
@@ -204,6 +207,7 @@ $media = Mediatheque::ingest($file, attributes: ['tenant_id' => $tenant->id]);  
 | `UploadedFile`, local path, stream | Copied to the media's source |
 | A file already on a disk (`Source::disk()`) | Moved or copied without going through PHP when the disk allows it. This is how files that the browser uploaded directly to storage are ingested |
 | A URL (`Source::url()`) | Downloaded in a queued job, with an SSRF guard (public addresses only, size and time limits, redirects checked) |
+| An embed's page (`Source::embed()`) | Nothing is downloaded: a media of its provider's `video` or `audio` type, whose original is remote, for the providers of `embeds.providers`. The probe reads the provider; the media runs `embeds.pipeline`, or none, and plays from its platform ([decisions/0029](decisions/0029-embeds.md)) |
 
 Ingest steps:
 

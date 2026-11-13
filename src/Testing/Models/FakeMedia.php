@@ -12,6 +12,7 @@ use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Exceptions\FileRejected;
 use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\Source;
+use Folklore\Mediatheque\Metadata\MetadataKey;
 use Folklore\Mediatheque\Pipelines\Processing;
 use Folklore\Mediatheque\Pipelines\RunFailure;
 use Folklore\Mediatheque\Support\MediaUsage;
@@ -214,5 +215,17 @@ class FakeMedia implements Media
         }
 
         return ($this->mainRendition !== null ? $this->file($this->mainRendition) : null) ?? $this->original();
+    }
+
+    public function isEmbed(): bool
+    {
+        return $this->original()?->isRemote() === true && is_string($this->metadata(MetadataKey::Provider->value));
+    }
+
+    public function embedUrl(): ?string
+    {
+        $url = $this->isEmbed() ? $this->metadata(MetadataKey::EmbedUrl->value) : null;
+
+        return is_string($url) && $url !== '' ? $url : null;
     }
 }

@@ -6,7 +6,9 @@ use Closure;
 use Folklore\Mediatheque\Contracts\Ingestor;
 use Folklore\Mediatheque\Contracts\Models\File as FileContract;
 use Folklore\Mediatheque\Contracts\Models\Media;
+use Folklore\Mediatheque\Embeds\EmbedProviders;
 use Folklore\Mediatheque\Enums\MediaStatus;
+use Folklore\Mediatheque\Enums\ProbeKind;
 use Folklore\Mediatheque\Enums\RejectionReason;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Events\IngestRejected;
@@ -70,6 +72,10 @@ class MediaIngestor implements Ingestor
 
     public function ingest(Source $source, IngestOptions $options = new IngestOptions): Media
     {
+        if ($source->kind === SourceKind::Embed) {
+            return $this->storeEmbed($source, $options);
+        }
+
         return $this->accept($source, fn (IncomingFile $file) => $this->store($file, $options));
     }
 
@@ -90,6 +96,9 @@ class MediaIngestor implements Ingestor
     {
         if ($source->kind === SourceKind::Url) {
             throw new InvalidArgumentException('Ingest from a URL comes with the SSRF guard, in a later alpha. Download the file, then ingest it.');
+        }
+        if ($source->kind === SourceKind::Embed) {
+            throw new InvalidArgumentException('An embed has no file to read: ingest it as a media of its own.');
         }
 
         $temporary = [];
@@ -218,6 +227,7 @@ class MediaIngestor implements Ingestor
                 return [$path, ContentType::sniff($path), $disk->size($file)];
 
             case SourceKind::Url:
+            case SourceKind::Embed:
                 throw $unreadable();
         }
     }
@@ -367,6 +377,72 @@ class MediaIngestor implements Ingestor
 
             throw $exception;
         }
+
+        $this->afterCommit($media, $pipeline);
+
+        return $media;
+    }
+
+    /**
+     * An embed (docs/decisions/0029): a media of its provider's `video` or
+     * `audio` type whose original is remote, with the provider and the id the
+     * URL names, and no file. The prober reads the rest. Nothing is requested
+     * at ingest: the URL is only matched against the providers of the config.
+     */
+    private function storeEmbed(Source $source, IngestOptions $options): Media
+    {
+        $match = EmbedProviders::match((string) $source->url, $this->config->embedProviders());
+        $type = $match !== null ? ($this->config->types()[$match->kind === ProbeKind::Audio ? 'audio' : 'video'] ?? null) : null;
+
+        if ($match === null || $type === null) {
+            $exception = FileRejected::because(
+                $match === null ? RejectionReason::EmbedNotAllowed : RejectionReason::UnknownType,
+                $match === null
+                    ? sprintf('"%s" is not a page of an embed provider this application accepts.', $source->url)
+                    : sprintf('No type of the config takes %s embeds.', $match->provider),
+            );
+            $this->events->dispatch(new IngestRejected($exception->reason, $exception->getMessage(), $source->url));
+
+            throw $exception;
+        }
+
+        $visibility = $options->visibility ?? $this->config->defaultVisibility();
+        $pipeline = $options->pipeline !== null ? $this->config->pipeline($options->pipeline)->name : null;
+
+        $media = Models::media()::query()->getModel()->newInstance();
+        $media->forceFill([
+            ...$options->attributes,
+            'uid' => Uid::generate($this->config->mediaPrefix()),
+            'type' => $type->name,
+            'name' => $options->name ?? $match->url,
+            'status' => MediaStatus::Pending,
+            'visibility' => $visibility,
+            'data' => $options->data === [] ? null : $options->data,
+            'metadata' => [
+                MetadataKey::Provider->value => $match->provider,
+                MetadataKey::ProviderId->value => $match->id,
+                MetadataKey::ProviderUrl->value => $match->url,
+            ],
+        ]);
+
+        $this->database->connection($media->getConnectionName())->transaction(function () use ($media, $match) {
+            $media->save();
+
+            $original = Models::file()::query()->getModel()->newInstance();
+            $original->forceFill([
+                'media_id' => $media->getKey(),
+                'handle' => FileContract::ORIGINAL,
+                'role' => FileContract::ORIGINAL,
+                'name' => $match->url,
+                'mime' => 'text/html',
+                'provider' => $match->provider,
+                'provider_ref' => $match->id,
+                'metadata' => [MetadataKey::ProviderUrl->value => $match->url],
+            ])->save();
+
+            $media->setRelation('mediaFiles', $media->newCollection([$original]));
+            $original->setRelation('media', $media);
+        });
 
         $this->afterCommit($media, $pipeline);
 

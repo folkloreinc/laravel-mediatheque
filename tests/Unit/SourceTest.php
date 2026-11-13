@@ -103,4 +103,16 @@ class SourceTest extends TestCase
 
         Source::from(['path' => 'video.mp4']);
     }
+
+    #[Test]
+    public function it_takes_the_https_page_of_an_embed(): void
+    {
+        $source = Source::embed('https://vimeo.com/76979871');
+
+        $this->assertSame(SourceKind::Embed, $source->kind);
+        $this->assertSame('https://vimeo.com/76979871', $source->url);
+
+        $this->expectException(InvalidArgumentException::class);
+        Source::embed('http://vimeo.com/76979871');
+    }
 }

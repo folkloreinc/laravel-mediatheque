@@ -46,6 +46,15 @@ trait MediaContractTests
     }
 
     #[Test]
+    public function a_media_with_a_stored_original_is_no_embed(): void
+    {
+        $media = $this->mediaWithFiles('video', Visibility::Public, [['original', null, 'original']], ['embed_url' => 'https://example.com/player']);
+
+        $this->assertFalse($media->isEmbed());
+        $this->assertNull($media->embedUrl());
+    }
+
+    #[Test]
     public function a_file_by_handle_is_a_single_file_or_a_file_of_a_group(): void
     {
         $media = $this->mediaWithFiles('video', Visibility::Public, [
