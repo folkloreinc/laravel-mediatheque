@@ -105,7 +105,7 @@ What the pilot needs for its reserved videos. URL import ([#91](https://github.c
 - [ ] Derived media: clips with start, end and crop
 - [ ] `captions` type; transcription through transcoders that support it
 - [ ] The JSON resources of runs and renditions reviewed with Panneau 5
-- [ ] Embeds: media whose original is a platform's page, probed through the provider's oEmbed or Eclair ([decisions/0029](decisions/0029-embeds.md), [#170](https://github.com/folkloreinc/laravel-mediatheque/issues/170)); then a poster from the provider's thumbnail and `mediatheque:refresh-embeds` ([decisions/0031](decisions/0031-embed-posters-and-refresh.md)), and importing an embed's file, as a rendition or as its new original ([decisions/0030](decisions/0030-import-embeds.md), [#171](https://github.com/folkloreinc/laravel-mediatheque/issues/171))
+- [x] Embeds: media whose original is a platform's page, probed through the provider's oEmbed or Eclair ([decisions/0029](decisions/0029-embeds.md), [#170](https://github.com/folkloreinc/laravel-mediatheque/issues/170)); then a poster from the provider's thumbnail and `mediatheque:refresh-embeds` ([decisions/0031](decisions/0031-embed-posters-and-refresh.md)), and importing an embed's file, as a rendition or as its new original ([decisions/0030](decisions/0030-import-embeds.md), [#171](https://github.com/folkloreinc/laravel-mediatheque/issues/171)), in 2.0.0-alpha.18
 - [ ] The monitoring dashboard validated on the pilot project, on the current `@panneau/ui` alpha ([#106](https://github.com/folkloreinc/laravel-mediatheque/issues/106))
 
 ## Release candidate
