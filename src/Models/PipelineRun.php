@@ -39,7 +39,7 @@ use LogicException;
  * @property int $pipelinable_id
  * @property string $transcoder
  * @property string|null $external_id
- * @property array{transcoder?: string, source?: string|null, renditions?: array<string, array<string, mixed>>, main?: string|null, options?: array<string, array<string, mixed>>, then?: string|null, import?: array<string, mixed>} $definition
+ * @property array{transcoder?: string, source?: string|null, renditions?: array<string, array<string, mixed>>, main?: string|null, options?: array<string, array<string, mixed>>, then?: string|null, import?: array<string, mixed>, refresh?: bool} $definition
  * @property string $output_source
  * @property string $path_prefix
  * @property Visibility $visibility
@@ -215,6 +215,16 @@ class PipelineRun extends Model implements PipelineRunContract
     public function runOptions(): array
     {
         return $this->definition['options'] ?? [];
+    }
+
+    /**
+     * Whether this probe run refreshes an embed that was probed before
+     * (docs/decisions/0031): its outcome goes to EmbedRefreshes, and never
+     * moves the media back to `pending` or `failed`.
+     */
+    public function isRefresh(): bool
+    {
+        return ($this->definition['refresh'] ?? false) === true;
     }
 
     /**

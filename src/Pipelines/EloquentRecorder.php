@@ -6,6 +6,7 @@ use Closure;
 use Folklore\Mediatheque\Contracts\Models\Media as MediaContract;
 use Folklore\Mediatheque\Contracts\Models\PipelineJob;
 use Folklore\Mediatheque\Contracts\Recorder;
+use Folklore\Mediatheque\Embeds\EmbedRefreshes;
 use Folklore\Mediatheque\Enums\JobStatus;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\PipelineStatus;
@@ -77,6 +78,7 @@ class EloquentRecorder implements Recorder
         private readonly Filesystems $filesystems,
         private readonly LocalFiles $files,
         private readonly ProbeResults $probes,
+        private readonly EmbedRefreshes $refreshes,
         private readonly MediathequeConfig $config,
     ) {}
 
@@ -117,7 +119,9 @@ class EloquentRecorder implements Recorder
             $this->runStarted($run);
             $job->forceFill(['status' => JobStatus::Completed, 'progress' => 1.0, 'ended_at' => Date::now()])->save();
 
-            if ($run->name() === PipelineDefinition::PROBE) {
+            if ($run->name() === PipelineDefinition::PROBE && $run->isRefresh()) {
+                $this->afterCommit(fn () => $this->refreshes->done($this->media($run), $outputs->metadata));
+            } elseif ($run->name() === PipelineDefinition::PROBE) {
                 $this->afterCommit(fn () => $this->probes->done($this->media($run), $outputs->metadata, $run->nextPipeline()));
             } else {
                 $this->attach($job, $run, $outputs);
@@ -231,7 +235,9 @@ class EloquentRecorder implements Recorder
         $job->forceFill(['status' => JobStatus::Failed, 'error' => $error->toArray(), 'ended_at' => Date::now()])->save();
         $this->events[] = new RenditionFailed($job, $error);
 
-        if ($run->name() === PipelineDefinition::PROBE) {
+        if ($run->name() === PipelineDefinition::PROBE && $run->isRefresh()) {
+            $this->afterCommit(fn () => $this->refreshes->failed($this->media($run), $error));
+        } elseif ($run->name() === PipelineDefinition::PROBE) {
             $this->afterCommit(fn () => $this->probes->failed($this->media($run), $error));
         }
 
@@ -249,7 +255,8 @@ class EloquentRecorder implements Recorder
         $job->forceFill(['status' => JobStatus::Canceled, 'ended_at' => Date::now()])->save();
         $this->events[] = new RenditionCanceled($job);
 
-        if ($run->name() === PipelineDefinition::PROBE) {
+        // A canceled refresh changes nothing
+        if ($run->name() === PipelineDefinition::PROBE && ! $run->isRefresh()) {
             $this->afterCommit(fn () => $this->probes->failed($this->media($run), new TranscoderError(TranscoderErrorCode::OperationFailed, 'The probe was canceled.')));
         }
 

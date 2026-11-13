@@ -40,6 +40,10 @@ use Throwable;
  * `pending` any more is left alone, and a retried job reuses its run, so a
  * retry changes nothing that already happened. An original replaced while
  * it is read records nothing.
+ *
+ * With `refresh`, it probes an embed that is `ready` again: its run is
+ * marked, and its outcome updates the embed's metadata without changing its
+ * status (EmbedRefreshes, docs/decisions/0031).
  */
 class ProbeMedia implements ShouldQueue
 {
@@ -55,10 +59,12 @@ class ProbeMedia implements ShouldQueue
 
     /**
      * @param  string|null  $pipeline  The pipeline to run once probed; the type's by default
+     * @param  bool  $refresh  Probe a ready embed again
      */
     public function __construct(
         public readonly int|string $mediaId,
         public readonly ?string $pipeline = null,
+        public readonly bool $refresh = false,
     ) {
         $config = app(MediathequeConfig::class);
         $this->tries = $config->jobsTries();
@@ -72,7 +78,7 @@ class ProbeMedia implements ShouldQueue
         $media = $this->media();
         $original = $media?->original();
 
-        if ($media === null || $original === null || $media->status() !== MediaStatus::Pending) {
+        if ($media === null || $original === null || ! $this->probes($media)) {
             return;
         }
 
@@ -120,7 +126,7 @@ class ProbeMedia implements ShouldQueue
     {
         $media = $this->media();
 
-        if ($media === null || $media->status() !== MediaStatus::Pending) {
+        if ($media === null || ! $this->probes($media)) {
             return;
         }
 
@@ -130,6 +136,17 @@ class ProbeMedia implements ShouldQueue
         if ($job !== null) {
             app(Recorder::class)->failed($job, $error);
         }
+    }
+
+    /**
+     * Whether the media is one this job probes: a pending media, or a ready
+     * embed for a refresh.
+     */
+    private function probes(Model&Media $media): bool
+    {
+        return $this->refresh
+            ? $media->isEmbed() && $media->status() === MediaStatus::Ready
+            : $media->status() === MediaStatus::Pending;
     }
 
     private function media(): (Model&Media)|null
@@ -170,7 +187,7 @@ class ProbeMedia implements ShouldQueue
             'pipelinable_type' => $media->getMorphClass(),
             'pipelinable_id' => $media->getKey(),
             'transcoder' => $pipeline->transcoder,
-            'definition' => [...PipelineRun::snapshot($pipeline, $pipeline->renditions), 'then' => $this->pipeline],
+            'definition' => [...PipelineRun::snapshot($pipeline, $pipeline->renditions), 'then' => $this->pipeline, ...($this->refresh ? ['refresh' => true] : [])],
             'output_source' => $media->original()?->source() ?? '',
             'path_prefix' => $paths->runPrefix($media, $uid),
             'visibility' => $media->visibility(),

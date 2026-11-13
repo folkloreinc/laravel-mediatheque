@@ -207,7 +207,7 @@ $media = Mediatheque::ingest($file, attributes: ['tenant_id' => $tenant->id]);  
 | `UploadedFile`, local path, stream | Copied to the media's source |
 | A file already on a disk (`Source::disk()`) | Moved or copied without going through PHP when the disk allows it. This is how files that the browser uploaded directly to storage are ingested |
 | A URL (`Source::url()`) | Downloaded in a queued job, with an SSRF guard (public addresses only, size and time limits, redirects checked) |
-| An embed's page (`Source::embed()`) | Nothing is downloaded: a media of its provider's `video` or `audio` type, whose original is remote, for the providers of `embeds.providers`. The probe reads the provider; the media runs `embeds.pipeline`, or none, and plays from its platform ([decisions/0029](decisions/0029-embeds.md)). `Mediatheque::importEmbed()` downloads its file with `embeds.import_pipeline`, as a rendition or as its new original ([decisions/0030](decisions/0030-import-embeds.md)) |
+| An embed's page (`Source::embed()`) | Nothing is downloaded: a media of its provider's `video` or `audio` type, whose original is remote, for the providers of `embeds.providers`. The probe reads the provider; the media runs `embeds.pipeline` (`embed`, its poster from the provider's thumbnail, [decisions/0031](decisions/0031-embed-posters-and-refresh.md)), or none, and plays from its platform ([decisions/0029](decisions/0029-embeds.md)). `mediatheque:refresh-embeds` probes it again. `Mediatheque::importEmbed()` downloads its file with `embeds.import_pipeline`, as a rendition or as its new original ([decisions/0030](decisions/0030-import-embeds.md)) |
 
 Ingest steps:
 
@@ -271,6 +271,13 @@ Renditions are declared in the config, or in PHP for applications that prefer cl
         'renditions' => [
             // A JPEG of the images not every browser shows; others run nothing
             'web' => ['op' => 'image.convert', 'format' => 'jpeg', 'when' => ['mime' => ['image/heic', 'image/heif', 'image/heic-sequence', 'image/heif-sequence', 'image/avif']]],
+        ],
+    ],
+    'embed' => [
+        'renditions' => [
+            // An embed's poster: its provider's thumbnail, as a JPEG (decisions/0031)
+            'thumbnail' => ['op' => 'embed.thumbnail', 'keep' => false],
+            'poster' => ['op' => 'image.convert', 'from' => 'thumbnail', 'format' => 'jpeg', 'role' => 'poster'],
         ],
     ],
     'document' => [
@@ -389,7 +396,7 @@ With a 98-second video, `h264` at 50 % and the poster done, a run of `h264`, `po
 
 | Driver | Runs | Completion | Package |
 |---|---|---|---|
-| `ffmpeg` | ffmpeg, ffprobe, Imagick, Poppler and fonttools in the application's queue. Since 2.0.0-alpha.1: `video.transcode` (`h264`, `vp9`; `passthrough` of web-ready H.264 and `max_bitrate` since #152, [decisions/0026](decisions/0026-h264-for-the-web-and-passthrough.md); a span with `start` and `duration` since #161, [decisions/0028](decisions/0028-video-transcode-span.md)), `video.poster`, `video.thumbnails`, `audio.transcode` (`mp3`, `aac`), `audio.waveform`; `image.convert` (`jpeg`, `webp`, `png`, with Imagick) since #132; `document.thumbnails` (`jpeg`, `png`, with Poppler's `pdfinfo` and `pdftoppm`, [decisions/0025](decisions/0025-document-thumbnails-with-poppler.md)) since #147; the application's operations, classes that implement `Transcoders\Ffmpeg\Operation` registered in `transcoders.ffmpeg.operations` ([decisions/0027](decisions/0027-custom-operations-and-run-options.md)), since #157 | Each rendition is a queued job; dependent renditions are dispatched when their input completes | This package |
+| `ffmpeg` | ffmpeg, ffprobe, Imagick, Poppler and fonttools in the application's queue. Since 2.0.0-alpha.1: `video.transcode` (`h264`, `vp9`; `passthrough` of web-ready H.264 and `max_bitrate` since #152, [decisions/0026](decisions/0026-h264-for-the-web-and-passthrough.md); a span with `start` and `duration` since #161, [decisions/0028](decisions/0028-video-transcode-span.md)), `video.poster`, `video.thumbnails`, `audio.transcode` (`mp3`, `aac`), `audio.waveform`; `image.convert` (`jpeg`, `webp`, `png`, with Imagick) since #132; `document.thumbnails` (`jpeg`, `png`, with Poppler's `pdfinfo` and `pdftoppm`, [decisions/0025](decisions/0025-document-thumbnails-with-poppler.md)) since #147; `embed.thumbnail`, an embed's thumbnail from its provider's domains ([decisions/0031](decisions/0031-embed-posters-and-refresh.md)), since #170; the application's operations, classes that implement `Transcoders\Ffmpeg\Operation` registered in `transcoders.ffmpeg.operations` ([decisions/0027](decisions/0027-custom-operations-and-run-options.md)), since #157 | Each rendition is a queued job; dependent renditions are dispatched when their input completes | This package |
 | `eclair` | The whole run as one Eclair job (task graph, `when` conditions, outputs written to the application's storage) | Signed webhooks, deduplicated | [`laravel-eclair`](https://github.com/urbania-media/eclair/issues/13) |
 | `mediaconvert` | AWS Elemental MediaConvert jobs for video renditions | EventBridge notifications through a webhook, or a scheduled poller. Never `sleep()` in a worker | This package, with `aws/aws-sdk-php` (suggested) |
 | `cloudflare-stream` (2.x) | Upload to Cloudflare Stream; remote renditions | Webhook | Later, if a project needs it |
@@ -525,6 +532,8 @@ Private files on local disks are served by Laravel's `serve` option, not by a ro
 | `MediaVisibilityChanged` | `setVisibility()` changed a media's visibility: the media, the previous and the new visibility. Its files follow in a queued job |
 | `OriginalReplaced` | The original was replaced: the media, the previous and the new checksum ([decisions/0019](decisions/0019-replace-original.md)) |
 | `IngestRejected` | Ingest, or the replacement of an original, refused a file: its reason, message and file name. Nothing was stored |
+| `EmbedRefreshed` | A refresh probed an embed again, and its provider still has it: what the provider says now ([decisions/0031](decisions/0031-embed-posters-and-refresh.md)) |
+| `EmbedUnavailable` | A refresh found an embed gone from its provider: the media keeps its status, with `unavailable_at` ([decisions/0031](decisions/0031-embed-posters-and-refresh.md)) |
 
 Events carry contracts, not concrete classes, so they work with the application's models.
 
@@ -586,7 +595,7 @@ The fake stores files on fake disks, returns probe fixtures, and completes rendi
 
 ## Commands
 
-`mediatheque:install`, `mediatheque:status`, `mediatheque:prune` and `mediatheque:upgrade` exist today; the other commands are planned ([roadmap](roadmap.md)).
+`mediatheque:install`, `mediatheque:status`, `mediatheque:prune`, `mediatheque:refresh-embeds` and `mediatheque:upgrade` exist today; the other commands are planned ([roadmap](roadmap.md)).
 
 | Command | Purpose |
 |---|---|
@@ -597,6 +606,7 @@ The fake stores files on fake disks, returns probe fixtures, and completes rendi
 | `mediatheque:run-pipeline` (to come) | Run a pipeline on media, by type or uid |
 | `mediatheque:refresh` (to come) | Scheduled: fetch the state of runs that have been running too long, and the progress of drivers that only report it by polling |
 | `mediatheque:prune` | Scheduled daily: force-delete media soft-deleted more than `prune.after_days` ago (30), and delete runs that ended more than `prune.runs_after_days` ago (7), keeping each media's last run of each pipeline. `--dry-run` lists what it would delete |
+| `mediatheque:refresh-embeds` | Scheduled: probe again the ready embeds no probe read for `--days` (7), the least recently probed first, `--limit` (100) at a time, or those of `--media`. They follow their provider, get `unavailable_at` when it lost them, and a new poster when their thumbnail changed ([decisions/0031](decisions/0031-embed-posters-and-refresh.md)) |
 | `mediatheque:install --dashboard` | Also publish and register the provider of the dashboard's gates |
 | `mediatheque:status` | Media by status, runs in progress and stuck, what ended in the last hours, and the latest failures (`--hours`, 24 by default) |
 
@@ -640,6 +650,7 @@ Route::middleware(['web', 'auth'])->group(function () {
 ```php
 // routes/console.php
 Schedule::command('mediatheque:prune')->daily();
+Schedule::command('mediatheque:refresh-embeds')->hourly(); // with embeds
 ```
 
 - `mediatheque:prune` works in batches, so a large table isn't locked, and running it again deletes nothing more. A setting set to null leaves media or runs. Files on a disk that no row references (orphans) are not looked for: listing a bucket is expensive. A later `--orphans` option can, if a project needs it.

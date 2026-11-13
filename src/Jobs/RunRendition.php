@@ -20,6 +20,7 @@ use Folklore\Mediatheque\Transcoders\Ffmpeg\FfmpegTranscoder;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\LocalOutput;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\OperationContext;
 use Folklore\Mediatheque\Transcoders\Ffmpeg\OperationFailed;
+use Folklore\Mediatheque\Transcoders\Ffmpeg\ReadsNoFile;
 use Folklore\Mediatheque\Transcoders\TranscoderError;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Filesystem\Factory as Filesystems;
@@ -36,7 +37,8 @@ use Throwable;
  * - Safe to retry: a rendition that already ended is left alone; a queue
  *   retry stays within the run and counts in `attempts`.
  * - Its input is the original, or the file of the rendition it reads from,
- *   which the same run wrote under its prefix.
+ *   which the same run wrote under its prefix. An operation that reads no
+ *   file (`ReadsNoFile`) gets none.
  * - Its files are written under the run's prefix, with the media's
  *   visibility, then probed and reported to the recorder, an image with
  *   its ThumbHash. A rendition canceled while ffmpeg runs drops its output.
@@ -100,13 +102,13 @@ class RunRendition implements ShouldQueue
             return;
         }
 
-        [$disk, $path] = $this->input($run, $rendition, $ffmpeg, $paths);
-        $copy = $files->copy($disk, $path);
+        // An operation that reads no file runs on the media's metadata: an embed's thumbnail (docs/decisions/0031)
+        $copy = $operation instanceof ReadsNoFile && $rendition->from === null ? null : $files->copy(...$this->input($run, $rendition, $ffmpeg, $paths));
         $directory = $files->temporaryDirectory();
 
         try {
             $outputs = $operation->run(new OperationContext(
-                input: $copy->path,
+                input: $copy->path ?? '',
                 outputDirectory: $directory,
                 rendition: $rendition,
                 metadata: $metadata,
@@ -124,7 +126,7 @@ class RunRendition implements ShouldQueue
         } catch (OperationFailed $exception) {
             $recorder->failed($job, $exception->error);
         } finally {
-            $copy->cleanup();
+            $copy?->cleanup();
             LocalFiles::removeDirectory($directory);
         }
     }

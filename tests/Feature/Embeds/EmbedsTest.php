@@ -84,7 +84,7 @@ class EmbedsTest extends DatabaseTestCase
     }
 
     #[Test]
-    public function a_probed_embed_is_ready_with_what_its_provider_says_and_runs_no_pipeline(): void
+    public function a_probed_embed_is_ready_with_what_its_provider_says_and_runs_the_embed_pipeline(): void
     {
         Event::fake([MediaReady::class]);
         Http::fake(['vimeo.com/api/oembed.json*' => Http::response(self::answer('vimeo-oembed'))]);
@@ -101,12 +101,13 @@ class EmbedsTest extends DatabaseTestCase
         $this->assertSame([1920, 1080, 62.0], [$media->original()?->width(), $media->original()?->height(), $media->original()?->duration()]);
         Event::assertDispatched(MediaReady::class);
         Http::assertSent(fn (HttpRequest $request) => str_starts_with($request->url(), 'https://vimeo.com/api/oembed.json?') && $request['url'] === 'https://vimeo.com/76979871');
-        // Only the probe ran: the type's pipeline needs a file
-        $this->assertSame(['probe'], PipelineRun::query()->pluck('name')->all());
-        Bus::assertNotDispatched(RunRendition::class);
+        // The embeds' pipeline, not the type's, which needs a file: its poster starts from the thumbnail
+        $this->assertSame(['probe', 'embed'], PipelineRun::query()->orderBy('id')->pluck('name')->all());
+        Bus::assertDispatched(RunRendition::class, fn (RunRendition $job) => $job->rendition === 'thumbnail');
+        Bus::assertNotDispatched(RunRendition::class, fn (RunRendition $job) => $job->rendition === 'poster');
 
         $json = (new MediaResource($media))->toArray(new Request);
-        $this->assertSame(['provider' => 'vimeo', 'url' => 'https://vimeo.com/76979871', 'embed_url' => 'https://player.vimeo.com/video/76979871'], $json['embed']);
+        $this->assertSame(['provider' => 'vimeo', 'url' => 'https://vimeo.com/76979871', 'embed_url' => 'https://player.vimeo.com/video/76979871', 'available' => true], $json['embed']);
         $this->assertSame(self::answer('vimeo-oembed')['thumbnail_url'], $json['thumbnail_url']);
         $this->assertNull($json['url']);
     }
