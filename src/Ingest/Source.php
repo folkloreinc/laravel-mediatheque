@@ -90,6 +90,23 @@ final readonly class Source
     }
 
     /**
+     * A video or audio on a platform, by the URL of its page (docs/decisions/0029):
+     * a media whose original is the platform's, never downloaded at ingest. Only
+     * the pages of the providers in `mediatheque.embeds.providers` are accepted.
+     */
+    public static function embed(string $url): self
+    {
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if (! is_string($scheme) || strtolower($scheme) !== 'https' || ! is_string($host) || $host === '') {
+            throw new InvalidArgumentException(sprintf('"%s" is not an https URL.', $url));
+        }
+
+        return new self(SourceKind::Embed, url: $url, filename: $url);
+    }
+
+    /**
      * A source from what applications pass to `ingest()`: an uploaded file,
      * a local path, a stream, or a source.
      */

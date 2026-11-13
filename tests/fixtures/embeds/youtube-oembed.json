@@ -1,0 +1,15 @@
+{
+    "title": "Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film",
+    "author_name": "Blender",
+    "author_url": "https://www.youtube.com/@BlenderOfficial",
+    "type": "video",
+    "height": 1080,
+    "width": 1920,
+    "version": "1.0",
+    "provider_name": "YouTube",
+    "provider_url": "https://www.youtube.com/",
+    "thumbnail_height": 360,
+    "thumbnail_width": 480,
+    "thumbnail_url": "https://i.ytimg.com/vi/aqz-KE-bpKQ/hqdefault.jpg",
+    "html": "<iframe width=\"1920\" height=\"1080\" src=\"https://www.youtube.com/embed/aqz-KE-bpKQ?feature=oembed\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" referrerpolicy=\"strict-origin-when-cross-origin\" allowfullscreen title=\"Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film\"></iframe>"
+}

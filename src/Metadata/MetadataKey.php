@@ -69,6 +69,45 @@ enum MetadataKey: string
     case Scenes = 'scenes';
     case Locale = 'locale';
 
+    /** An embed's platform: `youtube`, `vimeo`… (docs/decisions/0029). */
+    case Provider = 'provider';
+
+    /** An embed's id at its provider. */
+    case ProviderId = 'provider_id';
+
+    /** The canonical URL of an embed's page. */
+    case ProviderUrl = 'provider_url';
+
+    /** The URL of the provider's player, for an iframe. */
+    case EmbedUrl = 'embed_url';
+
+    /** The player's HTML, from the provider's oEmbed only. */
+    case EmbedHtml = 'embed_html';
+
+    case Title = 'title';
+    case Description = 'description';
+
+    /** The provider's id of an embed's author: a YouTube channel, a Vimeo user… */
+    case AuthorId = 'author_id';
+
+    case AuthorName = 'author_name';
+    case AuthorUrl = 'author_url';
+
+    /** The URL of the provider's thumbnail of an embed. */
+    case ThumbnailUrl = 'thumbnail_url';
+
+    /** ISO 8601. */
+    case PublishedAt = 'published_at';
+
+    /** Whether the provider lets other sites play the embed. */
+    case Embeddable = 'embeddable';
+
+    /** `public`, `unlisted` or `private`. */
+    case Privacy = 'privacy';
+
+    /** A live stream, current or upcoming. */
+    case Live = 'live';
+
     /**
      * Names that drivers use for canonical keys, other than the camel case
      * of the key itself (`frameRate`), which normalize() already converts.

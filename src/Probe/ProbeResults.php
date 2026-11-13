@@ -60,7 +60,12 @@ class ProbeResults
             ], fn (int|float|array|null $value) => $value !== null))->save();
         }
 
-        $definition = $pipeline !== null ? $this->config->pipeline($pipeline) : $this->config->pipelineOfType($media->type());
+        // An embed has no file for the type's pipeline: it runs the embeds' one, or none (docs/decisions/0029)
+        $definition = match (true) {
+            $pipeline !== null => $this->config->pipeline($pipeline),
+            $original?->isRemote() === true => $this->config->embedPipeline(),
+            default => $this->config->pipelineOfType($media->type()),
+        };
         $probed = [...$media->metadata(), ...$metadata];
         $main = $definition?->mainRendition();
         $ready = $main === null || ! $main->when->matches($probed);

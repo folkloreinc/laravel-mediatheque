@@ -14,6 +14,7 @@
     "url": "/storage/video/med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P/run/h264.mp4",
     "thumbnail_url": "/storage/video/med_01JAB3QX5Z8Y7W6V5T4S3R2Q1P/run/poster.jpg",
     "transform": null,
+    "embed": null,
     "metadata": {
         "kind": "video",
         "mime": "video/quicktime",

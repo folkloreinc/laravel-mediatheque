@@ -48,10 +48,16 @@ class LocalProber implements Prober
         private readonly LocalFiles $files,
         private readonly Filesystems $filesystems,
         private readonly Binaries $binaries,
+        private readonly OEmbedProber $embeds,
     ) {}
 
     public function probe(File $file): ProbeOutcome
     {
+        // An embed's original is its platform's page: its oEmbed says what it is (docs/decisions/0029)
+        if ($file->isRemote()) {
+            return $this->embeds->probe($file);
+        }
+
         $source = $file->source();
         $path = $file->path();
         $mime = strtolower($file->mime() ?? 'application/octet-stream');

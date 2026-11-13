@@ -1,0 +1,14 @@
+{
+    "error": {
+        "more_info": "https://developer.dailymotion.com/api#error-codes",
+        "code": 404,
+        "message": "Can't find object video for `id' parameter",
+        "type": "not_found",
+        "error_data": {
+            "reason": "object_not_found",
+            "object_type": "video",
+            "object_id": "xzzzzzzz",
+            "param": "id"
+        }
+    }
+}

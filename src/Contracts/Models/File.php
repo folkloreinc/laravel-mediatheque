@@ -89,9 +89,21 @@ interface File
     public function visibility(): Visibility;
 
     /**
-     * A file kept by a provider (a hosted video service) instead of a source.
+     * A file kept by a provider (a hosted video service, an embed's platform)
+     * instead of a source.
      */
     public function isRemote(): bool;
+
+    /**
+     * The provider of a remote file: `youtube`, `vimeo`… Null for a file on a
+     * source.
+     */
+    public function provider(): ?string;
+
+    /**
+     * The id of a remote file at its provider.
+     */
+    public function providerRef(): ?string;
 
     public function url(): ?string;
 

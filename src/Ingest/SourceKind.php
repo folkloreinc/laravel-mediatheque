@@ -9,4 +9,5 @@ enum SourceKind: string
     case Stream = 'stream';
     case Disk = 'disk';
     case Url = 'url';
+    case Embed = 'embed';
 }

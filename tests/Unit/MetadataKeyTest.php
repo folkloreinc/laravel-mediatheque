@@ -16,6 +16,10 @@ class MetadataKeyTest extends TestCase
             'width', 'height', 'rotation', 'orientation', 'duration', 'frame_rate', 'bitrate',
             'video_codec', 'audio_codec', 'audio_channels', 'pages_count', 'font_names',
             'animated', 'exif', 'palette', 'thumbhash', 'scenes', 'locale',
+            // Embeds (docs/decisions/0029)
+            'provider', 'provider_id', 'provider_url', 'embed_url', 'embed_html', 'title', 'description',
+            'author_id', 'author_name', 'author_url', 'thumbnail_url', 'published_at', 'embeddable',
+            'privacy', 'live',
         ], array_column(MetadataKey::cases(), 'value'));
     }
 

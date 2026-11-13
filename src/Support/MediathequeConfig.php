@@ -170,6 +170,41 @@ final class MediathequeConfig
     }
 
     /**
+     * The embed providers whose pages can be ingested (docs/decisions/0029).
+     *
+     * @return list<string>
+     */
+    public function embedProviders(): array
+    {
+        $providers = $this->config->get('mediatheque.embeds.providers', []);
+
+        if (! is_array($providers) || ! array_is_list($providers) || array_filter($providers, fn (mixed $provider) => ! is_string($provider)) !== []) {
+            throw InvalidConfig::at('embeds.providers', 'expected a list of provider names');
+        }
+
+        /** @var list<string> $providers */
+        return $providers;
+    }
+
+    /**
+     * The pipeline an embed runs once probed, or null for none.
+     */
+    public function embedPipeline(): ?PipelineDefinition
+    {
+        $name = $this->optionalString('embeds.pipeline');
+
+        return $name === null ? null : $this->pipeline($name);
+    }
+
+    /**
+     * Seconds the local prober waits for a provider's oEmbed.
+     */
+    public function embedTimeout(): int
+    {
+        return $this->positiveInt('embeds.timeout', 5);
+    }
+
+    /**
      * The queue connection of the package's jobs; null for the default.
      */
     public function jobsConnection(): ?string

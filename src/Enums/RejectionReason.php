@@ -27,4 +27,6 @@ enum RejectionReason: string
 
     /** A replacement of a media's original of another type, without `allowTypeChange`. */
     case TypeChanged = 'type_changed';
+    /** A URL that no embed provider of the config recognizes (docs/decisions/0029). */
+    case EmbedNotAllowed = 'embed_not_allowed';
 }

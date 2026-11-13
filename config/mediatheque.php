@@ -103,6 +103,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Embeds
+    |--------------------------------------------------------------------------
+    |
+    | Videos and audio on platforms, ingested with Source::embed($url): media
+    | whose original is the platform's page, never downloaded at ingest
+    | (docs/decisions/0029). `providers` lists the platforms whose pages can
+    | be ingested; any other URL is rejected. A media gets the `video` or
+    | `audio` type of its provider, and runs `pipeline` once probed, or none.
+    | The local prober reads the providers' oEmbed, for `timeout` seconds at
+    | most; Eclair's prober reads their APIs.
+    |
+    */
+    'embeds' => [
+        'providers' => ['youtube', 'vimeo', 'dailymotion', 'soundcloud', 'spotify', 'tiktok', 'instagram'],
+        'pipeline' => null,
+        'timeout' => 5,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Types
     |--------------------------------------------------------------------------
     |
