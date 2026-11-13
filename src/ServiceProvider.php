@@ -10,6 +10,7 @@ use Folklore\Mediatheque\Compat\LegacyConfig;
 use Folklore\Mediatheque\Compat\LegacyTypes;
 use Folklore\Mediatheque\Console\InstallCommand;
 use Folklore\Mediatheque\Console\PruneCommand;
+use Folklore\Mediatheque\Console\RefreshEmbedsCommand;
 use Folklore\Mediatheque\Console\StatusCommand;
 use Folklore\Mediatheque\Console\UpgradeCommand;
 use Folklore\Mediatheque\Contracts\Ingestor;
@@ -75,6 +76,7 @@ class ServiceProvider extends BaseServiceProvider
             $this->commands([
                 InstallCommand::class,
                 PruneCommand::class,
+                RefreshEmbedsCommand::class,
                 StatusCommand::class,
                 UpgradeCommand::class,
             ]);

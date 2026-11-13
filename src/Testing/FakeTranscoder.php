@@ -128,6 +128,10 @@ class FakeTranscoder implements Transcoder
             $rendition->operation === 'audio.transcode' => ['audio/mpeg', 'mp3'],
             $rendition->operation === 'audio.waveform' => ['image/png', 'png'],
             $rendition->operation === 'embed.download' => ['video/mp4', 'mp4'],
+            $rendition->operation === 'embed.thumbnail' => ['image/jpeg', 'jpg'],
+            $rendition->operation === 'image.convert' && ($rendition->options['format'] ?? 'jpeg') === 'webp' => ['image/webp', 'webp'],
+            $rendition->operation === 'image.convert' && ($rendition->options['format'] ?? 'jpeg') === 'png' => ['image/png', 'png'],
+            $rendition->operation === 'image.convert' => ['image/jpeg', 'jpg'],
             str_starts_with($rendition->operation, 'video.') => ['image/jpeg', 'jpg'],
             default => ['application/octet-stream', 'bin'],
         };

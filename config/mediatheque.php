@@ -110,14 +110,15 @@ return [
     | whose original is the platform's page, never downloaded at ingest
     | (docs/decisions/0029). `providers` lists the platforms whose pages can
     | be ingested; any other URL is rejected. A media gets the `video` or
-    | `audio` type of its provider, and runs `pipeline` once probed, or none.
+    | `audio` type of its provider, and runs `pipeline` once probed (`embed`,
+    | its poster from the provider's thumbnail, docs/decisions/0031), or none.
     | The local prober reads the providers' oEmbed, for `timeout` seconds at
     | most; Eclair's prober reads their APIs.
     |
     */
     'embeds' => [
         'providers' => ['youtube', 'vimeo', 'dailymotion', 'soundcloud', 'spotify', 'tiktok', 'instagram'],
-        'pipeline' => null,
+        'pipeline' => 'embed',
         'timeout' => 5,
 
         // The pipeline that imports an embed's file (Mediatheque::importEmbed()),
@@ -212,6 +213,18 @@ return [
                     'format' => 'jpeg',
                     'when' => ['mime' => ['image/heic', 'image/heif', 'image/heic-sequence', 'image/heif-sequence', 'image/avif']],
                 ],
+            ],
+        ],
+        // An embed's poster: its provider's thumbnail, downloaded from the
+        // provider's thumbnail domains (`embed.thumbnail`), then a JPEG of
+        // it stored with the media. The embed is ready once probed: its
+        // poster follows (docs/decisions/0031)
+        'embed' => [
+            'transcoder' => env('MEDIATHEQUE_TRANSCODER', 'ffmpeg'),
+            'source' => null,
+            'renditions' => [
+                'thumbnail' => ['op' => 'embed.thumbnail', 'keep' => false],
+                'poster' => ['op' => 'image.convert', 'from' => 'thumbnail', 'format' => 'jpeg', 'role' => 'poster'],
             ],
         ],
         // An image of the first page of PDFs, rendered by Poppler

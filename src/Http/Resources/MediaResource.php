@@ -77,6 +77,8 @@ class MediaResource extends JsonResource
                 'provider' => self::string($media->metadata(MetadataKey::Provider->value)),
                 'url' => self::string($media->metadata(MetadataKey::ProviderUrl->value)),
                 'embed_url' => $media->embedUrl(),
+                // False once a refresh found it gone from its provider (docs/decisions/0031)
+                'available' => $media->metadata(MetadataKey::UnavailableAt->value) === null,
             ] : null,
             'metadata' => (object) array_filter($media->metadata(), fn (mixed $value) => $value !== null),
             'files' => (object) $this->files($media, $request),

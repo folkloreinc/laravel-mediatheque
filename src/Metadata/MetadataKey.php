@@ -109,6 +109,13 @@ enum MetadataKey: string
     case Live = 'live';
 
     /**
+     * ISO 8601: when a refresh found the embed gone from its provider
+     * (deleted, made private, no more embeddable). A later refresh that
+     * finds it removes the key (docs/decisions/0031).
+     */
+    case UnavailableAt = 'unavailable_at';
+
+    /**
      * Names that drivers use for canonical keys, other than the camel case
      * of the key itself (`frameRate`), which normalize() already converts.
      */

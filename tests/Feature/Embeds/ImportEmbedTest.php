@@ -220,7 +220,7 @@ class ImportEmbedTest extends DatabaseTestCase
         $this->assertFalse($media->isEmbed());
         $this->assertSame('video/mp4', $media->original()?->mime());
         $this->assertSame('dailymotion', $media->metadata('provider'));
-        // The import, then the video's pipeline once probed again
-        $this->assertSame(['embed_import', 'video'], $fake->runs()->map(fn (PipelineRunContract $run) => $run->name())->all());
+        // The embed's poster, the import, then the video's pipeline once probed again
+        $this->assertSame(['embed', 'embed_import', 'video'], $fake->runs()->map(fn (PipelineRunContract $run) => $run->name())->all());
     }
 }

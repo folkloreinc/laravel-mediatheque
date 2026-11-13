@@ -26,7 +26,7 @@ class EventsTest extends TestCase
         'MediaReady', 'MediaFailed', 'MediaVisibilityChanged', 'OriginalReplaced',
         'PipelineStarted', 'PipelineCompleted', 'PipelineFailed', 'PipelineCanceled',
         'RenditionProgressed', 'RenditionCompleted', 'RenditionFailed', 'RenditionSkipped', 'RenditionCanceled',
-        'IngestRejected',
+        'IngestRejected', 'EmbedRefreshed', 'EmbedUnavailable',
     ];
 
     private const array ALLOWED_TYPES = [

@@ -16,6 +16,43 @@ final class EmbedProviders
     public const array PROVIDERS = ['youtube', 'vimeo', 'dailymotion', 'soundcloud', 'spotify', 'tiktok', 'instagram'];
 
     /**
+     * The domains each provider serves its thumbnails from: a thumbnail is
+     * only downloaded from its provider's, so the URL a provider answers
+     * never makes the server connect anywhere else (docs/decisions/0031).
+     */
+    public const array THUMBNAIL_DOMAINS = [
+        'youtube' => ['ytimg.com'],
+        'vimeo' => ['vimeocdn.com'],
+        'dailymotion' => ['dmcdn.net'],
+        'soundcloud' => ['sndcdn.com'],
+        'spotify' => ['scdn.co', 'spotifycdn.com'],
+        'tiktok' => ['tiktokcdn.com', 'tiktokcdn-us.com', 'tiktokcdn-eu.com'],
+        'instagram' => ['cdninstagram.com', 'fbcdn.net'],
+    ];
+
+    /**
+     * Whether a URL is a thumbnail of a provider: `https`, without
+     * credentials or port, on one of the provider's thumbnail domains or
+     * their subdomains.
+     */
+    public static function isThumbnail(string $provider, string $url): bool
+    {
+        $parts = parse_url($url);
+        if (! is_array($parts) || strtolower($parts['scheme'] ?? '') !== 'https' || isset($parts['user']) || isset($parts['pass']) || isset($parts['port']) || ! isset($parts['host'])) {
+            return false;
+        }
+        $host = strtolower($parts['host']);
+
+        foreach (self::THUMBNAIL_DOMAINS[$provider] ?? [] as $domain) {
+            if ($host === $domain || str_ends_with($host, '.'.$domain)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * The provider, among `$allowed`, that recognizes a URL, or null.
      *
      * @param  list<string>  $allowed

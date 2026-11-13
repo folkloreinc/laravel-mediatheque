@@ -19,7 +19,7 @@ class MetadataKeyTest extends TestCase
             // Embeds (docs/decisions/0029)
             'provider', 'provider_id', 'provider_url', 'embed_url', 'embed_html', 'title', 'description',
             'author_id', 'author_name', 'author_url', 'thumbnail_url', 'published_at', 'embeddable',
-            'privacy', 'live',
+            'privacy', 'live', 'unavailable_at',
         ], array_column(MetadataKey::cases(), 'value'));
     }
 
