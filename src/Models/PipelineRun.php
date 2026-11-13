@@ -39,7 +39,7 @@ use LogicException;
  * @property int $pipelinable_id
  * @property string $transcoder
  * @property string|null $external_id
- * @property array{transcoder?: string, source?: string|null, renditions?: array<string, array<string, mixed>>, main?: string|null, options?: array<string, array<string, mixed>>, then?: string|null} $definition
+ * @property array{transcoder?: string, source?: string|null, renditions?: array<string, array<string, mixed>>, main?: string|null, options?: array<string, array<string, mixed>>, then?: string|null, import?: array<string, mixed>} $definition
  * @property string $output_source
  * @property string $path_prefix
  * @property Visibility $visibility
@@ -215,6 +215,22 @@ class PipelineRun extends Model implements PipelineRunContract
     public function runOptions(): array
     {
         return $this->definition['options'] ?? [];
+    }
+
+    /**
+     * The import of an embed's file that this run makes, if any: its mode
+     * (an `ImportMode` value) and its rendition of `embed.download`
+     * (docs/decisions/0030). retry() creates the new run with it.
+     *
+     * @return array{mode: string, rendition: string}|null
+     */
+    public function embedImport(): ?array
+    {
+        $import = $this->definition['import'] ?? null;
+
+        return is_array($import) && is_string($import['mode'] ?? null) && is_string($import['rendition'] ?? null)
+            ? ['mode' => $import['mode'], 'rendition' => $import['rendition']]
+            : null;
     }
 
     /**

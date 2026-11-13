@@ -19,6 +19,8 @@ use Folklore\Mediatheque\Contracts\Recorder;
 use Folklore\Mediatheque\Contracts\Type\Factory as TypeFactory;
 use Folklore\Mediatheque\Contracts\UrlGenerator;
 use Folklore\Mediatheque\Dashboard\Routes as DashboardRoutes;
+use Folklore\Mediatheque\Embeds\ImportedOriginal;
+use Folklore\Mediatheque\Events\PipelineCompleted;
 use Folklore\Mediatheque\Images\MediaResolver;
 use Folklore\Mediatheque\Ingest\MediaIngestor;
 use Folklore\Mediatheque\Monitoring\Monitoring;
@@ -29,6 +31,7 @@ use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Transcoders\TranscoderManager;
 use Folklore\Mediatheque\Urls\DiskUrlGenerator;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\CachesConfiguration;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
@@ -58,6 +61,9 @@ class ServiceProvider extends BaseServiceProvider
     public function boot(): void
     {
         $this->registerImageResolver();
+
+        // An embed's import in ImportMode::ReplaceOriginal replaces its original once downloaded (docs/decisions/0030)
+        $this->app->make(Dispatcher::class)->listen(PipelineCompleted::class, [ImportedOriginal::class, 'handle']);
 
         // Registered by the application, inside its own middleware: Route::mediathequeDashboard()
         Router::macro('mediathequeDashboard', function (string $prefix = 'mediatheque') {

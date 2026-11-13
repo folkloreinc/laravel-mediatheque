@@ -119,6 +119,11 @@ return [
         'providers' => ['youtube', 'vimeo', 'dailymotion', 'soundcloud', 'spotify', 'tiktok', 'instagram'],
         'pipeline' => null,
         'timeout' => 5,
+
+        // The pipeline that imports an embed's file (Mediatheque::importEmbed()),
+        // with a rendition of `embed.download`, on a transcoder that runs it
+        // (Eclair's). Null: embeds aren't imported.
+        'import_pipeline' => null,
     ],
 
     /*

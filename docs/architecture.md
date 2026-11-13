@@ -207,7 +207,7 @@ $media = Mediatheque::ingest($file, attributes: ['tenant_id' => $tenant->id]);  
 | `UploadedFile`, local path, stream | Copied to the media's source |
 | A file already on a disk (`Source::disk()`) | Moved or copied without going through PHP when the disk allows it. This is how files that the browser uploaded directly to storage are ingested |
 | A URL (`Source::url()`) | Downloaded in a queued job, with an SSRF guard (public addresses only, size and time limits, redirects checked) |
-| An embed's page (`Source::embed()`) | Nothing is downloaded: a media of its provider's `video` or `audio` type, whose original is remote, for the providers of `embeds.providers`. The probe reads the provider; the media runs `embeds.pipeline`, or none, and plays from its platform ([decisions/0029](decisions/0029-embeds.md)) |
+| An embed's page (`Source::embed()`) | Nothing is downloaded: a media of its provider's `video` or `audio` type, whose original is remote, for the providers of `embeds.providers`. The probe reads the provider; the media runs `embeds.pipeline`, or none, and plays from its platform ([decisions/0029](decisions/0029-embeds.md)). `Mediatheque::importEmbed()` downloads its file with `embeds.import_pipeline`, as a rendition or as its new original ([decisions/0030](decisions/0030-import-embeds.md)) |
 
 Ingest steps:
 

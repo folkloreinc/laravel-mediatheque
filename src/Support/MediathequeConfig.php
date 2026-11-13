@@ -197,6 +197,16 @@ final class MediathequeConfig
     }
 
     /**
+     * The pipeline that imports an embed's file, or null.
+     */
+    public function embedImportPipeline(): ?PipelineDefinition
+    {
+        $name = $this->optionalString('embeds.import_pipeline');
+
+        return $name === null ? null : $this->pipeline($name);
+    }
+
+    /**
      * Seconds the local prober waits for a provider's oEmbed.
      */
     public function embedTimeout(): int

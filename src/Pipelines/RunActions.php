@@ -41,7 +41,8 @@ class RunActions
      * forced, so a rendition that still has a file from an earlier run is
      * produced again. Renditions the pipeline doesn't have any more, and
      * those a later run of the pipeline completed, are left out. The new run
-     * has the options of the run it retries (docs/decisions/0027).
+     * has the options of the run it retries (docs/decisions/0027), and its
+     * embed's import (docs/decisions/0030).
      */
     public function retry(PipelineRunContract $run): ?PipelineRunContract
     {
@@ -72,7 +73,10 @@ class RunActions
 
         $options = array_filter($run->runOptions(), fn (string $name) => $pipeline->rendition($name) !== null, ARRAY_FILTER_USE_KEY);
 
-        return $this->runner->run($media, $run->name(), $renditions, force: true, options: $options);
+        // An embed's import keeps its mode (docs/decisions/0030)
+        $import = $run->embedImport();
+
+        return $this->runner->run($media, $run->name(), $renditions, force: true, options: $options, context: $import !== null ? ['import' => $import] : []);
     }
 
     /**

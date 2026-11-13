@@ -7,6 +7,7 @@ use Folklore\Mediatheque\Contracts\Ingestor;
 use Folklore\Mediatheque\Contracts\Mediatheque;
 use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Contracts\Models\PipelineRun;
+use Folklore\Mediatheque\Enums\ImportMode;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Ingest\IngestOptions;
 use Folklore\Mediatheque\Ingest\OriginalReplacer;
@@ -15,6 +16,7 @@ use Folklore\Mediatheque\Monitoring\Monitoring;
 use Folklore\Mediatheque\Pipelines\PipelineRunner;
 use Folklore\Mediatheque\Pipelines\RunActions;
 use Folklore\Mediatheque\References\MediaReference;
+use Folklore\Mediatheque\Support\MediathequeConfig;
 use Folklore\Mediatheque\Support\Models;
 use Folklore\Mediatheque\Support\Uid;
 use Folklore\Mediatheque\Urls\VisibilityChanger;
@@ -22,6 +24,7 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 
 /**
  * The package's entry point, behind the `Mediatheque` facade, on the
@@ -130,6 +133,34 @@ class MediathequeManager implements Mediatheque
     public function runPipeline(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false, array $options = []): ?PipelineRun
     {
         return $this->container->make(PipelineRunner::class)->run($media, $pipeline, $renditions, $force, $options);
+    }
+
+    public function importEmbed(Media $media, ImportMode $mode = ImportMode::Rendition, ?string $pipeline = null): ?PipelineRun
+    {
+        if (! $media->isEmbed()) {
+            throw new InvalidArgumentException(sprintf('%s is not an embed: only an embed\'s file is imported.', $media->uid()));
+        }
+
+        $config = $this->container->make(MediathequeConfig::class);
+        $definition = ($pipeline !== null ? $config->pipeline($pipeline) : $config->embedImportPipeline())
+            ?? throw new InvalidArgumentException('No pipeline imports embeds: set mediatheque.embeds.import_pipeline.');
+        $download = null;
+        foreach ($definition->renditions as $name => $rendition) {
+            if ($rendition->operation === 'embed.download') {
+                $download = $name;
+                break;
+            }
+        }
+        if ($download === null) {
+            throw new InvalidArgumentException(sprintf('The pipeline "%s" has no rendition of embed.download.', $definition->name));
+        }
+
+        return $this->container->make(PipelineRunner::class)->run(
+            $media,
+            $definition->name,
+            force: true,
+            context: ['import' => ['mode' => $mode->value, 'rendition' => $download]],
+        );
     }
 
     public function retry(PipelineRun $run): ?PipelineRun

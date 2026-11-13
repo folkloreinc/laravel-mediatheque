@@ -4,6 +4,7 @@ namespace Folklore\Mediatheque\Contracts;
 
 use Folklore\Mediatheque\Contracts\Models\Media;
 use Folklore\Mediatheque\Contracts\Models\PipelineRun;
+use Folklore\Mediatheque\Enums\ImportMode;
 use Folklore\Mediatheque\Enums\Visibility;
 use Folklore\Mediatheque\Exceptions\FileRejected;
 use Folklore\Mediatheque\Ingest\IngestOptions;
@@ -117,6 +118,21 @@ interface Mediatheque
      * @phpstan-impure
      */
     public function runPipeline(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false, array $options = []): ?PipelineRun;
+
+    /**
+     * Import the file of an embed, its own video or audio, with the import
+     * pipeline (`mediatheque.embeds.import_pipeline`, or `$pipeline`), whose
+     * rendition of `embed.download` downloads it (docs/decisions/0030). With
+     * `ImportMode::Rendition`, the file is a rendition of the embed. With
+     * `ImportMode::ReplaceOriginal`, it replaces the embed's original once
+     * downloaded: the media becomes an ordinary video or audio. Whether the
+     * application may download it (its rights, its user's account) is the
+     * application's to check. Throws for a media that isn't an embed, and
+     * without an import pipeline.
+     *
+     * @phpstan-impure
+     */
+    public function importEmbed(Media $media, ImportMode $mode = ImportMode::Rendition, ?string $pipeline = null): ?PipelineRun;
 
     /**
      * Retry a run that ended: a new run of its failed and canceled
