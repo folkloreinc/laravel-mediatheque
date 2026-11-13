@@ -13,6 +13,7 @@ use Folklore\Mediatheque\Contracts\Prober;
 use Folklore\Mediatheque\Contracts\Recorder;
 use Folklore\Mediatheque\Contracts\UrlGenerator;
 use Folklore\Mediatheque\Embeds\EmbedProviders;
+use Folklore\Mediatheque\Enums\ImportMode;
 use Folklore\Mediatheque\Enums\JobStatus;
 use Folklore\Mediatheque\Enums\MediaStatus;
 use Folklore\Mediatheque\Enums\PipelineStatus;
@@ -388,6 +389,59 @@ class MediathequeFake implements Fake, Mediatheque
         }
 
         return new Collection($resolved);
+    }
+
+    /**
+     * Imports an embed's file as the package does (docs/decisions/0030): the
+     * import pipeline runs at once, and in ImportMode::ReplaceOriginal its
+     * downloaded file becomes the original, the media keeping its provenance.
+     */
+    public function importEmbed(Media $media, ImportMode $mode = ImportMode::Rendition, ?string $pipeline = null): ?PipelineRun
+    {
+        $media = $this->find($media);
+        if (! $media->isEmbed()) {
+            throw new InvalidArgumentException(sprintf('%s is not an embed: only an embed\'s file is imported.', $media->uid()));
+        }
+        $name = $pipeline ?? $this->config->get('mediatheque.embeds.import_pipeline');
+        if (! is_string($name) || $name === '') {
+            throw new InvalidArgumentException('No pipeline imports embeds: set mediatheque.embeds.import_pipeline.');
+        }
+        $download = null;
+        foreach ($this->pipeline($name)->renditions as $renditionName => $rendition) {
+            if ($rendition->operation === 'embed.download') {
+                $download = $renditionName;
+                break;
+            }
+        }
+        if ($download === null) {
+            throw new InvalidArgumentException(sprintf('The pipeline "%s" has no rendition of embed.download.', $name));
+        }
+
+        $run = $this->runPipeline($media, $name, force: true);
+
+        $file = $media->file($download);
+        if ($mode === ImportMode::ReplaceOriginal && $file instanceof FakeFile && $file->source !== null && $file->path !== null) {
+            $original = new FakeFile(
+                media: $media,
+                urls: $this->urls,
+                handle: File::ORIGINAL,
+                source: $file->source,
+                path: $file->path,
+                role: 'original',
+                mime: $file->mime,
+                size: $file->size,
+                name: $media->name(),
+            );
+            // As a replaced original, its renditions go
+            $media->files = [$original];
+            $media->metadata = [
+                ...array_intersect_key($media->metadata, array_flip([MetadataKey::Provider->value, MetadataKey::ProviderId->value, MetadataKey::ProviderUrl->value])),
+                MetadataKey::Mime->value => $file->mime,
+            ];
+            $this->probe($media, $this->pipelineOf($media->type));
+        }
+
+        return $run;
     }
 
     public function runPipeline(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false, array $options = []): ?PipelineRun

@@ -10,10 +10,12 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 - The `File` contract has `provider()` and `providerRef()`, and the `Media` contract `isEmbed()` and `embedUrl()`: an application's own implementations of these contracts add them (#170).
 - `MediaResource` has an `embed` key, null for media that aren't embeds (#170).
+- The `Mediatheque` contract has `importEmbed()`: an application's own implementation adds it (#171).
 
 ### Added
 
 - Embeds: `Source::embed($url)` ingests a video or audio on YouTube, Vimeo, Dailymotion, SoundCloud, Spotify, TikTok or Instagram as a media whose original is the platform's page, of its provider's `video` or `audio` type, without downloading anything. Only the providers of `mediatheque.embeds.providers` are accepted; another URL is rejected with `RejectionReason::EmbedNotAllowed`. The local prober reads the provider's oEmbed (`OEmbedProber`, `mediatheque.embeds.timeout`), never the page itself; Eclair's prober reads the providers' APIs. An embed runs `mediatheque.embeds.pipeline`, or none, and is `ready` once probed. New canonical metadata keys (`provider`, `provider_id`, `provider_url`, `embed_url`, `title`, `author_name`, `thumbnail_url`…), `TranscoderErrorCode::ProviderUnavailable` and `ProviderRefused`, and `MediaResource`'s `thumbnail_url` falls back on the provider's thumbnail. The fake ingests and probes embeds too ([decisions/0029](docs/decisions/0029-embeds.md), #170).
+- `Mediatheque::importEmbed($media, $mode)` imports an embed's file with `mediatheque.embeds.import_pipeline`, whose rendition of `embed.download` downloads it (Eclair's). With `ImportMode::Rendition`, the file is a rendition of the embed; with `ImportMode::ReplaceOriginal`, it replaces the embed's original once downloaded, and the media becomes an ordinary video or audio that keeps its `provider`, `provider_id` and `provider_url`. `retry()` keeps the mode, `PipelineRunner::run()` and `create()` take a `context` recorded in the run's snapshot, and the fake imports too ([decisions/0030](docs/decisions/0030-import-embeds.md), #171).
 
 ## [2.0.0-alpha.17] - 2026-11-10
 

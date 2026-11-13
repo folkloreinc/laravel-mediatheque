@@ -42,8 +42,9 @@ class PipelineRunner
      *
      * @param  list<string>|null  $renditions  Only these renditions (and those they read from)
      * @param  array<string, array<string, mixed>>  $options  Options of this run, by rendition (docs/decisions/0027)
+     * @param  array<string, mixed>  $context  More of the run, recorded in its snapshot
      */
-    public function run(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false, array $options = []): ?PipelineRun
+    public function run(Media $media, ?string $pipeline = null, ?array $renditions = null, bool $force = false, array $options = [], array $context = []): ?PipelineRun
     {
         $definition = $this->definition($media, $pipeline)->withOptions($options);
         $names = $renditions ?? array_keys(array_filter($definition->renditions, fn (Rendition $rendition) => $rendition->keep));
@@ -56,7 +57,7 @@ class PipelineRunner
             return null;
         }
 
-        $run = $this->create($media, $definition, $names, $options);
+        $run = $this->create($media, $definition, $names, $options, $context);
         $externalId = $this->transcoders->driver($run->transcoder())->submit($run);
 
         if ($externalId !== null) {
@@ -72,8 +73,9 @@ class PipelineRunner
      *
      * @param  list<string>  $renditions
      * @param  array<string, array<string, mixed>>  $options  The run's options, already merged into the pipeline's renditions, recorded for retries
+     * @param  array<string, mixed>  $context  More of the run, recorded in its snapshot: an embed's `import` (docs/decisions/0030)
      */
-    public function create(Media $media, PipelineDefinition $pipeline, array $renditions, array $options = []): PipelineRun
+    public function create(Media $media, PipelineDefinition $pipeline, array $renditions, array $options = [], array $context = []): PipelineRun
     {
         if (! $media instanceof Model) {
             throw new InvalidArgumentException('Pipelines run on Eloquent media.');
@@ -102,14 +104,14 @@ class PipelineRunner
             throw new InvalidArgumentException('The pipeline run model must extend '.PipelineRun::class.'.');
         }
 
-        $this->database->connection($run->getConnectionName())->transaction(function () use ($run, $uid, $media, $pipeline, $selected, $original, $options) {
+        $this->database->connection($run->getConnectionName())->transaction(function () use ($run, $uid, $media, $pipeline, $selected, $original, $options, $context) {
             $run->forceFill([
                 'uid' => $uid,
                 'name' => $pipeline->name,
                 'pipelinable_type' => $media->getMorphClass(),
                 'pipelinable_id' => $media->getKey(),
                 'transcoder' => $pipeline->transcoder,
-                'definition' => PipelineRun::snapshot($pipeline, $selected, $options),
+                'definition' => [...PipelineRun::snapshot($pipeline, $selected, $options), ...$context],
                 'output_source' => $pipeline->source ?? $original->source() ?? $this->config->defaultSource(),
                 'path_prefix' => $this->paths->runPrefix($media, $uid),
                 'visibility' => $media->visibility(),

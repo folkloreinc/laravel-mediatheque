@@ -4,6 +4,7 @@
 - Date: 2026-11-13
 - Issue: [#170](https://github.com/folkloreinc/laravel-mediatheque/issues/170)
 - Amends: [0004](0004-renditions.md), [0006](0006-ingest-and-uploads.md), [0012](0012-pipeline-runs-recorder-and-probe.md)
+- Amended by: [0030](0030-import-embeds.md)
 
 ## Context
 
@@ -28,4 +29,4 @@ Applications keep videos and audio that live on platforms (YouTube, Vimeo, Daily
 - An embed is a media like the others: referenced, used, made private, deleted. Its URL never decides where the server connects: only the providers' endpoints are requested.
 - The contracts grow: `File::provider()`, `File::providerRef()`, `Media::isEmbed()` and `Media::embedUrl()`. An application's own implementations add them (alphas can break, [0001](0001-supported-versions.md)).
 - Without Eclair, an embed's metadata is what oEmbed gives: no YouTube duration, no author id for most providers, nothing for Instagram. With Eclair and its project's credentials, the APIs give the rest.
-- A poster stored with the media, copied from the provider's thumbnail, needs a rendition that reads another input than the original's file; it comes with a refresh command that probes embeds again (title, privacy, deletion), in a later change of #170. Importing an embed's file comes with [#171](https://github.com/folkloreinc/laravel-mediatheque/issues/171).
+- A poster stored with the media, copied from the provider's thumbnail, needs a rendition that reads another input than the original's file; it comes with a refresh command that probes embeds again (title, privacy, deletion), in a later change of #170. Importing an embed's file is [0030](0030-import-embeds.md).
