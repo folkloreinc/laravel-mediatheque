@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
+use stdClass;
 
 /**
  * The upgrade of a 1.x database, on tables created by the 1.x migrations of
@@ -72,6 +73,22 @@ class UpgradeFromV1Test extends TestCase
         $this->assertSame(0, $status, $output);
 
         return $output;
+    }
+
+    private function pageData(int $id): string
+    {
+        $data = DB::table('pages')->where('id', $id)->value('data');
+        $this->assertIsString($data);
+
+        return $data;
+    }
+
+    private function uid(int $media): string
+    {
+        $uid = DB::table($this->table('medias'))->where('id', $media)->value('uid');
+        $this->assertIsString($uid);
+
+        return $uid;
     }
 
     private function table(string $name): string
@@ -378,6 +395,74 @@ class UpgradeFromV1Test extends TestCase
         // Its metadata was not copied: the cleanup keeps it
         $this->assertSame(1, Artisan::call('mediatheque:upgrade', ['--cleanup' => true, '--force' => true]));
         $this->assertMatchesRegularExpression('/of morph types that are neither media nor files[ .]+1\s/', Artisan::output());
+    }
+
+    #[Test]
+    public function the_references_to_media_by_id_are_counted_by_the_check_and_rewritten_to_their_uid(): void
+    {
+        $this->create1xDatabase();
+        $data = '{"image":"media://1","fr":{"gallery":["medias://2","media://99"],"text":"See media://3"},"empty":{},"link":"https://example.com","video":"media://med_abc","count":12}';
+        DB::table('pages')->where('id', 1)->update(['data' => $data]);
+        DB::table('pages')->insert([
+            ['id' => 2, 'title' => 'Text', 'data' => '{"text":"No media"}'],
+            ['id' => 3, 'title' => 'Empty', 'data' => null],
+            // As Laravel's casts encode it
+            ['id' => 4, 'title' => 'Escaped', 'data' => '{"image":"media:\\/\\/3"}'],
+        ]);
+
+        $this->assertSame(0, Artisan::call('mediatheque:upgrade', ['--check' => true, '--references' => ['pages.data']]));
+        $output = Artisan::output();
+        $this->assertMatchesRegularExpression('/pages\.data \.+ 3 references in 2 rows/', $output);
+        $this->assertStringContainsString("pages.data refers to media that don't exist, left as they are: 99", $output);
+        $this->assertEquals(json_decode($data), json_decode($this->pageData(1)));
+
+        $this->migrate();
+        $this->assertSame(0, Artisan::call('mediatheque:upgrade', ['--force' => true, '--references' => ['pages.data']]));
+        $this->assertMatchesRegularExpression('/pages\.data \.+ 3 references in 2 rows rewritten/', Artisan::output());
+
+        $rewritten = $this->pageData(1);
+        $this->assertEquals(json_decode(str_replace(['"media://1"', '"medias://2"'], ['"media://'.$this->uid(1).'"', '"media://'.$this->uid(2).'"'], $data)), json_decode($rewritten));
+        // Objects stay objects
+        $decoded = json_decode($rewritten);
+        $this->assertInstanceOf(stdClass::class, $decoded);
+        $this->assertEquals(new stdClass, $decoded->empty);
+        $this->assertEquals((object) ['text' => 'No media'], json_decode($this->pageData(2)));
+        $this->assertEquals((object) ['image' => 'media://'.$this->uid(3)], json_decode($this->pageData(4)));
+
+        // Uids are never digits: a second run finds nothing
+        $this->assertSame(0, Artisan::call('mediatheque:upgrade', ['--force' => true, '--references' => ['pages.data']]));
+        $this->assertMatchesRegularExpression('/pages\.data \.+ 0 references in 0 rows rewritten/', Artisan::output());
+        $this->assertSame($rewritten, $this->pageData(1));
+    }
+
+    #[Test]
+    public function the_references_take_other_schemes(): void
+    {
+        $this->create1xDatabase();
+        $this->migrate();
+        DB::table('pages')->where('id', 1)->update(['data' => '{"a":"asset://1","b":"media://1"}']);
+
+        $this->assertSame(0, Artisan::call('mediatheque:upgrade', ['--force' => true, '--references' => ['pages.data'], '--reference-key' => ['asset']]));
+
+        $this->assertEquals((object) ['a' => 'media://'.$this->uid(1), 'b' => 'media://1'], json_decode($this->pageData(1)));
+    }
+
+    #[Test]
+    public function the_references_refuse_a_column_they_cant_rewrite(): void
+    {
+        $this->create1xDatabase();
+
+        foreach ([
+            'pages' => '--references takes a table and a JSON column',
+            'films.data' => 'There is no table films.',
+            'pages.blocks' => 'The table pages has no column blocks.',
+        ] as $option => $error) {
+            $this->assertSame(1, Artisan::call('mediatheque:upgrade', ['--check' => true, '--references' => [$option]]));
+            $this->assertStringContainsString($error, Artisan::output());
+        }
+
+        $this->assertSame(1, Artisan::call('mediatheque:upgrade', ['--cleanup' => true, '--references' => ['pages.data']]));
+        $this->assertStringContainsString('--references runs with --check or the conversion.', Artisan::output());
     }
 
     #[Test]

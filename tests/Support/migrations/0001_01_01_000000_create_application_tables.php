@@ -29,6 +29,7 @@ return new class extends Migration
         Schema::create('pages', function (Blueprint $table) {
             $table->id();
             $table->string('title');
+            $table->json('data')->nullable();
         });
     }
 
