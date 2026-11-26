@@ -6,6 +6,10 @@ All notable changes to `folklore/laravel-mediatheque` 2.x are documented in this
 
 ## [Unreleased]
 
+### Added
+
+- `mediatheque:upgrade --references=table.column` rewrites the references to media by id that an application stored in its own JSON columns (`media://12`, `medias://12`) to `media://<uid>`, after the conversion, in batches; `--check` counts them by column and lists the ids that match no media, and `--reference-key` sets other schemes (#176).
+
 ## [2.0.0-alpha.18] - 2026-11-13
 
 Embeds: videos and audio on YouTube, Vimeo, Dailymotion, SoundCloud, Spotify, TikTok and Instagram as media whose original is the platform's page, probed through the provider's oEmbed or Eclair, with a poster from the provider's thumbnail, a refresh command, and the import of their file (#170, #171).

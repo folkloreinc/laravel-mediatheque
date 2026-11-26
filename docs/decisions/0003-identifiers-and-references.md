@@ -21,5 +21,5 @@ The pilot project already uses prefixed ULIDs for its public ids (`med_…`) and
 ## Consequences
 
 - `mediatheque:upgrade` backfills `uid` for existing media. ULIDs generated for old media use their `created_at`, so they sort in creation order.
-- Applications can move from `medias://` to `media://` at their own pace; a helper rewrites references in JSON columns.
+- Applications can move from `medias://` to `media://` at their own pace; a helper rewrites references in JSON columns: `mediatheque:upgrade --references` ([#176](https://github.com/folkloreinc/laravel-mediatheque/issues/176)).
 - Stored URLs are discouraged in the docs: references are resolved to URLs at render time.

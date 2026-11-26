@@ -9,6 +9,7 @@ use Folklore\Mediatheque\Upgrade\Converter;
 use Folklore\Mediatheque\Upgrade\Inspector;
 use Folklore\Mediatheque\Upgrade\LegacyConfigFile;
 use Folklore\Mediatheque\Upgrade\LegacyTables;
+use Folklore\Mediatheque\Upgrade\ReferenceRewriter;
 use Illuminate\Console\Command;
 use Illuminate\Console\ConfirmableTrait;
 use Illuminate\Filesystem\Filesystem;
@@ -24,7 +25,9 @@ use Symfony\Component\Console\Attribute\AsCommand;
  *   removes orphan rows and adds the foreign keys;
  * - `--config` rewrites a 1.x `config/mediatheque.php` in the 2.0 shape,
  *   with only the application's overrides;
- * - `--cleanup` drops the 1.x `metadatas` table once the data is converted.
+ * - `--cleanup` drops the 1.x `metadatas` table once the data is converted;
+ * - `--references` rewrites the references to media by id that the
+ *   application stored in its JSON columns, with `--check` or the conversion.
  */
 #[AsCommand(name: 'mediatheque:upgrade')]
 class UpgradeCommand extends Command
@@ -38,6 +41,8 @@ class UpgradeCommand extends Command
                             {--batch=500 : The number of rows converted in each transaction}
                             {--media-morph=* : Another morph type that 1.x rows use for media}
                             {--file-morph=* : Another morph type that 1.x rows use for files}
+                            {--references=* : A JSON column (table.column) whose references to media by id (media://12) are rewritten to their uid}
+                            {--reference-key=* : The schemes of those references (default: media and medias)}
                             {--accept-unknown-morphs : Convert although metadata of morph types neither media nor files would not be copied}
                             {--force : Run without asking for confirmation}';
 
@@ -52,21 +57,32 @@ class UpgradeCommand extends Command
             return self::FAILURE;
         }
 
+        if (($this->option('config') || $this->option('cleanup')) && $this->strings('references') !== []) {
+            $this->components->error('--references runs with --check or the conversion.');
+
+            return self::FAILURE;
+        }
+
         if ($this->option('config')) {
             return $this->rewriteConfig($files);
         }
 
         $tables = LegacyTables::make($this->strings('media-morph'), $this->strings('file-morph'));
 
-        if ($this->option('check')) {
-            return $this->check($tables, $config, $files);
-        }
-
         $batch = filter_var($this->option('batch'), FILTER_VALIDATE_INT);
         if (! is_int($batch) || $batch < 1) {
             $this->components->error('--batch is a positive number of rows.');
 
             return self::FAILURE;
+        }
+
+        $references = $this->references($tables, $batch);
+        if ($references === null) {
+            return self::FAILURE;
+        }
+
+        if ($this->option('check')) {
+            return $this->check($tables, $config, $files, $references);
         }
 
         $converter = new Converter($tables, $config, $batch);
@@ -93,11 +109,65 @@ class UpgradeCommand extends Command
             return self::FAILURE;
         }
 
-        return $this->convert($converter, $tables);
+        return $this->convert($converter, $tables, $references);
     }
 
-    private function check(LegacyTables $tables, MediathequeConfig $config, Filesystem $files): int
+    /**
+     * The rewriter and the columns of `--references`, or null when one can't
+     * be rewritten.
+     *
+     * @param  int<1, max>  $batch
+     * @return array{0: ReferenceRewriter, 1: list<array{0: string, 1: string}>}|null
+     */
+    private function references(LegacyTables $tables, int $batch): ?array
     {
+        $keys = $this->strings('reference-key');
+        $rewriter = new ReferenceRewriter($tables, $keys !== [] ? $keys : ReferenceRewriter::KEYS, $batch);
+        $columns = [];
+
+        foreach (array_unique($this->strings('references')) as $option) {
+            $column = ReferenceRewriter::parse($option);
+            $invalid = $column === null ? sprintf('--references takes a table and a JSON column, as table.column: "%s" isn\'t one.', $option) : $rewriter->invalid(...$column);
+            if ($invalid !== null || $column === null) {
+                $this->components->error((string) $invalid);
+
+                return null;
+            }
+            $columns[] = $column;
+        }
+
+        return [$rewriter, $columns];
+    }
+
+    /**
+     * @param  array{0: ReferenceRewriter, 1: list<array{0: string, 1: string}>}  $references
+     */
+    private function rewriteReferences(array $references, bool $check): void
+    {
+        [$rewriter, $columns] = $references;
+        if ($columns === []) {
+            return;
+        }
+
+        $this->newLine();
+        $this->components->info($check ? 'References to media by id, rewritten to their uid by the conversion' : 'References to media by id, rewritten to their uid');
+
+        foreach ($columns as [$table, $column]) {
+            $count = $check ? $rewriter->inspect($table, $column) : $rewriter->rewrite($table, $column);
+            $this->components->twoColumnDetail($table.'.'.$column, sprintf('%d references in %d rows%s', $count->references, $count->rows, $check ? '' : ' rewritten'));
+            if ($count->missing !== []) {
+                $this->components->warn(sprintf('%s.%s refers to media that don\'t exist, left as they are: %s', $table, $column, implode(', ', $count->missing)));
+            }
+        }
+    }
+
+    /**
+     * @param  array{0: ReferenceRewriter, 1: list<array{0: string, 1: string}>}  $references
+     */
+    private function check(LegacyTables $tables, MediathequeConfig $config, Filesystem $files, array $references): int
+    {
+        $this->rewriteReferences($references, true);
+
         $report = (new Inspector($tables, $config))->inspect();
 
         $this->components->info('Media are recognized by these morph types: '.implode(', ', $tables->mediaTypes).'; files by: '.implode(', ', $tables->fileTypes).'.');
@@ -149,7 +219,10 @@ class UpgradeCommand extends Command
         return self::SUCCESS;
     }
 
-    private function convert(Converter $converter, LegacyTables $tables): int
+    /**
+     * @param  array{0: ReferenceRewriter, 1: list<array{0: string, 1: string}>}  $references
+     */
+    private function convert(Converter $converter, LegacyTables $tables, array $references): int
     {
         $this->components->twoColumnDetail('Files without a source: the default source', $converter->fillSources().' given "'.$tables->defaultSource().'"');
         $this->components->twoColumnDetail('Files: media, handles and metadata', $converter->convertFiles().' converted');
@@ -172,6 +245,8 @@ class UpgradeCommand extends Command
 
             return self::FAILURE;
         }
+
+        $this->rewriteReferences($references, false);
 
         $this->components->info('The 1.x data is converted. Check it, then drop the 1.x metadatas table with `php artisan mediatheque:upgrade --cleanup`.');
 
